@@ -4,7 +4,7 @@ import json
 import numpy as np
 
 # runs are located in:
-# runs/full/$TASK_NAME/$MODEL_NAME/$SEED/checkpoint-xxxxx
+# runs/st-a/$TASK_NAME/$MODEL_NAME/$SEED/checkpoint-xxxxx
 
 
 # do this for every TASK_NAME and MAX_SEQ_LEN
@@ -12,12 +12,12 @@ import numpy as np
 
 MODEL_NAME = "bert-base-uncased"
 
-output_file = "results/FULL.csv"
+output_file = "results/ST-A-FUSION.csv"
 df = pd.DataFrame(columns=["task", "n_runs", "best_seed", "seeds", "accuracy_MEAN", "accuracy_STD", "accuracy_mm_MEAN", "accuracy_mm_STD", "pearson_MEAN", "pearson_STD", "spearmanr_MEAN", "spearmanr_STD", "matthews_correlation_MEAN", "matthews_correlation_STD"])
 
 for task in ["mnli", "qqp", "sst2", "mrpc", "rte", "qnli", "stsb", "cola"]:
     # get all directories in subfolder
-    subfolder = os.path.join("runs", "full", task, MODEL_NAME)
+    subfolder = os.path.join("runs", "st-a-fusion", task, MODEL_NAME)
     subfolder_content = os.listdir(subfolder)
     # get all directories with seed
     seed_dirs = [os.path.join(subfolder, d) for d in subfolder_content if os.path.isdir(os.path.join(subfolder, d))]
@@ -45,15 +45,18 @@ for task in ["mnli", "qqp", "sst2", "mrpc", "rte", "qnli", "stsb", "cola"]:
     seeds.sort()
     best_seed = seeds[0]
     for seed in seeds:
-        if task == "cola":
-            if all_metrics[seed]["matthews_correlation"] > all_metrics[best_seed]["matthews_correlation"]:
-                best_seed = seed
-        elif task == "stsb":
-            if all_metrics[seed]["pearson"] > all_metrics[best_seed]["pearson"]:
-                best_seed = seed
-        else:
-            if all_metrics[seed]["accuracy"] > all_metrics[best_seed]["accuracy"]:
-                best_seed = seed
+        try:
+            if task == "cola":
+                if all_metrics[seed]["matthews_correlation"] > all_metrics[best_seed]["matthews_correlation"]:
+                    best_seed = seed
+            elif task == "stsb":
+                if all_metrics[seed]["pearson"] > all_metrics[best_seed]["pearson"]:
+                    best_seed = seed
+            else:
+                if all_metrics[seed]["accuracy"] > all_metrics[best_seed]["accuracy"]:
+                    best_seed = seed
+        except:
+            continue
     for metric in ["accuracy", "accuracy_mm", "pearson", "spearmanr", "matthews_correlation"]:
         metric_values = [float(m[metric]) for m in all_metrics if metric in m]
         mean_metrics[metric] = np.mean(metric_values)

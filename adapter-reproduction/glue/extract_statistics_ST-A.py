@@ -13,7 +13,7 @@ import numpy as np
 MODEL_NAME = "bert-base-uncased"
 
 output_file = "results/ST-A.csv"
-df = pd.DataFrame(columns=["task", "n_runs", "seeds", "accuracy_MEAN", "accuracy_STD", "accuracy_mm_MEAN", "accuracy_mm_STD", "pearson_MEAN", "pearson_STD", "spearmanr_MEAN", "spearmanr_STD", "matthews_correlation_MEAN", "matthews_correlation_STD"])
+df = pd.DataFrame(columns=["task", "n_runs", "best_seed", "seeds", "accuracy_MEAN", "accuracy_STD", "accuracy_mm_MEAN", "accuracy_mm_STD", "pearson_MEAN", "pearson_STD", "spearmanr_MEAN", "spearmanr_STD", "matthews_correlation_MEAN", "matthews_correlation_STD"])
 
 for task in ["mnli", "qqp", "sst2", "mrpc", "rte", "qnli", "stsb", "cola"]:
     # get all directories in subfolder
@@ -43,11 +43,25 @@ for task in ["mnli", "qqp", "sst2", "mrpc", "rte", "qnli", "stsb", "cola"]:
     std_metrics = {}
     # sort seeds
     seeds.sort()
+    best_seed = seeds[0]
+    for seed in seeds:
+        try:
+            if task == "cola":
+                if all_metrics[seed]["matthews_correlation"] > all_metrics[best_seed]["matthews_correlation"]:
+                    best_seed = seed
+            elif task == "stsb":
+                if all_metrics[seed]["pearson"] > all_metrics[best_seed]["pearson"]:
+                    best_seed = seed
+            else:
+                if all_metrics[seed]["accuracy"] > all_metrics[best_seed]["accuracy"]:
+                    best_seed = seed
+        except:
+            continue
     for metric in ["accuracy", "accuracy_mm", "pearson", "spearmanr", "matthews_correlation"]:
         metric_values = [float(m[metric]) for m in all_metrics if metric in m]
         mean_metrics[metric] = np.mean(metric_values)
         std_metrics[metric] = np.std(metric_values, ddof=1)
     # add to dataframe
-    df = df.append({"task": task, "seeds": seeds, "accuracy_MEAN": mean_metrics["accuracy"], "accuracy_STD": std_metrics["accuracy"], "accuracy_mm_MEAN": mean_metrics["accuracy_mm"], "accuracy_mm_STD": std_metrics["accuracy_mm"], "pearson_MEAN": mean_metrics["pearson"], "pearson_STD": std_metrics["pearson"], "spearmanr_MEAN": mean_metrics["spearmanr"], "spearmanr_STD": std_metrics["spearmanr"], "matthews_correlation_MEAN": mean_metrics["matthews_correlation"], "matthews_correlation_STD": std_metrics["matthews_correlation"], "n_runs": len(all_metrics)}, ignore_index=True)
+    df = df.append({"task": task, "best_seed": best_seed, "seeds": seeds, "accuracy_MEAN": mean_metrics["accuracy"], "accuracy_STD": std_metrics["accuracy"], "accuracy_mm_MEAN": mean_metrics["accuracy_mm"], "accuracy_mm_STD": std_metrics["accuracy_mm"], "pearson_MEAN": mean_metrics["pearson"], "pearson_STD": std_metrics["pearson"], "spearmanr_MEAN": mean_metrics["spearmanr"], "spearmanr_STD": std_metrics["spearmanr"], "matthews_correlation_MEAN": mean_metrics["matthews_correlation"], "matthews_correlation_STD": std_metrics["matthews_correlation"], "n_runs": len(all_metrics)}, ignore_index=True)
 
 df.to_csv(output_file, index=False)

@@ -553,5 +553,6 @@ if __name__ == "__main__":
             "wandb",
             "--run_name",
             "st-a-mrpc-TEST",
+            "--no_cuda"
         ]
     main()

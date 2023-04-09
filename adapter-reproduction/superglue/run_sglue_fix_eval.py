@@ -1,6 +1,6 @@
+#!/usr/bin/env python
 # coding=utf-8
-# Copyright 2018 The Google AI Language Team Authors and The HuggingFace Inc. team.
-# Copyright (c) 2018, NVIDIA CORPORATION.  All rights reserved.
+# Copyright 2020 The HuggingFace Inc. team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,8 +13,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-""" Finetuning the library models for sequence classification on
-GLUE (Bert, XLM, XLNet, RoBERTa, Albert, XLM-RoBERTa)."""
+""" Finetuning the library models for sequence classification on GLUE."""
+# You can also adapt this script on your own text classification task. Pointers for this are left as comments.
 
 import logging
 import os
@@ -32,7 +32,6 @@ import transformers
 from transformers import (
     AutoConfig,
     AutoTokenizer,
-    AutoModelForSequenceClassification,
     DataCollatorWithPadding,
     EvalPrediction,
     HfArgumentParser,
@@ -50,11 +49,12 @@ from transformers.utils.versions import require_version
 
 from hf_arguments import DataTrainingArguments, ModelArguments
 
+
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
 check_min_version("4.26.0")
 require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/text-classification/requirements.txt")
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
-os.environ["WANDB_PROJECT"] = "THESIS_st-a-fusion"
+os.environ["WANDB_PROJECT"] = "SUPERGLUE-ST-A"
 
 task_to_keys = {
     "cola": ("sentence", None),
@@ -66,6 +66,7 @@ task_to_keys = {
     "sst2": ("sentence", None),
     "stsb": ("sentence1", "sentence2"),
     "wnli": ("sentence1", "sentence2"),
+
 }
 
 logger = logging.getLogger(__name__)
@@ -137,7 +138,7 @@ def main():
     if data_args.task_name is not None:
         # Downloading and loading a dataset from the hub.
         raw_datasets = load_dataset(
-            "glue",
+            "super_glue",
             data_args.task_name,
             cache_dir=model_args.cache_dir,
             use_auth_token=True if model_args.use_auth_token else None,
@@ -162,11 +163,9 @@ def main():
                 train_extension = data_args.train_file.split(".")[-1]
                 test_extension = data_args.test_file.split(".")[-1]
                 assert (
-                        test_extension == train_extension
+                    test_extension == train_extension
                 ), "`test_file` should have the same extension (csv or json) as `train_file`."
                 data_files["test"] = data_args.test_file
-            else:
-                raise ValueError("Need either a GLUE task or a test file for `do_predict`.")
 
         for key in data_files.keys():
             logger.info(f"load a local file for {key}: {data_files[key]}")
@@ -229,7 +228,8 @@ def main():
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
     )
-    model = AutoModelForSequenceClassification.from_pretrained(
+    # We use the AutoAdapterModel class here for better adapter support.
+    model = AutoAdapterModel.from_pretrained(
         model_args.model_name_or_path,
         from_tf=bool(".ckpt" in model_args.model_name_or_path),
         config=config,
@@ -238,10 +238,16 @@ def main():
         use_auth_token=True if model_args.use_auth_token else None,
         ignore_mismatched_sizes=model_args.ignore_mismatched_sizes,
     )
+    model.add_classification_head(
+        data_args.task_name or "super_glue",
+        num_labels=num_labels,
+        id2label={i: v for i, v in enumerate(label_list)} if not is_regression else None,
+    )
 
     # Preprocessing the raw_datasets
     if data_args.task_name is not None:
-        sentence1_key, sentence2_key = task_to_keys[data_args.task_name]
+        pass
+        # sentence1_key, sentence2_key = task_to_keys[data_args.task_name]
     else:
         # Again, we try to have some nice defaults but don't hesitate to tweak to your use case.
         non_label_column_names = [name for name in raw_datasets["train"].column_names if name != "label"]
@@ -263,9 +269,9 @@ def main():
     # Some models have set the order of the labels to use, so let's make sure we do use it.
     label_to_id = None
     if (
-            model.config.label2id != PretrainedConfig(num_labels=num_labels).label2id
-            and data_args.task_name is not None
-            and not is_regression
+        model.config.label2id != PretrainedConfig(num_labels=num_labels).label2id
+        and data_args.task_name is not None
+        and not is_regression
     ):
         # Some have all caps in their config, some don't.
         label_name_to_id = {k.lower(): v for k, v in model.config.label2id.items()}
@@ -325,9 +331,7 @@ def main():
             # regression --> no stratification
             dataset_dict = train_dataset.train_test_split(test_size=0.1, shuffle=True, seed=42)
         else:
-            dataset_dict = train_dataset.train_test_split(
-                test_size=0.1, shuffle=True, seed=42, stratify_by_column="label"
-            )
+            dataset_dict = train_dataset.train_test_split(test_size=0.1, shuffle=True, seed=42, stratify_by_column="label")
         train_dataset = dataset_dict["train"]
         eval_dataset = dataset_dict["test"]
 
@@ -354,43 +358,9 @@ def main():
 
     # Get the metric function
     if data_args.task_name is not None:
-        metric = evaluate.load("glue", data_args.task_name)
+        metric = evaluate.load("super_glue", data_args.task_name)
     else:
         metric = evaluate.load("accuracy")
-
-    # ~~~~~ Here comes the interesting part of setting up AdapterFusion training ~~~~~
-    from transformers.adapters.configuration import PfeifferConfig
-
-    # First, load the pre-trained adapters we want to fuse from Hub
-    # model.load_adapter("sentiment/sst-2@ukp", config=PfeifferConfig(), with_head=False)
-    model.load_adapter("runs/st-a/rte/bert-base-uncased/1", config=PfeifferConfig(), with_head=False)
-    model.load_adapter("runs/st-a/mrpc/bert-base-uncased/1", config=PfeifferConfig(), with_head=False)
-    model.load_adapter("runs/st-a/cola/bert-base-uncased/2", config=PfeifferConfig(), with_head=False)
-    model.load_adapter("runs/st-a/mnli/bert-base-uncased/2", config=PfeifferConfig(), with_head=False)
-
-    model.load_adapter("runs/st-a/qnli/bert-base-uncased/2", config=PfeifferConfig(), with_head=False)
-    model.load_adapter("runs/st-a/qqp/bert-base-uncased/4", config=PfeifferConfig(), with_head=False)
-    model.load_adapter("runs/st-a/sst2/bert-base-uncased/2", config=PfeifferConfig(), with_head=False)
-    model.load_adapter("runs/st-a/stsb/bert-base-uncased/3", config=PfeifferConfig(), with_head=False)
-
-    adapter_setup = [
-        [
-            "rte",
-            "mrpc",
-            "cola",
-            "mnli",
-            "qnli",
-            "qqp",
-            "sst2",
-            "stsb"
-        ]
-    ]
-
-    # Add a fusion layer and tell the model to train fusion
-    model.add_adapter_fusion(adapter_setup[0], "dynamic")
-    model.train_adapter_fusion(adapter_setup)
-
-    # ~~~~~ Rest is again same as in standard training setup ~~~~~
 
     # You can define your custom compute_metrics function. It takes an `EvalPrediction` object (a namedtuple with a
     # predictions and label_ids field) and has to return a dictionary string to float.
@@ -416,22 +386,26 @@ def main():
     else:
         data_collator = None
 
+    # Setup adapters
+    setup_adapter_training(model, adapter_args, data_args.task_name or "glue")
+    # Initialize our Trainer
+    trainer_class = AdapterTrainer if adapter_args.train_adapter else Trainer
+
     # early stopping
     if model_args.early_stopping:
         logger.info("Early stopping is enabled with patience %d", model_args.early_stopping_patience)
         early_stopping_callback = EarlyStoppingCallback(early_stopping_patience=model_args.early_stopping_patience)
     else:
         early_stopping_callback = None
-
-    trainer = AdapterTrainer(
+    trainer = trainer_class(
         model=model,
         args=training_args,
         train_dataset=train_dataset if training_args.do_train else None,
         eval_dataset=eval_dataset if training_args.do_eval else None,
+        compute_metrics=compute_metrics,
         tokenizer=tokenizer,
         data_collator=data_collator,
-        compute_metrics=compute_metrics,
-        callbacks=[early_stopping_callback]
+        callbacks=[early_stopping_callback],
     )
 
     # Training
@@ -442,7 +416,6 @@ def main():
         elif last_checkpoint is not None:
             checkpoint = last_checkpoint
         train_result = trainer.train(resume_from_checkpoint=checkpoint)
-        trainer.save_model()
         metrics = train_result.metrics
         max_train_samples = (
             data_args.max_train_samples if data_args.max_train_samples is not None else len(train_dataset)
@@ -454,6 +427,11 @@ def main():
         trainer.log_metrics("train", metrics)
         trainer.save_metrics("train", metrics)
         trainer.save_state()
+        # save adapter
+        print(adapter_args)
+        if adapter_args.train_adapter:
+            logger.info("Saving adapter.")
+            model.save_adapter(training_args.output_dir, data_args.task_name)
 
     # Evaluation
     if training_args.do_eval:
@@ -516,9 +494,9 @@ def main():
     kwargs = {"finetuned_from": model_args.model_name_or_path, "tasks": "text-classification"}
     if data_args.task_name is not None:
         kwargs["language"] = "en"
-        kwargs["dataset_tags"] = "glue"
+        kwargs["dataset_tags"] = "super_glue"
         kwargs["dataset_args"] = data_args.task_name
-        kwargs["dataset"] = f"GLUE {data_args.task_name.upper()}"
+        kwargs["dataset"] = f"SUPERGLUE {data_args.task_name.upper()}"
 
     if training_args.push_to_hub:
         trainer.push_to_hub(**kwargs)
@@ -539,7 +517,7 @@ if __name__ == "__main__":
             "--model_name_or_path",
             "bert-base-uncased",
             "--task_name",
-            "rte",
+            "stsb",
             "--max_seq_length",
             "128",
             "--do_train",
@@ -574,7 +552,6 @@ if __name__ == "__main__":
             "--report_to",
             "wandb",
             "--run_name",
-            "st-a-fusion-rte-TEST",
-            "--no_cuda",
+            "st-a-mrpc-TEST",
         ]
     main()
