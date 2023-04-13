@@ -346,7 +346,6 @@ def main():
         # select and stratify
         if data_args.task_name == "stsb":
             # regression --> no stratification
-            train_dataset = train_dataset.select(range(data_args.max_train_samples))
             dataset_dict = train_dataset.train_test_split(test_size=0.1, shuffle=True, seed=42)
         else:
             dataset_dict = train_dataset.train_test_split(

@@ -1,32 +1,28 @@
 MODEL_NAME=bert-base-uncased
 GPU_ID=0
-SEED=$GPU_ID
-NEW_SEED=-1
+SEEDS=-1  # set the default seed(s) to be the same as GPU_ID
 
 while getopts ":g:s:" opt; do
+  # shellcheck disable=SC2220
   case $opt in
     g) GPU_ID="$OPTARG"
     ;;
-    s) NEW_SEED="$OPTARG"
-    ;;
-    \?) echo "Invalid option -$OPTARG" >&3
-        exit 1
+    s) SEEDS="$OPTARG"
     ;;
   esac
 done
 
-# if NEW_SEED is not -1, use it as new seed. otherwise, use GPU_ID as seed
-# shellcheck disable=SC2086
-if [ $NEW_SEED -eq -1 ]; then
-  SEED=$GPU_ID
-else
-  SEED=$NEW_SEED
+
+IFS=',' read -ra SEED_ARRAY <<< "$SEEDS"  # split SEEDS into an array
+
+
+# if the seed is not specified, use the GPU ID as the seed
+if [ "${SEED_ARRAY[0]}" -eq -1 ]; then
+  SEED_ARRAY[0]=$GPU_ID
 fi
 
-echo $SEED
-
-for TASK in mrpc rte sst2 cola stsb qnli mnli qqp; do
-  for SEED in $SEED; do
+for TASK in stsb; do
+  for SEED in "${SEED_ARRAY[@]}"; do
     if [ $TASK = "cola" ]; then
         EVAL_METRIC="eval_matthews_correlation"
     elif [ $TASK = "stsb" ]; then
@@ -34,6 +30,7 @@ for TASK in mrpc rte sst2 cola stsb qnli mnli qqp; do
     else
         EVAL_METRIC="eval_accuracy"
     fi
+    echo $SEED
 
     for TRAIN_PCT in 10 25 50; do
       CUDA_VISIBLE_DEVICES=$GPU_ID python run_glue_fix_eval.py \

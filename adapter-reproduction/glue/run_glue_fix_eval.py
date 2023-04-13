@@ -334,16 +334,18 @@ def main():
                 percentiles_idx[i] = int(len(train_dataset) * i / 100)
             if data_args.task_name == "stsb":
                 # regression --> no stratification
-                percentiles[95] = train_dataset.train_test_split(train_size=percentiles_idx[95], shuffle=True, seed=42)["train"]
+                percentiles[95] = train_dataset.train_test_split(train_size=percentiles_idx[95], shuffle=True, seed=42)[
+                    "train"]
                 for i in range(90, 0, -5):
-                    percentiles[i] = percentiles[i + 5].train_test_split(train_size=percentiles_idx[i], shuffle=True, seed=42)["train"]
+                    percentiles[i] = \
+                    percentiles[i + 5].train_test_split(train_size=percentiles_idx[i], shuffle=True, seed=42)["train"]
             else:
-                percentiles[95] = train_dataset.train_test_split(train_size=percentiles_idx[95], shuffle=True, seed=42, stratify_by_column="label")["train"]
+                percentiles[95] = train_dataset.train_test_split(train_size=percentiles_idx[95], shuffle=True, seed=42,
+                                                                 stratify_by_column="label")["train"]
                 for i in range(90, 0, -5):
-                    percentiles[i] = percentiles[i + 5].train_test_split(train_size=percentiles_idx[i], shuffle=True, seed=42, stratify_by_column="label")["train"]
-
-
-
+                    percentiles[i] = \
+                    percentiles[i + 5].train_test_split(train_size=percentiles_idx[i], shuffle=True, seed=42,
+                                                        stratify_by_column="label")["train"]
             train_dataset = percentiles[data_args.max_train_pct]
 
         elif data_args.max_train_samples:
@@ -351,7 +353,6 @@ def main():
         # select and stratify
         if data_args.task_name == "stsb":
             # regression --> no stratification
-            train_dataset = train_dataset.select(range(data_args.max_train_samples))
             dataset_dict = train_dataset.train_test_split(test_size=0.1, shuffle=True, seed=42)
         else:
             dataset_dict = train_dataset.train_test_split(
@@ -359,23 +360,6 @@ def main():
             )
         train_dataset = dataset_dict["train"]
         eval_dataset = dataset_dict["test"]
-
-    if training_args.do_eval:
-        if "validation" not in raw_datasets and "validation_matched" not in raw_datasets:
-            raise ValueError("--do_eval requires a validation dataset")
-        test_dataset = raw_datasets["validation_matched" if data_args.task_name == "mnli" else "validation"]
-        if data_args.max_eval_samples or data_args.max_eval_pct:
-            # both
-            if data_args.max_eval_samples and data_args.max_eval_pct:
-                raise ValueError("Cannot specify both max_train_samples and max_train_pct!")
-            # pct
-            if data_args.max_eval_pct:
-                max_eval_samples = int(len(train_dataset) * data_args.max_train_pct)
-            # samples
-            else:
-                max_eval_samples = data_args.max_eval_samples
-            max_eval_samples = min(len(test_dataset), max_eval_samples)
-            test_dataset = test_dataset.select(range(max_eval_samples))
 
     if training_args.do_predict or data_args.task_name is not None or data_args.test_file is not None:
         if "test" not in raw_datasets and "test_matched" not in raw_datasets:
@@ -560,7 +544,7 @@ if __name__ == "__main__":
             "--model_name_or_path",
             "bert-base-uncased",
             "--task_name",
-            "rte",
+            "mnli",
             "--max_seq_length",
             "128",
             "--do_train",
@@ -596,8 +580,12 @@ if __name__ == "__main__":
             "wandb",
             "--run_name",
             "st-a-mrpc-TEST",
-            "--no_cuda",
             "--max_train_pct",
-            "25"
+            "25",
+            "--seed",
+            "42",
+            "--overwrite_output_dir",
+            "--max_steps",
+            "10"
         ]
     main()
