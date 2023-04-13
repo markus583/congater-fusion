@@ -1,8 +1,33 @@
 MODEL_NAME=bert-base-uncased
-NR=0
+GPU_ID=0
+SEED=$GPU_ID
+NEW_SEED=-1
+TRAIN_PCT=100
+
+while getopts ":g:s:" opt; do
+  case $opt in
+    g) GPU_ID="$OPTARG"
+    ;;
+    s) NEW_SEED="$OPTARG"
+    ;;
+    \?) echo "Invalid option -$OPTARG" >&3
+        exit 1
+    ;;
+  esac
+done
+
+# if NEW_SEED is not -1, use it as new seed. otherwise, use GPU_ID as seed
+# shellcheck disable=SC2086
+if [ $NEW_SEED -eq -1 ]; then
+  SEED=$GPU_ID
+else
+  SEED=$NEW_SEED
+fi
+
+echo $SEED
 
 for TASK in mrpc rte sst2 cola stsb qnli mnli qqp; do
-  for SEED in $NR; do
+  for SEED in $SEED; do
     if [ $TASK = "cola" ]; then
         EVAL_METRIC="eval_matthews_correlation"
     elif [ $TASK = "stsb" ]; then
@@ -10,7 +35,7 @@ for TASK in mrpc rte sst2 cola stsb qnli mnli qqp; do
     else
         EVAL_METRIC="eval_accuracy"
     fi
-    CUDA_VISIBLE_DEVICES=$NR python run_glue_FULL.py \
+    CUDA_VISIBLE_DEVICES=$GPU_ID python run_glue_FULL.py \
       --model_name_or_path $MODEL_NAME \
       --task_name $TASK \
       --max_seq_length 128 \
@@ -21,7 +46,7 @@ for TASK in mrpc rte sst2 cola stsb qnli mnli qqp; do
       --dataloader_num_workers 0 \
       --learning_rate 2e-5 \
       --num_train_epochs 30 \
-      --output_dir runs/full/$TASK/$MODEL_NAME/$SEED \
+      --output_dir runs/full/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED \
       --logging_strategy epoch \
       --save_strategy epoch \
       --evaluation_strategy epoch \
@@ -30,7 +55,7 @@ for TASK in mrpc rte sst2 cola stsb qnli mnli qqp; do
       --load_best_model_at_end True \
       --metric_for_best_model $EVAL_METRIC \
       --report_to wandb \
-      --run_name $TASK-$MODEL_NAME-$SEED \
+      --run_name $TASK-$MODEL_NAME-$TRAIN_PCT-$SEED \
       --seed $SEED
   done
 done

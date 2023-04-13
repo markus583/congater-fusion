@@ -90,6 +90,15 @@ class DataTrainingArguments:
             )
         },
     )
+    max_train_pct: Optional[int] = field(
+        default=None,
+        metadata={
+            "help": (
+                "For debugging purposes or quicker training, truncate the number of training examples to this "
+                "percentage of the dataset if set."
+            )
+        },
+    )
     max_eval_samples: Optional[int] = field(
         default=None,
         metadata={
@@ -99,12 +108,30 @@ class DataTrainingArguments:
             )
         },
     )
+    max_eval_pct: Optional[int] = field(
+        default=None,
+        metadata={
+            "help": (
+                "For debugging purposes or quicker training, truncate the number of evaluation examples to this "
+                "percentage of the dataset if set."
+            )
+        },
+    )
     max_predict_samples: Optional[int] = field(
         default=None,
         metadata={
             "help": (
                 "For debugging purposes or quicker training, truncate the number of prediction examples to this "
                 "value if set."
+            )
+        },
+    )
+    max_predict_pct: Optional[int] = field(
+        default=None,
+        metadata={
+            "help": (
+                "For debugging purposes or quicker training, truncate the number of evaluation examples to this "
+                "percentage of the dataset if set."
             )
         },
     )

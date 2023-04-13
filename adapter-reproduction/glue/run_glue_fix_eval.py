@@ -49,7 +49,6 @@ from transformers.utils.versions import require_version
 
 from hf_arguments import DataTrainingArguments, ModelArguments
 
-
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
 check_min_version("4.26.0")
 require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/text-classification/requirements.txt")
@@ -162,7 +161,7 @@ def main():
                 train_extension = data_args.train_file.split(".")[-1]
                 test_extension = data_args.test_file.split(".")[-1]
                 assert (
-                    test_extension == train_extension
+                        test_extension == train_extension
                 ), "`test_file` should have the same extension (csv or json) as `train_file`."
                 data_files["test"] = data_args.test_file
             else:
@@ -269,9 +268,9 @@ def main():
     # Some models have set the order of the labels to use, so let's make sure we do use it.
     label_to_id = None
     if (
-        model.config.label2id != PretrainedConfig(num_labels=num_labels).label2id
-        and data_args.task_name is not None
-        and not is_regression
+            model.config.label2id != PretrainedConfig(num_labels=num_labels).label2id
+            and data_args.task_name is not None
+            and not is_regression
     ):
         # Some have all caps in their config, some don't.
         label_name_to_id = {k.lower(): v for k, v in model.config.label2id.items()}
@@ -323,15 +322,41 @@ def main():
         if "train" not in raw_datasets:
             raise ValueError("--do_train requires a train dataset")
         train_dataset = raw_datasets["train"]
-        if data_args.max_train_samples is not None:
-            max_train_samples = min(len(train_dataset), data_args.max_train_samples)
-            train_dataset = train_dataset.select(range(max_train_samples))
-        # split into 2 parts and stratify, 90/10
+
+        if data_args.max_eval_samples and data_args.max_eval_pct:
+            raise ValueError("Cannot specify both max_train_samples and max_train_pct!")
+        if data_args.max_train_pct:
+            # create dict of percentiles in 5%-steps for stratification
+            percentiles = {}
+            percentiles_idx = {}
+            # for each 5 % increment, take how many samples are needed to reach that percentage
+            for i in range(5, 100, 5):
+                percentiles_idx[i] = int(len(train_dataset) * i / 100)
+            if data_args.task_name == "stsb":
+                # regression --> no stratification
+                percentiles[95] = train_dataset.train_test_split(train_size=percentiles_idx[95], shuffle=True, seed=42)["train"]
+                for i in range(90, 0, -5):
+                    percentiles[i] = percentiles[i + 5].train_test_split(train_size=percentiles_idx[i], shuffle=True, seed=42)["train"]
+            else:
+                percentiles[95] = train_dataset.train_test_split(train_size=percentiles_idx[95], shuffle=True, seed=42, stratify_by_column="label")["train"]
+                for i in range(90, 0, -5):
+                    percentiles[i] = percentiles[i + 5].train_test_split(train_size=percentiles_idx[i], shuffle=True, seed=42, stratify_by_column="label")["train"]
+
+
+
+            train_dataset = percentiles[data_args.max_train_pct]
+
+        elif data_args.max_train_samples:
+            train_dataset = train_dataset.select(range(data_args.max_train_samples))
+        # select and stratify
         if data_args.task_name == "stsb":
             # regression --> no stratification
+            train_dataset = train_dataset.select(range(data_args.max_train_samples))
             dataset_dict = train_dataset.train_test_split(test_size=0.1, shuffle=True, seed=42)
         else:
-            dataset_dict = train_dataset.train_test_split(test_size=0.1, shuffle=True, seed=42, stratify_by_column="label")
+            dataset_dict = train_dataset.train_test_split(
+                test_size=0.1, shuffle=True, seed=42, stratify_by_column="label"
+            )
         train_dataset = dataset_dict["train"]
         eval_dataset = dataset_dict["test"]
 
@@ -339,17 +364,35 @@ def main():
         if "validation" not in raw_datasets and "validation_matched" not in raw_datasets:
             raise ValueError("--do_eval requires a validation dataset")
         test_dataset = raw_datasets["validation_matched" if data_args.task_name == "mnli" else "validation"]
-        if data_args.max_eval_samples is not None:
-            max_eval_samples = min(len(test_dataset), data_args.max_eval_samples)
+        if data_args.max_eval_samples or data_args.max_eval_pct:
+            # both
+            if data_args.max_eval_samples and data_args.max_eval_pct:
+                raise ValueError("Cannot specify both max_train_samples and max_train_pct!")
+            # pct
+            if data_args.max_eval_pct:
+                max_eval_samples = int(len(train_dataset) * data_args.max_train_pct)
+            # samples
+            else:
+                max_eval_samples = data_args.max_eval_samples
+            max_eval_samples = min(len(test_dataset), max_eval_samples)
             test_dataset = test_dataset.select(range(max_eval_samples))
 
     if training_args.do_predict or data_args.task_name is not None or data_args.test_file is not None:
         if "test" not in raw_datasets and "test_matched" not in raw_datasets:
             raise ValueError("--do_predict requires a test dataset")
         predict_dataset = raw_datasets["test_matched" if data_args.task_name == "mnli" else "test"]
-        if data_args.max_predict_samples is not None:
-            max_predict_samples = min(len(predict_dataset), data_args.max_predict_samples)
-            predict_dataset = predict_dataset.select(range(max_predict_samples))
+        if data_args.max_predict_samples or data_args.max_predict_pct:
+            # both
+            if data_args.max_predict_samples and data_args.max_predict_pct:
+                raise ValueError("Cannot specify both max_train_samples and max_train_pct!")
+            # pct
+            if data_args.max_predict_pct:
+                max_predict_samples = int(len(train_dataset) * data_args.max_predict_pct)
+            # samples
+            else:
+                max_predict_samples = data_args.max_predict_samples
+            max_predict_samples = min(len(predict_dataset), max_predict_samples)
+            test_dataset = predict_dataset.select(range(max_predict_samples))
 
     # Log a few random samples from the training set:
     if training_args.do_train:
@@ -517,7 +560,7 @@ if __name__ == "__main__":
             "--model_name_or_path",
             "bert-base-uncased",
             "--task_name",
-            "stsb",
+            "rte",
             "--max_seq_length",
             "128",
             "--do_train",
@@ -534,7 +577,7 @@ if __name__ == "__main__":
             "1",
             "--train_adapter",
             "--output_dir",
-            "runs/st-a/TEST",
+            "runs/st-a/TEST-1",
             "--logging_strategy",
             "epoch",
             "--evaluation_strategy",
@@ -553,6 +596,8 @@ if __name__ == "__main__":
             "wandb",
             "--run_name",
             "st-a-mrpc-TEST",
-            "--no_cuda"
+            "--no_cuda",
+            "--max_train_pct",
+            "25"
         ]
     main()
