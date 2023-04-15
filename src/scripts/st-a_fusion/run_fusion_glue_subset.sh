@@ -21,7 +21,8 @@ if [ "${SEED_ARRAY[0]}" -eq -1 ]; then
   SEED_ARRAY[0]=$GPU_ID
 fi
 
-for TASK in qqp; do
+
+for TASK in sst2 cola stsb qnli mnli qqp; do
   for SEED in "${SEED_ARRAY[@]}"; do
     if [ $TASK = "cola" ]; then
         EVAL_METRIC="eval_matthews_correlation"
@@ -31,20 +32,24 @@ for TASK in qqp; do
         EVAL_METRIC="eval_accuracy"
     fi
     echo $SEED
+    echo $TASK
 
     for TRAIN_PCT in 10 25 50; do
-      CUDA_VISIBLE_DEVICES=$GPU_ID python run_glue_FULL.py \
+      CUDA_VISIBLE_DEVICES=$GPU_ID python ../../run.py \
         --model_name_or_path $MODEL_NAME \
+        --dataset_name glue \
         --task_name $TASK \
         --max_seq_length 128 \
         --do_train \
         --do_eval \
+        --train_fusion \
+        --fusion_load_dir af_config.json \
         --per_device_train_batch_size 32 \
         --per_device_eval_batch_size 32 \
         --dataloader_num_workers 0 \
-        --learning_rate 2e-5 \
-        --num_train_epochs 30 \
-        --output_dir runs/full/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED \
+        --learning_rate 5e-5 \
+        --num_train_epochs 10 \
+        --output_dir ../../runs/st-a-fusion/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED \
         --logging_strategy epoch \
         --save_strategy epoch \
         --evaluation_strategy epoch \

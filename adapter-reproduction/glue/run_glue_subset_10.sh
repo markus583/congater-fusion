@@ -21,7 +21,7 @@ if [ "${SEED_ARRAY[0]}" -eq -1 ]; then
   SEED_ARRAY[0]=$GPU_ID
 fi
 
-for TASK in stsb; do
+for TASK in mnli; do
   for SEED in "${SEED_ARRAY[@]}"; do
     if [ $TASK = "cola" ]; then
         EVAL_METRIC="eval_matthews_correlation"
@@ -32,7 +32,7 @@ for TASK in stsb; do
     fi
     echo $SEED
 
-    for TRAIN_PCT in 10 25 50; do
+    for TRAIN_PCT in 50; do
       CUDA_VISIBLE_DEVICES=$GPU_ID python run_glue_fix_eval.py \
         --model_name_or_path $MODEL_NAME \
         --task_name $TASK \
@@ -57,7 +57,8 @@ for TASK in stsb; do
         --report_to wandb \
         --run_name $TASK-$MODEL_NAME-$TRAIN_PCT-$SEED \
         --seed $SEED \
-        --max_train_pct $TRAIN_PCT
+        --max_train_pct $TRAIN_PCT \
+        --overwrite_output_dir
     done
   done
 done

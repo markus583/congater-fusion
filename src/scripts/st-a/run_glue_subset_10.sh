@@ -21,7 +21,7 @@ if [ "${SEED_ARRAY[0]}" -eq -1 ]; then
   SEED_ARRAY[0]=$GPU_ID
 fi
 
-for TASK in qqp; do
+for TASK in mrpc rte sst2 cola stsb qnli mnli qqp; do
   for SEED in "${SEED_ARRAY[@]}"; do
     if [ $TASK = "cola" ]; then
         EVAL_METRIC="eval_matthews_correlation"
@@ -33,7 +33,7 @@ for TASK in qqp; do
     echo $SEED
 
     for TRAIN_PCT in 10 25 50; do
-      CUDA_VISIBLE_DEVICES=$GPU_ID python run_glue_FULL.py \
+      CUDA_VISIBLE_DEVICES=$GPU_ID python run_glue_fix_eval.py \
         --model_name_or_path $MODEL_NAME \
         --task_name $TASK \
         --max_seq_length 128 \
@@ -42,9 +42,11 @@ for TASK in qqp; do
         --per_device_train_batch_size 32 \
         --per_device_eval_batch_size 32 \
         --dataloader_num_workers 0 \
-        --learning_rate 2e-5 \
+        --learning_rate 1e-4 \
         --num_train_epochs 30 \
-        --output_dir runs/full/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED \
+        --train_adapter \
+        --adapter_config pfeiffer \
+        --output_dir ../../runs/st-a/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED \
         --logging_strategy epoch \
         --save_strategy epoch \
         --evaluation_strategy epoch \
@@ -55,8 +57,7 @@ for TASK in qqp; do
         --report_to wandb \
         --run_name $TASK-$MODEL_NAME-$TRAIN_PCT-$SEED \
         --seed $SEED \
-        --max_train_pct $TRAIN_PCT \
-        --overwrite_output_dir
+        --max_train_pct $TRAIN_PCT
     done
   done
 done

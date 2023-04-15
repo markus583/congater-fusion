@@ -26,7 +26,7 @@ fi
 
 echo $SEED
 
-for TASK in cola stsb mnli qqp; do
+for TASK in mrpc rte sst2 cola stsb qnli mnli qqp; do
   for SEED in $SEED; do
     if [ $TASK = "cola" ]; then
         EVAL_METRIC="eval_matthews_correlation"
@@ -35,7 +35,7 @@ for TASK in cola stsb mnli qqp; do
     else
         EVAL_METRIC="eval_accuracy"
     fi
-    CUDA_VISIBLE_DEVICES=$NR python run_glue_fix_eval.py \
+    CUDA_VISIBLE_DEVICES=$GPU_ID python run_glue_FULL.py \
       --model_name_or_path $MODEL_NAME \
       --task_name $TASK \
       --max_seq_length 128 \
@@ -43,12 +43,10 @@ for TASK in cola stsb mnli qqp; do
       --do_eval \
       --per_device_train_batch_size 32 \
       --per_device_eval_batch_size 32 \
-      --dataloader_num_workers 4 \
-      --learning_rate 1e-4 \
+      --dataloader_num_workers 0 \
+      --learning_rate 2e-5 \
       --num_train_epochs 30 \
-      --train_adapter \
-      --adapter_config pfeiffer \
-      --output_dir runs/st-a/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED \
+      --output_dir runs/full/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED \
       --logging_strategy epoch \
       --save_strategy epoch \
       --evaluation_strategy epoch \

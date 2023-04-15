@@ -47,7 +47,7 @@ class DataTrainingArguments:
         default=None,
         metadata={
             "help": "The name of the task to train on: "
-            + ", ".join(task_to_keys.keys())
+                    + ", ".join(task_to_keys.keys())
         },
     )
     dataset_name: Optional[str] = field(
@@ -92,7 +92,7 @@ class DataTrainingArguments:
         },
     )
     max_train_pct: Optional[int] = field(
-        default=None,
+        default=100,
         metadata={
             "help": (
                 "For debugging purposes or quicker training, truncate the number of training examples to this "
@@ -110,25 +110,7 @@ class DataTrainingArguments:
         },
     )
     max_eval_pct: Optional[int] = field(
-        default=None,
-        metadata={
-            "help": (
-                "For debugging purposes or quicker training, truncate the number of evaluation examples to this "
-                "percentage of the dataset if set."
-            )
-        },
-    )
-    max_predict_samples: Optional[int] = field(
-        default=None,
-        metadata={
-            "help": (
-                "For debugging purposes or quicker training, truncate the number of prediction examples to this "
-                "value if set."
-            )
-        },
-    )
-    max_predict_pct: Optional[int] = field(
-        default=None,
+        default=100,
         metadata={
             "help": (
                 "For debugging purposes or quicker training, truncate the number of evaluation examples to this "
@@ -171,7 +153,7 @@ class DataTrainingArguments:
             ], "`train_file` should be a csv or a json file."
             validation_extension = self.validation_file.split(".")[-1]
             assert (
-                validation_extension == train_extension
+                    validation_extension == train_extension
             ), "`validation_file` should have the same extension (csv or json) as `train_file`."
 
 
@@ -243,10 +225,48 @@ class ModelArguments:
     )
 
 
+@dataclass
+class FusionArguments:
+    """
+    Arguments pertaining to what data we are going to input our model Fusion
+
+    Using `HfArgumentParser` we can turn this class
+    into argparse arguments to be able to specify them on
+    the command line.
+    """
+    train_fusion: bool = field(
+        default=False,
+        metadata={"help": "Whether to train fusion or not."}
+    )
+    fusion_type: str = field(
+        default="dynamic",
+        metadata={"help": "Type of fusion to perform."}
+    )
+    fusion_with_head: bool = field(
+        default=False,
+        metadata={"help": "Whether to include the head in the fusion."}
+    )
+
+    fusion_adapter_config: str = field(
+        default="pfeiffer",
+        metadata={"help": "Type of adapter config to use for fusion."}
+    )
+
+    fusion_load_dir: str = field(
+        default="scripts/st-a_fusion/af_config.json",
+        metadata={"help": "Json specifying paths to adapters to be loaded fur fusion."}
+    )
+
+    fusion_unfreeze_adapters: str = field(
+        default=None,
+        metadata={"help": "Whether to unfreeze adapters."}
+    )
+
+
 def get_args():
     """Parse all the args."""
     parser = HfArgumentParser(
-        (ModelArguments, DataTrainingArguments, TrainingArguments, AdapterArguments)
+        (ModelArguments, DataTrainingArguments, TrainingArguments, AdapterArguments, FusionArguments)
     )
 
     args = parser.parse_args_into_dataclasses()

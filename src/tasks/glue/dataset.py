@@ -4,6 +4,7 @@ import numpy as np
 from datasets.load import load_dataset, load_metric
 from transformers import (AutoTokenizer, DataCollatorWithPadding,
                           EvalPrediction, default_data_collator)
+import evaluate
 
 task_to_keys = {
     "cola": ("sentence", None),
@@ -150,11 +151,13 @@ class GlueDataset:
                     max_eval_samples = data_args.max_eval_samples
                 max_eval_samples = min(len(self.test_dataset), max_eval_samples)
                 self.test_dataset = self.test_dataset.select(range(max_eval_samples))
-                self.test_dataset_mm = self.test_dataset_mm.select(
-                    range(max_eval_samples)
-                )
+                if data_args.task_name == "mnli":
+                    self.test_dataset_mm = self.test_dataset_mm.select(
+                        range(max_eval_samples)
+                    )
 
-        self.metric = load_metric("tasks/glue/glue.py", data_args.task_name)
+        # self.metric = load_metric("tasks/glue/glue.py", data_args.task_name)
+        self.metric = evaluate.load("glue", data_args.task_name)
 
         # Data collator will default to DataCollatorWithPadding when the tokenizer is passed to Trainer, so we change
         # it if we already did the padding.

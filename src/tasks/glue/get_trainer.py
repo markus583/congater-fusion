@@ -1,20 +1,24 @@
+import json
 import logging
-import os
-import random
-import sys
 
+from arguments import get_args
 from model.utils import TaskType, get_model
 from tasks.glue.dataset import GlueDataset
-from training.trainer_base import BaseTrainer
-from transformers import (AdapterConfig, AdapterTrainer, AutoConfig,
-                          AutoTokenizer, EarlyStoppingCallback, Trainer)
+from transformers import (
+    AdapterTrainer,
+    AutoConfig,
+    AutoTokenizer,
+    EarlyStoppingCallback,
+    Trainer,
+)
 from transformers.adapters.training import setup_adapter_training
+from transformers.adapters.configuration import PfeifferConfig
 
 logger = logging.getLogger(__name__)
 
 
 def get_trainer(args):
-    model_args, data_args, training_args, adapter_args = args
+    model_args, data_args, training_args, adapter_args, fusion_args = get_args()
 
     tokenizer = AutoTokenizer.from_pretrained(
         model_args.tokenizer_name
@@ -29,7 +33,9 @@ def get_trainer(args):
 
     if not dataset.is_regression:
         config = AutoConfig.from_pretrained(
-            model_args.model_name_or_path,
+            model_args.config_name
+            if model_args.config_name
+            else model_args.model_name_or_path,
             num_labels=dataset.num_labels,
             label2id=dataset.label2id,
             id2label=dataset.id2label,
@@ -40,7 +46,9 @@ def get_trainer(args):
         )
     else:
         config = AutoConfig.from_pretrained(
-            model_args.model_name_or_path,
+            model_args.config_name
+            if model_args.config_name
+            else model_args.model_name_or_path,
             num_labels=dataset.num_labels,
             finetuning_task=data_args.task_name,
             revision=model_args.model_revision,
@@ -53,7 +61,37 @@ def get_trainer(args):
         task_type=TaskType.SEQUENCE_CLASSIFICATION,
     )
 
-    if adapter_args.train_adapter:
+    adapter_setup = None
+    if fusion_args.train_fusion:
+        if adapter_args.train_adapter:
+            raise ValueError(
+                "Fusion training is currently not supported in adapter training mode."
+                "Set --train_adapter to False to enable fusion training"
+            )
+        af_config = json.load(open(fusion_args.fusion_load_dir))
+        if data_args.max_train_pct != 100:
+            seed = af_config[data_args.task_name][-1]
+            af_config[data_args.task_name] = af_config[data_args.task_name][:-1] + str(data_args.max_train_pct) + "/" + seed
+        if fusion_args.fusion_adapter_config == "pfeiffer":
+            adapter_config = PfeifferConfig()
+        else:
+            raise ValueError(
+                "Only pfeiffer is currently supported for fusion training."
+                "Set --fusion_adapter_config to pfeiffer"
+            )
+        for _, adapter_dir in af_config.items():
+            model.load_adapter(
+                "../../../adapter-reproduction/glue/" + adapter_dir,
+                config=adapter_config,
+                with_head=fusion_args.fusion_with_head,
+            )
+        adapter_setup = [list(af_config.keys())]
+
+        # Add a fusion layer and tell the model to train fusion
+        model.add_adapter_fusion(adapter_setup[0], fusion_args.fusion_type)
+        model.train_adapter_fusion(adapter_setup, unfreeze_adapters=fusion_args.fusion_unfreeze_adapters)
+
+    elif adapter_args.train_adapter:
         model.add_classification_head(
             data_args.task_name or "glue",
             num_labels=dataset.num_labels,
@@ -77,7 +115,11 @@ def get_trainer(args):
             logger.info(f"{n}")
             # print(n)
 
-    trainer_cls = AdapterTrainer if adapter_args.train_adapter else Trainer
+    trainer_cls = (
+        AdapterTrainer
+        if adapter_args.train_adapter or fusion_args.train_fusion
+        else Trainer
+    )
 
     # early stopping
     if model_args.early_stopping:
@@ -102,4 +144,4 @@ def get_trainer(args):
         callbacks=[early_stopping_callback],
     )
 
-    return trainer, model, dataset
+    return trainer, model, dataset, adapter_setup

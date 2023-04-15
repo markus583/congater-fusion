@@ -26,7 +26,7 @@ fi
 
 echo $SEED
 
-for TASK in cola stsb mnli qqp; do
+for TASK in mrpc rte sst2 cola stsb qnli mnli qqp; do
   for SEED in $SEED; do
     if [ $TASK = "cola" ]; then
         EVAL_METRIC="eval_matthews_correlation"

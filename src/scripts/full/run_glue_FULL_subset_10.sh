@@ -21,7 +21,7 @@ if [ "${SEED_ARRAY[0]}" -eq -1 ]; then
   SEED_ARRAY[0]=$GPU_ID
 fi
 
-for TASK in qqp; do
+for TASK in mrpc rte sst2 cola stsb qnli mnli qqp; do
   for SEED in "${SEED_ARRAY[@]}"; do
     if [ $TASK = "cola" ]; then
         EVAL_METRIC="eval_matthews_correlation"
@@ -32,7 +32,7 @@ for TASK in qqp; do
     fi
     echo $SEED
 
-    for TRAIN_PCT in 10 25 50; do
+    for TRAIN_PCT in 10 25 50 100; do
       CUDA_VISIBLE_DEVICES=$GPU_ID python run_glue_FULL.py \
         --model_name_or_path $MODEL_NAME \
         --task_name $TASK \
@@ -55,8 +55,7 @@ for TASK in qqp; do
         --report_to wandb \
         --run_name $TASK-$MODEL_NAME-$TRAIN_PCT-$SEED \
         --seed $SEED \
-        --max_train_pct $TRAIN_PCT \
-        --overwrite_output_dir
+        --max_train_pct $TRAIN_PCT
     done
   done
 done

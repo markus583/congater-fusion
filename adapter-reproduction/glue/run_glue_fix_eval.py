@@ -361,22 +361,22 @@ def main():
         train_dataset = dataset_dict["train"]
         eval_dataset = dataset_dict["test"]
 
-    if training_args.do_predict or data_args.task_name is not None or data_args.test_file is not None:
-        if "test" not in raw_datasets and "test_matched" not in raw_datasets:
-            raise ValueError("--do_predict requires a test dataset")
-        predict_dataset = raw_datasets["test_matched" if data_args.task_name == "mnli" else "test"]
-        if data_args.max_predict_samples or data_args.max_predict_pct:
+    if training_args.do_eval:
+        if "validation" not in raw_datasets and "validation_matched" not in raw_datasets:
+            raise ValueError("--do_eval requires a validation dataset")
+        test_dataset = raw_datasets["validation_matched" if data_args.task_name == "mnli" else "validation"]
+        if data_args.max_eval_samples or data_args.max_eval_pct:
             # both
-            if data_args.max_predict_samples and data_args.max_predict_pct:
+            if data_args.max_eval_samples and data_args.max_eval_pct:
                 raise ValueError("Cannot specify both max_train_samples and max_train_pct!")
             # pct
-            if data_args.max_predict_pct:
-                max_predict_samples = int(len(train_dataset) * data_args.max_predict_pct)
+            if data_args.max_eval_pct:
+                max_eval_samples = int(len(train_dataset) * data_args.max_train_pct)
             # samples
             else:
-                max_predict_samples = data_args.max_predict_samples
-            max_predict_samples = min(len(predict_dataset), max_predict_samples)
-            test_dataset = predict_dataset.select(range(max_predict_samples))
+                max_eval_samples = data_args.max_eval_samples
+            max_eval_samples = min(len(test_dataset), max_eval_samples)
+            test_dataset = test_dataset.select(range(max_eval_samples))
 
     # Log a few random samples from the training set:
     if training_args.do_train:
