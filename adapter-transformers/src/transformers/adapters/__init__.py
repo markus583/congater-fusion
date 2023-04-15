@@ -53,12 +53,11 @@ _import_structure = {
         "ModelAdaptersConfig",
         "ParallelConfig",
         "PfeifferConfig",
-        "OriginalCongaterConfig"
-        "PfeifferInvConfig",
+        "OriginalCongaterConfig" "PfeifferInvConfig",
         "PrefixTuningConfig",
         "StaticAdapterFusionConfig",
         "UniPELTConfig",
-        "CongaterConfig"
+        "CongaterConfig",
     ],
     "context": [
         "AdapterSetup",
@@ -145,95 +144,60 @@ _import_structure = {
         "get_adapter_info",
         "list_adapters",
     ],
-    "t_sigmoid": ["Tsigmoid"]
+    "t_sigmoid": ["Tsigmoid"],
 }
 
 if TYPE_CHECKING:
-    from .composition import (
-        AdapterCompositionBlock,
-        BatchSplit,
-        Fuse,
-        Parallel,
-        Split,
-        Stack,
-        parse_composition,
-        validate_composition,
-    )
-    from .configuration import (
-        ADAPTER_CONFIG_MAP,
-        ADAPTERFUSION_CONFIG_MAP,
-        DEFAULT_ADAPTER_CONFIG,
-        DEFAULT_ADAPTERFUSION_CONFIG,
-        AdapterConfig,
-        AdapterConfigBase,
-        AdapterFusionConfig,
-        CompacterConfig,
-        CompacterPlusPlusConfig,
-        ConfigUnion,
-        DynamicAdapterFusionConfig,
-        HoulsbyConfig,
-        HoulsbyInvConfig,
-        IA3Config,
-        LoRAConfig,
-        MAMConfig,
-        ModelAdaptersConfig,
-        ParallelConfig,
-        PfeifferConfig,
-        PfeifferInvConfig,
-        PrefixTuningConfig,
-        StaticAdapterFusionConfig,
-        UniPELTConfig,
-    )
+    from .composition import (AdapterCompositionBlock, BatchSplit, Fuse,
+                              Parallel, Split, Stack, parse_composition,
+                              validate_composition)
+    from .configuration import (ADAPTER_CONFIG_MAP, ADAPTERFUSION_CONFIG_MAP,
+                                DEFAULT_ADAPTER_CONFIG,
+                                DEFAULT_ADAPTERFUSION_CONFIG, AdapterConfig,
+                                AdapterConfigBase, AdapterFusionConfig,
+                                CompacterConfig, CompacterPlusPlusConfig,
+                                ConfigUnion, DynamicAdapterFusionConfig,
+                                HoulsbyConfig, HoulsbyInvConfig, IA3Config,
+                                LoRAConfig, MAMConfig, ModelAdaptersConfig,
+                                ParallelConfig, PfeifferConfig,
+                                PfeifferInvConfig, PrefixTuningConfig,
+                                StaticAdapterFusionConfig, UniPELTConfig)
     from .context import AdapterSetup, ForwardContext
-    from .heads import (
-        BertStyleMaskedLMHead,
-        BiaffineParsingHead,
-        CausalLMHead,
-        ClassificationHead,
-        DependencyParsingOutput,
-        ModelWithFlexibleHeadsAdaptersMixin,
-        MultiHeadOutput,
-        MultiLabelClassificationHead,
-        MultipleChoiceHead,
-        PredictionHead,
-        QuestionAnsweringHead,
-        Seq2SeqLMHead,
-        TaggingHead,
-    )
+    from .heads import (BertStyleMaskedLMHead, BiaffineParsingHead,
+                        CausalLMHead, ClassificationHead,
+                        DependencyParsingOutput,
+                        ModelWithFlexibleHeadsAdaptersMixin, MultiHeadOutput,
+                        MultiLabelClassificationHead, MultipleChoiceHead,
+                        PredictionHead, QuestionAnsweringHead, Seq2SeqLMHead,
+                        TaggingHead)
     from .layer import AdapterLayer, AdapterLayerBase
-    from .model_mixin import (
-        EmbeddingAdaptersMixin,
-        InvertibleAdaptersMixin,
-        InvertibleAdaptersWrapperMixin,
-        ModelAdaptersMixin,
-        ModelWithHeadsAdaptersMixin,
-    )
+    from .model_mixin import (EmbeddingAdaptersMixin, InvertibleAdaptersMixin,
+                              InvertibleAdaptersWrapperMixin,
+                              ModelAdaptersMixin, ModelWithHeadsAdaptersMixin)
     from .models.albert import AlbertAdapterModel
-    from .models.auto import ADAPTER_MODEL_MAPPING, MODEL_WITH_HEADS_MAPPING, AutoAdapterModel, AutoModelWithHeads
+    from .models.auto import (ADAPTER_MODEL_MAPPING, MODEL_WITH_HEADS_MAPPING,
+                              AutoAdapterModel, AutoModelWithHeads)
     from .models.bart import BartAdapterModel, BartModelWithHeads
     from .models.beit import BeitAdapterModel
     from .models.bert import BertAdapterModel, BertModelWithHeads
     from .models.bert_generation import BertGenerationAdapterModel
     from .models.deberta import DebertaAdapterModel
     from .models.debertaV2 import DebertaV2AdapterModel
-    from .models.distilbert import DistilBertAdapterModel, DistilBertModelWithHeads
+    from .models.distilbert import (DistilBertAdapterModel,
+                                    DistilBertModelWithHeads)
     from .models.gpt2 import GPT2AdapterModel, GPT2ModelWithHeads
     from .models.gptj import GPTJAdapterModel
     from .models.mbart import MBartAdapterModel, MBartModelWithHeads
     from .models.roberta import RobertaAdapterModel, RobertaModelWithHeads
     from .models.t5 import T5AdapterModel, T5ModelWithHeads
     from .models.vit import ViTAdapterModel
-    from .models.xlm_roberta import XLMRobertaAdapterModel, XLMRobertaModelWithHeads
+    from .models.xlm_roberta import (XLMRobertaAdapterModel,
+                                     XLMRobertaModelWithHeads)
     from .trainer import AdapterTrainer, Seq2SeqAdapterTrainer
     from .training import AdapterArguments, setup_adapter_training
-    from .utils import (
-        ADAPTER_CACHE,
-        AdapterInfo,
-        AdapterType,
-        get_adapter_config_hash,
-        get_adapter_info,
-        list_adapters,
-    )
+    from .utils import (ADAPTER_CACHE, AdapterInfo, AdapterType,
+                        get_adapter_config_hash, get_adapter_info,
+                        list_adapters)
 
 else:
     import sys

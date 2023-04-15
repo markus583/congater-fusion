@@ -23,7 +23,9 @@ class AdapterConfigBase(Mapping):
     architecture: Optional[str] = None
 
     def __init__(self):
-        raise TypeError("AdapterConfigBase is an abstract class and cannot be instantiated.")
+        raise TypeError(
+            "AdapterConfigBase is an abstract class and cannot be instantiated."
+        )
 
     # We want to emulate a simple form of immutability while keeping the ability to add custom attributes.
     # Therefore, we don't allow changing attribute values if set once.
@@ -115,7 +117,9 @@ class AdapterConfigBase(Mapping):
         else:
             local_map = ADAPTER_CONFIG_MAP
         if download_kwargs:
-            config_dict = resolve_adapter_config(config, local_map=local_map, **download_kwargs)
+            config_dict = resolve_adapter_config(
+                config, local_map=local_map, **download_kwargs
+            )
         else:
             config_dict = resolve_adapter_config(config, local_map=local_map)
         # convert back to dict to allow attr overrides
@@ -269,7 +273,9 @@ class AdapterConfig(AdapterConfigBase):
             # Now, we have two config keys directly in the adapter config.
             if value:
                 object.__setattr__(self, "inv_adapter", value["block_type"])
-                object.__setattr__(self, "inv_adapter_reduction_factor", value["reduction_factor"])
+                object.__setattr__(
+                    self, "inv_adapter_reduction_factor", value["reduction_factor"]
+                )
         else:
             object.__setattr__(self, name, value)
 
@@ -521,22 +527,34 @@ class ConfigUnion(AdapterConfigBase):
             if not isinstance(config, AdapterConfigBase):
                 raise TypeError(f"{config} is not an instance of AdapterConfigBase")
             elif isinstance(config, ConfigUnion):
-                raise TypeError(f"{config} of type {type(config)} is not supported in a config union.")
+                raise TypeError(
+                    f"{config} of type {type(config)} is not supported in a config union."
+                )
         # perform pairwise check
-        for c_a, c_b in [(c_a, c_b) for i, c_a in enumerate(configs) for j, c_b in enumerate(configs) if i > j]:
+        for c_a, c_b in [
+            (c_a, c_b)
+            for i, c_a in enumerate(configs)
+            for j, c_b in enumerate(configs)
+            if i > j
+        ]:
             if c_a.architecture != c_b.architecture:
                 continue
             # if at least one config specifies a leave_out, we cannot make a final decision at this point
             elif c_a.get("leave_out", []) or c_b.get("leave_out", []):
                 continue
             elif c_a.architecture is None or c_a.architecture == "bottleneck":
-                is_valid = c_a.mh_adapter != c_b.mh_adapter and c_a.output_adapter != c_b.output_adapter
+                is_valid = (
+                    c_a.mh_adapter != c_b.mh_adapter
+                    and c_a.output_adapter != c_b.output_adapter
+                )
                 if not is_valid:
                     raise ValueError(f"{c_a} and {c_b} cannot be combined.")
                 else:
                     continue
             # at this point, we know that the architectures are the same
-            raise ValueError(f"{c_a} and {c_b} have the same adapter architecture and cannot be combined.")
+            raise ValueError(
+                f"{c_a} and {c_b} have the same adapter architecture and cannot be combined."
+            )
 
     def __getitem__(self, key):
         if isinstance(key, int):
@@ -559,7 +577,10 @@ class ConfigUnion(AdapterConfigBase):
         return all([c_a == c_b for c_a, c_b in zip(self.configs, other.configs)])
 
     def to_dict(self):
-        return {"architecture": self.architecture, "configs": [c.to_dict() for c in self.configs]}
+        return {
+            "architecture": self.architecture,
+            "configs": [c.to_dict() for c in self.configs],
+        }
 
     def replace(self, **changes):
         return ConfigUnion(*[c.replace(**changes) for c in self.configs])
@@ -582,7 +603,11 @@ class MAMConfig(ConfigUnion):
     The Mix-And-Match adapter architecture proposed by He et al. (2021). See https://arxiv.org/pdf/2110.04366.pdf.
     """
 
-    def __init__(self, prefix_tuning: Optional[PrefixTuningConfig] = None, adapter: Optional[AdapterConfig] = None):
+    def __init__(
+        self,
+        prefix_tuning: Optional[PrefixTuningConfig] = None,
+        adapter: Optional[AdapterConfig] = None,
+    ):
         prefix_tuning = prefix_tuning or PrefixTuningConfig(bottleneck_size=800)
         adapter = adapter or ParallelConfig()
 
@@ -605,10 +630,10 @@ class UniPELTConfig(ConfigUnion):
     """
 
     def __init__(
-            self,
-            prefix_tuning: Optional[PrefixTuningConfig] = None,
-            adapter: Optional[AdapterConfig] = None,
-            lora: Optional[LoRAConfig] = None,
+        self,
+        prefix_tuning: Optional[PrefixTuningConfig] = None,
+        adapter: Optional[AdapterConfig] = None,
+        lora: Optional[LoRAConfig] = None,
     ):
         components = [
             prefix_tuning or PrefixTuningConfig(prefix_length=10),
@@ -635,7 +660,7 @@ ADAPTER_CONFIG_MAP = {
     "ia3": IA3Config(),
     "mam": MAMConfig(),
     "unipelt": UniPELTConfig(),
-    "congater-original": OriginalCongaterConfig()
+    "congater-original": OriginalCongaterConfig(),
 }
 
 DEFAULT_ADAPTER_CONFIG = "pfeiffer"
@@ -648,7 +673,13 @@ class ModelAdaptersConfig(Collection):
         adapters_list = kwargs.pop("adapters", {})
         # this is for backwards compability: in v1.x, self.adapters values had shape (<type>, <config_name>)
         adapters_list = dict(
-            map(lambda t: (t[0], t[1][1] or t[1][0] if isinstance(t[1], tuple) else t[1]), adapters_list.items())
+            map(
+                lambda t: (
+                    t[0],
+                    t[1][1] or t[1][0] if isinstance(t[1], tuple) else t[1],
+                ),
+                adapters_list.items(),
+            )
         )
         self.adapters: Mapping[str, str] = adapters_list
         self.config_map = kwargs.pop("config_map", {})
@@ -692,11 +723,11 @@ class ModelAdaptersConfig(Collection):
         return config
 
     def match(
-            self,
-            adapter_name: str,
-            config_type: type,
-            layer_idx: Optional[int] = None,
-            location_key: Optional[str] = None,
+        self,
+        adapter_name: str,
+        config_type: type,
+        layer_idx: Optional[int] = None,
+        location_key: Optional[str] = None,
     ) -> Optional[dict]:
         """
         Tries to match the given criteria to an existing adapter. Return the adapter config if a match is found,
@@ -743,7 +774,9 @@ class ModelAdaptersConfig(Collection):
             config (Optional[Union[str, dict]], optional): The adapter config. Defaults to None.
         """
         if adapter_name in self.adapters:
-            raise ValueError(f"An adapter with the name '{adapter_name}' has already been added.")
+            raise ValueError(
+                f"An adapter with the name '{adapter_name}' has already been added."
+            )
         if config is None:
             config = DEFAULT_ADAPTER_CONFIG
         if isinstance(config, str):
@@ -781,7 +814,11 @@ class ModelAdaptersConfig(Collection):
             config = None
         return config
 
-    def add_fusion(self, fusion_name: Union[str, List[str]], config: Optional[Union[str, dict]] = None):
+    def add_fusion(
+        self,
+        fusion_name: Union[str, List[str]],
+        config: Optional[Union[str, dict]] = None,
+    ):
         """
         Adds a new AdapterFusion.
 
@@ -792,11 +829,16 @@ class ModelAdaptersConfig(Collection):
         if isinstance(fusion_name, list):
             fusion_name = ",".join(fusion_name)
         if fusion_name in self.fusions:
-            raise ValueError(f"An AdapterFusion with the name '{fusion_name}' has already been added.")
+            raise ValueError(
+                f"An AdapterFusion with the name '{fusion_name}' has already been added."
+            )
         if config is None:
             config = DEFAULT_ADAPTERFUSION_CONFIG
         if isinstance(config, str):
-            if config not in ADAPTERFUSION_CONFIG_MAP and config not in self.fusion_config_map:
+            if (
+                config not in ADAPTERFUSION_CONFIG_MAP
+                and config not in self.fusion_config_map
+            ):
                 raise ValueError(f"Invalid AdapterFusion config identifier '{config}'.")
             config_name = config
         # if it's a dict, compute it's hash and add a new entry to the config map
@@ -826,7 +868,9 @@ class ModelAdaptersConfig(Collection):
                 )
             config_value = config.get(attribute, None)
             if i > 0 and config_value != common_value:
-                raise ValueError(f"All given adapters must define the same value for config attribute {attribute}.")
+                raise ValueError(
+                    f"All given adapters must define the same value for config attribute {attribute}."
+                )
             common_value = config_value
         return common_value
 
@@ -896,7 +940,9 @@ class AdapterFusionConfig(AdapterConfigBase):
             dict: The resolved adapter fusion configuration dictionary.
         """
         # currently storing AdapterFusion weights on AdapterHub is not supported.
-        config_dict = resolve_adapter_config(config, local_map=ADAPTERFUSION_CONFIG_MAP, try_loading_from_hub=False)
+        config_dict = resolve_adapter_config(
+            config, local_map=ADAPTERFUSION_CONFIG_MAP, try_loading_from_hub=False
+        )
         # convert back to dict to allow attr overrides
         if isinstance(config_dict, AdapterFusionConfig):
             config_dict = config_dict.to_dict()
@@ -938,6 +984,9 @@ class DynamicAdapterFusionConfig(AdapterFusionConfig):
     value_initialized: str = True
 
 
-ADAPTERFUSION_CONFIG_MAP = {"static": StaticAdapterFusionConfig(), "dynamic": DynamicAdapterFusionConfig()}
+ADAPTERFUSION_CONFIG_MAP = {
+    "static": StaticAdapterFusionConfig(),
+    "dynamic": DynamicAdapterFusionConfig(),
+}
 
 DEFAULT_ADAPTERFUSION_CONFIG = "dynamic"

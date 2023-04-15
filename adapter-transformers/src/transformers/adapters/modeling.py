@@ -2,7 +2,6 @@ import math
 
 import torch
 from torch import nn
-
 from transformers.activations import get_activation
 from transformers.adapters.t_sigmoid import Tsigmoid
 
@@ -35,11 +34,11 @@ class Adapter(nn.Module):
     """
 
     def __init__(
-            self,
-            adapter_name,
-            input_size,
-            down_sample,
-            config: AdapterConfig,
+        self,
+        adapter_name,
+        input_size,
+        down_sample,
+        config: AdapterConfig,
     ):
         super().__init__()
         self.name = adapter_name
@@ -83,7 +82,11 @@ class Adapter(nn.Module):
 
         if config["phm_layer"]:
             # Linear down projection of the input
-            seq_list.append(PHMLayer(adapter_name, self.input_size, self.down_sample, "down", config))
+            seq_list.append(
+                PHMLayer(
+                    adapter_name, self.input_size, self.down_sample, "down", config
+                )
+            )
         else:
             seq_list.append(nn.Linear(self.input_size, self.down_sample))
 
@@ -101,7 +104,9 @@ class Adapter(nn.Module):
             # Up projection to input size
             if config["phm_layer"]:
                 # Linear down projection of the input
-                self.adapter_up = PHMLayer(adapter_name, self.down_sample, self.input_size, "up", config)
+                self.adapter_up = PHMLayer(
+                    adapter_name, self.down_sample, self.input_size, "up", config
+                )
             else:
                 self.adapter_up = nn.Linear(self.down_sample, self.input_size)
 
@@ -137,14 +142,16 @@ class Adapter(nn.Module):
                 if self.use_gating:
                     self.gate.apply(self.init_bert_weights)
         else:
-            raise ValueError("Unknown init_weights type: {}".format(config["init_weights"]))
+            raise ValueError(
+                "Unknown init_weights type: {}".format(config["init_weights"])
+            )
 
     def pre_forward(
-            self,
-            hidden_states,
-            input_tensor,
-            layer_norm,
-            fusion_config=None,
+        self,
+        hidden_states,
+        input_tensor,
+        layer_norm,
+        fusion_config=None,
     ):
         """
         Retrieves the hidden_states, query (for Fusion), and residual connection according to the set configuration.
@@ -218,7 +225,9 @@ class Adapter(nn.Module):
             return output, down, up, gate
         return output, down, up
 
-    def post_forward(self, hidden_states, input_hidden_states, input_tensor, layer_norm):
+    def post_forward(
+        self, hidden_states, input_hidden_states, input_tensor, layer_norm
+    ):
         """
         Performs computations after the forward pass of the adapter block(s). This e.g. includes applying the residual
         connection and layer norm if configured in this way.
@@ -264,11 +273,11 @@ class ParallelAdapter(Adapter):
         super().__init__(adapter_name, input_size, down_sample, config)
 
     def pre_forward(
-            self,
-            hidden_states,
-            input_tensor,
-            layer_norm,
-            fusion_config=None,
+        self,
+        hidden_states,
+        input_tensor,
+        layer_norm,
+        fusion_config=None,
     ):
         """
         Retrieves the hidden_states, query (for Fusion), and residual connection according to the set configuration.
@@ -309,7 +318,9 @@ class ParallelAdapter(Adapter):
             return output, down, up, gate
         return output, down, up
 
-    def post_forward(self, hidden_states, input_hidden_states, input_tensor, layer_norm):
+    def post_forward(
+        self, hidden_states, input_hidden_states, input_tensor, layer_norm
+    ):
         """
         Performs computations after the forward pass of the adapter block(s). This e.g. includes applying the residual
         connection and layer norm if configured in this way.
@@ -371,7 +382,9 @@ class Congater(Adapter):
             return output, output, output, gate
         return output, output, output
 
-    def post_forward(self, hidden_states, input_hidden_states, input_tensor, layer_norm):
+    def post_forward(
+        self, hidden_states, input_hidden_states, input_tensor, layer_norm
+    ):
         """
         Performs computations after the forward pass of the adapter block(s). This e.g. includes applying the residual
         connection and layer norm if configured in this way.
@@ -397,16 +410,17 @@ class Congater(Adapter):
 
 # Adapter Fusion
 
+
 class BertFusion(nn.Module):
     """
     Implementation of an AdapterFusion block.
     """
 
     def __init__(
-            self,
-            config: AdapterFusionConfig,
-            dense_size,
-            attention_probs_dropout_prob,
+        self,
+        config: AdapterFusionConfig,
+        dense_size,
+        attention_probs_dropout_prob,
     ):
         super(BertFusion, self).__init__()
         # if config.hidden_size % config.num_attention_heads != 0:
@@ -418,7 +432,11 @@ class BertFusion(nn.Module):
         self.dense_size = dense_size
         self.dropout = nn.Dropout(attention_probs_dropout_prob)
 
-        if not self.config["query"] and not self.config["key"] and not self.config["value"]:
+        if (
+            not self.config["query"]
+            and not self.config["key"]
+            and not self.config["value"]
+        ):
             self.dense = nn.Linear(self.dense_size, 1)
 
         if self.config["query"]:
@@ -433,7 +451,9 @@ class BertFusion(nn.Module):
             self.value = nn.Linear(self.dense_size, self.dense_size, bias=False)
             self.value.apply(Adapter.init_bert_weights)
             if self.config["value_initialized"]:
-                self.value.weight.data = (torch.zeros(self.dense_size, self.dense_size) + 0.000001).fill_diagonal_(1.0)
+                self.value.weight.data = (
+                    torch.zeros(self.dense_size, self.dense_size) + 0.000001
+                ).fill_diagonal_(1.0)
 
         if self.config["temperature"]:
             self.T = 50.0
@@ -442,7 +462,6 @@ class BertFusion(nn.Module):
         self.reduction = self.T / 1000.0
 
     def forward(self, query, key, value, residual, output_attentions: bool = False):
-
         if self.config["residual_before"]:
             value += residual[:, :, None, :].repeat(1, 1, value.size(2), 1)
 
@@ -463,7 +482,9 @@ class BertFusion(nn.Module):
             value_layer = value
 
         # Take the dot product between "query" and "key" to get the raw attention scores.
-        attention_scores = torch.squeeze(torch.matmul(query_layer.unsqueeze(2), key_layer.transpose(-2, -1)), dim=2)
+        attention_scores = torch.squeeze(
+            torch.matmul(query_layer.unsqueeze(2), key_layer.transpose(-2, -1)), dim=2
+        )
 
         attention_scores = self.dropout(attention_scores)
 
@@ -471,7 +492,9 @@ class BertFusion(nn.Module):
         attention_probs = nn.Softmax(dim=-1)(attention_scores / self.T)
         self.T = max(self.T - self.reduction, 1.0)
 
-        context_layer = torch.squeeze(torch.matmul(attention_probs.unsqueeze(2), value_layer), dim=2)
+        context_layer = torch.squeeze(
+            torch.matmul(attention_probs.unsqueeze(2), value_layer), dim=2
+        )
 
         if self.config["value"] and not self.config["value_before_softmax"]:
             # key/value have dims => batch, toks, number-of-adapters, feats
@@ -524,7 +547,7 @@ class NICECouplingBlock(nn.Module):
         self.G = subnet_constructor(self.split_len1 + condition_length, self.split_len2)
 
     def forward(self, x, c=[], rev=False):
-        x1, x2 = (x[:, :, : self.split_len1], x[:, :, self.split_len1:])
+        x1, x2 = (x[:, :, : self.split_len1], x[:, :, self.split_len1 :])
         if not rev:
             x2_c = torch.cat([x2, *c], 1) if self.conditional else x2
             y1 = x1 + self.F(x2_c)
@@ -554,7 +577,9 @@ class GLOWCouplingBlock(nn.Module):
     or attenuation of each input dimension can be at most ±exp(clamp).
     """
 
-    def __init__(self, dims_in, dims_c=[], non_linearity="relu", reduction_factor=2, clamp=5.0):
+    def __init__(
+        self, dims_in, dims_c=[], non_linearity="relu", reduction_factor=2, clamp=5.0
+    ):
         super().__init__()
 
         channels = dims_in[0][0]
@@ -573,8 +598,12 @@ class GLOWCouplingBlock(nn.Module):
         condition_length = sum([dims_c[i][0] for i in range(len(dims_c))])
 
         subnet_constructor = get_subnet_constructor(non_linearity, reduction_factor)
-        self.s1 = subnet_constructor(self.split_len1 + condition_length, self.split_len2 * 2)
-        self.s2 = subnet_constructor(self.split_len2 + condition_length, self.split_len1 * 2)
+        self.s1 = subnet_constructor(
+            self.split_len1 + condition_length, self.split_len2 * 2
+        )
+        self.s2 = subnet_constructor(
+            self.split_len2 + condition_length, self.split_len1 * 2
+        )
 
     def e(self, s):
         return torch.exp(self.clamp * 0.636 * torch.atan(s / self.clamp))
@@ -583,30 +612,30 @@ class GLOWCouplingBlock(nn.Module):
         return self.clamp * 0.636 * torch.atan(s / self.clamp)
 
     def forward(self, x, c=[], rev=False):
-        x1, x2 = (x[:, :, : self.split_len1], x[:, :, self.split_len1:])
+        x1, x2 = (x[:, :, : self.split_len1], x[:, :, self.split_len1 :])
 
         if not rev:
             s2, t2 = x1.clone(), x2.clone()
             y1 = self.e(s2) * x1 + t2
 
             r1 = self.s1(torch.cat([y1, *c], 1) if self.conditional else y1)
-            s1, t1 = r1[:, : self.split_len2], r1[:, self.split_len2:]
+            s1, t1 = r1[:, : self.split_len2], r1[:, self.split_len2 :]
             y2 = self.e(s1) * x2 + t1
-            self.last_jac = torch.sum(self.log_e(s1), dim=tuple(range(1, self.ndims + 1))) + torch.sum(
-                self.log_e(s2), dim=tuple(range(1, self.ndims + 1))
-            )
+            self.last_jac = torch.sum(
+                self.log_e(s1), dim=tuple(range(1, self.ndims + 1))
+            ) + torch.sum(self.log_e(s2), dim=tuple(range(1, self.ndims + 1)))
 
         else:  # names of x and y are swapped!
             r1 = self.s1(torch.cat([x1, *c], 1) if self.conditional else x1)
-            s1, t1 = r1[:, : self.split_len2], r1[:, self.split_len2:]
+            s1, t1 = r1[:, : self.split_len2], r1[:, self.split_len2 :]
             y2 = (x2 - t1) / self.e(s1)
 
             r2 = self.s2(torch.cat([y2, *c], 1) if self.conditional else y2)
-            s2, t2 = r2[:, : self.split_len1], r2[:, self.split_len1:]
+            s2, t2 = r2[:, : self.split_len1], r2[:, self.split_len1 :]
             y1 = (x1 - t2) / self.e(s2)
-            self.last_jac = -torch.sum(self.log_e(s1), dim=tuple(range(1, self.ndims + 1))) - torch.sum(
-                self.log_e(s2), dim=tuple(range(1, self.ndims + 1))
-            )
+            self.last_jac = -torch.sum(
+                self.log_e(s1), dim=tuple(range(1, self.ndims + 1))
+            ) - torch.sum(self.log_e(s2), dim=tuple(range(1, self.ndims + 1)))
 
         return [torch.cat((y1, y2), 1)]
 
@@ -637,21 +666,26 @@ class PHMLayer(nn.Module):
     """
 
     def __init__(
-            self,
-            adapter_name: str,
-            in_features: int,
-            out_features: int,
-            position: str,
-            config: dict,
+        self,
+        adapter_name: str,
+        in_features: int,
+        out_features: int,
+        position: str,
+        config: dict,
     ) -> None:
         super(PHMLayer, self).__init__()
-        assert config["hypercomplex_nonlinearity"] in ["phm", "glorot-normal", "glorot-uniform", "normal"]
+        assert config["hypercomplex_nonlinearity"] in [
+            "phm",
+            "glorot-normal",
+            "glorot-uniform",
+            "normal",
+        ]
         assert config["phm_c_init"] in ["normal", "uniform"]
         assert (
-                in_features % config["phm_dim"] == 0
+            in_features % config["phm_dim"] == 0
         ), f"Argument `in_features`={in_features} is not divisble be `phm_dim`{config['phm_dim']}"
         assert (
-                out_features % config["phm_dim"] == 0
+            out_features % config["phm_dim"] == 0
         ), f"Argument `out_features`={out_features} is not divisble be `phm_dim`{config['phm_dim']}"
         self.config = config
         self.name = adapter_name
@@ -669,14 +703,17 @@ class PHMLayer(nn.Module):
         if not self.shared_phm_rule:
             if self.factorized_phm_rule:
                 self.phm_rule_left = nn.Parameter(
-                    torch.FloatTensor(self.phm_dim, self.phm_dim, 1), requires_grad=self.learn_phm
+                    torch.FloatTensor(self.phm_dim, self.phm_dim, 1),
+                    requires_grad=self.learn_phm,
                 )
                 self.phm_rule_right = nn.Parameter(
-                    torch.FloatTensor(self.phm_dim, 1, self.phm_dim), requires_grad=self.learn_phm
+                    torch.FloatTensor(self.phm_dim, 1, self.phm_dim),
+                    requires_grad=self.learn_phm,
                 )
             else:
                 self.phm_rule = nn.Parameter(
-                    torch.FloatTensor(self.phm_dim, self.phm_dim, self.phm_dim), requires_grad=self.learn_phm
+                    torch.FloatTensor(self.phm_dim, self.phm_dim, self.phm_dim),
+                    requires_grad=self.learn_phm,
                 )
         self.bias_flag = config["phm_bias"]
         self.w_init = config["hypercomplex_nonlinearity"]
@@ -686,14 +723,26 @@ class PHMLayer(nn.Module):
         if not self.shared_W_phm:
             if self.factorized_phm_W:
                 self.W_left = nn.Parameter(
-                    torch.Tensor(size=(self.phm_dim, self._in_feats_per_axis, self.phm_rank)), requires_grad=True
+                    torch.Tensor(
+                        size=(self.phm_dim, self._in_feats_per_axis, self.phm_rank)
+                    ),
+                    requires_grad=True,
                 )
                 self.W_right = nn.Parameter(
-                    torch.Tensor(size=(self.phm_dim, self.phm_rank, self._out_feats_per_axis)), requires_grad=True
+                    torch.Tensor(
+                        size=(self.phm_dim, self.phm_rank, self._out_feats_per_axis)
+                    ),
+                    requires_grad=True,
                 )
             else:
                 self.W = nn.Parameter(
-                    torch.Tensor(size=(self.phm_dim, self._in_feats_per_axis, self._out_feats_per_axis)),
+                    torch.Tensor(
+                        size=(
+                            self.phm_dim,
+                            self._in_feats_per_axis,
+                            self._out_feats_per_axis,
+                        )
+                    ),
                     requires_grad=True,
                 )
         if self.bias_flag:
@@ -758,7 +807,10 @@ class PHMLayer(nn.Module):
         if self.shared_W_phm:
             parameters = ForwardContext.get_context().shared_parameters[self.name]
             if self.factorized_phm_W:
-                W = torch.bmm(parameters[f"W_{self.position}_left"], parameters[f"W_{self.position}_right"])
+                W = torch.bmm(
+                    parameters[f"W_{self.position}_left"],
+                    parameters[f"W_{self.position}_right"],
+                )
             else:
                 W = parameters[f"W_{self.position}"]
         else:
@@ -769,7 +821,9 @@ class PHMLayer(nn.Module):
         if self.shared_phm_rule:
             parameters = ForwardContext.get_context().shared_parameters[self.name]
             if self.factorized_phm_rule:
-                phm_rule = torch.bmm(parameters["phm_rule_left"], parameters["phm_rule_right"])
+                phm_rule = torch.bmm(
+                    parameters["phm_rule_left"], parameters["phm_rule_right"]
+                )
             else:
                 phm_rule = parameters["phm_rule"]
         else:
@@ -796,10 +850,18 @@ def init_shared_parameters(config, in_features, device):
             out_features = in_features // config["reduction_factor"]
             _in_feats_per_axis = in_features // config["phm_dim"]
             _out_feats_per_axis = out_features // config["phm_dim"]
-            W_down_left = torch.Tensor(size=(config["phm_dim"], _in_feats_per_axis, config["phm_rank"]))
-            W_down_right = torch.Tensor(size=(config["phm_dim"], config["phm_rank"], _out_feats_per_axis))
-            W_up_left = torch.Tensor(size=(config["phm_dim"], _out_feats_per_axis, config["phm_rank"]))
-            W_up_right = torch.Tensor(size=(config["phm_dim"], config["phm_rank"], _in_feats_per_axis))
+            W_down_left = torch.Tensor(
+                size=(config["phm_dim"], _in_feats_per_axis, config["phm_rank"])
+            )
+            W_down_right = torch.Tensor(
+                size=(config["phm_dim"], config["phm_rank"], _out_feats_per_axis)
+            )
+            W_up_left = torch.Tensor(
+                size=(config["phm_dim"], _out_feats_per_axis, config["phm_rank"])
+            )
+            W_up_right = torch.Tensor(
+                size=(config["phm_dim"], config["phm_rank"], _in_feats_per_axis)
+            )
             init_W(config, W_left=W_down_left, W_right=W_down_right)
             init_W(config, W_left=W_up_left, W_right=W_up_right)
             parameters["W_down_left"] = nn.Parameter(W_down_left, requires_grad=True)
@@ -807,8 +869,12 @@ def init_shared_parameters(config, in_features, device):
             parameters["W_up_left"] = nn.Parameter(W_up_left, requires_grad=True)
             parameters["W_up_right"] = nn.Parameter(W_up_right, requires_grad=True)
         else:
-            W_down = torch.Tensor(size=(config["phm_dim"], _in_feats_per_axis, _out_feats_per_axis))
-            W_up = torch.Tensor(size=(config["phm_dim"], _out_feats_per_axis, _in_feats_per_axis))
+            W_down = torch.Tensor(
+                size=(config["phm_dim"], _in_feats_per_axis, _out_feats_per_axis)
+            )
+            W_up = torch.Tensor(
+                size=(config["phm_dim"], _out_feats_per_axis, _in_feats_per_axis)
+            )
             init_W(config, W=W_down)
             init_W(config, W=W_up)
             parameters["W_down"] = nn.Parameter(W_down, requires_grad=True)
@@ -835,7 +901,9 @@ def init_shared_parameters(config, in_features, device):
             parameters["phm_rule_right"] = phm_rule_right
         else:
             phm_rule = nn.Parameter(
-                torch.FloatTensor(config["phm_dim"], config["phm_dim"], config["phm_dim"]),
+                torch.FloatTensor(
+                    config["phm_dim"], config["phm_dim"], config["phm_dim"]
+                ),
                 requires_grad=config["learn_phm"],
             )
             if config["phm_c_init"] == "normal":

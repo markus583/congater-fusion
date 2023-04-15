@@ -5,7 +5,8 @@ import numpy as np
 import torch
 from torch import nn
 
-from .composition import AdapterCompositionBlock, BatchSplit, Fuse, Parallel, Split, Stack, adjust_tensors_for_parallel
+from .composition import (AdapterCompositionBlock, BatchSplit, Fuse, Parallel,
+                          Split, Stack, adjust_tensors_for_parallel)
 from .configuration import AdapterConfig
 from .context import AdapterSetup, ForwardContext
 from .modeling import Adapter, BertFusion, ParallelAdapter
@@ -37,9 +38,12 @@ class AdapterLayerBase(ABC):
         else:
             adapter_setup = None
         skip_adapters = adapter_setup is None or (
-            self.config.adapters.skip_layers is not None and self.layer_idx in self.config.adapters.skip_layers
+            self.config.adapters.skip_layers is not None
+            and self.layer_idx in self.config.adapters.skip_layers
         )
-        if not skip_adapters and (len(set(module_dict.keys()) & adapter_setup.flatten()) > 0):
+        if not skip_adapters and (
+            len(set(module_dict.keys()) & adapter_setup.flatten()) > 0
+        ):
             return adapter_setup
         else:
             return None
@@ -53,13 +57,17 @@ class AdapterLayerBase(ABC):
             gating_score = gating_score.detach().squeeze().cpu().numpy()
             if len(gating_score.shape) == 0:
                 gating_score = np.expand_dims(gating_score, axis=0)
-            cache_score = gating_cache[adapter_name][self.layer_idx].get(self.location_key, None)
+            cache_score = gating_cache[adapter_name][self.layer_idx].get(
+                self.location_key, None
+            )
             if cache_score is not None:
-                gating_cache[adapter_name][self.layer_idx][self.location_key] = np.column_stack(
-                    (cache_score, gating_score)
-                )
+                gating_cache[adapter_name][self.layer_idx][
+                    self.location_key
+                ] = np.column_stack((cache_score, gating_score))
             else:
-                gating_cache[adapter_name][self.layer_idx][self.location_key] = gating_score
+                gating_cache[adapter_name][self.layer_idx][
+                    self.location_key
+                ] = gating_score
 
     def _store_fusion_attentions(self, fusion_name, attentions):
         context = ForwardContext.get_context()
@@ -86,7 +94,12 @@ class AdapterLayerBase(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def enable_adapters(self, adapter_setup: AdapterCompositionBlock, unfreeze_adapters: bool, unfreeze_fusion: bool):
+    def enable_adapters(
+        self,
+        adapter_setup: AdapterCompositionBlock,
+        unfreeze_adapters: bool,
+        unfreeze_fusion: bool,
+    ):
         raise NotImplementedError()
 
     @abstractmethod
@@ -145,7 +158,11 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
 
     def add_fusion_layer(self, adapter_names: Union[List, str]):
         """See BertModel.add_fusion_layer"""
-        adapter_names = adapter_names if isinstance(adapter_names, list) else adapter_names.split(",")
+        adapter_names = (
+            adapter_names
+            if isinstance(adapter_names, list)
+            else adapter_names.split(",")
+        )
         if self.config.adapters.common_config_value(adapter_names, self.location_key):
             fusion_config = self.config.adapters.get_fusion(adapter_names)
             fusion = BertFusion(
@@ -157,11 +174,18 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
             self.adapter_fusion_layer[",".join(adapter_names)] = fusion
 
     def delete_fusion_layer(self, adapter_names: Union[List, str]):
-        adapter_names = adapter_names if isinstance(adapter_names, str) else ",".join(adapter_names)
+        adapter_names = (
+            adapter_names if isinstance(adapter_names, str) else ",".join(adapter_names)
+        )
         if adapter_names in self.adapter_fusion_layer:
             del self.adapter_fusion_layer[adapter_names]
 
-    def enable_adapters(self, adapter_setup: AdapterCompositionBlock, unfreeze_adapters: bool, unfreeze_fusion: bool):
+    def enable_adapters(
+        self,
+        adapter_setup: AdapterCompositionBlock,
+        unfreeze_adapters: bool,
+        unfreeze_fusion: bool,
+    ):
         """
         Unfreezes a given list of adapters, the adapter fusion layer, or both
 
@@ -178,12 +202,16 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
         if unfreeze_fusion:
             if isinstance(adapter_setup, Fuse):
                 if adapter_setup.name in self.adapter_fusion_layer:
-                    for param in self.adapter_fusion_layer[adapter_setup.name].parameters():
+                    for param in self.adapter_fusion_layer[
+                        adapter_setup.name
+                    ].parameters():
                         param.requires_grad = True
             for sub_setup in adapter_setup:
                 if isinstance(sub_setup, Fuse):
                     if sub_setup.name in self.adapter_fusion_layer:
-                        for param in self.adapter_fusion_layer[sub_setup.name].parameters():
+                        for param in self.adapter_fusion_layer[
+                            sub_setup.name
+                        ].parameters():
                             param.requires_grad = True
 
     def get_adapter(self, adapter_name):
@@ -192,7 +220,9 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
         else:
             return None
 
-    def adapter_stack(self, adapter_setup: Stack, hidden_states, input_tensor, layer_norm, lvl=0):
+    def adapter_stack(
+        self, adapter_setup: Stack, hidden_states, input_tensor, layer_norm, lvl=0
+    ):
         """
         Forwards the given input through the given stack of adapters.
         """
@@ -207,30 +237,50 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
             # Case 1: We have a nested fusion layer -> call fusion method
             if isinstance(adapter_stack_layer, Fuse):
                 hidden_states = self.adapter_fusion(
-                    adapter_stack_layer, hidden_states, input_tensor, layer_norm, lvl=lvl + 1
+                    adapter_stack_layer,
+                    hidden_states,
+                    input_tensor,
+                    layer_norm,
+                    lvl=lvl + 1,
                 )
             # Case 2: We have a nested split layer -> call split method
             elif isinstance(adapter_stack_layer, Split):
                 hidden_states = self.adapter_split(
-                    adapter_stack_layer, hidden_states, input_tensor, layer_norm, lvl=lvl + 1
+                    adapter_stack_layer,
+                    hidden_states,
+                    input_tensor,
+                    layer_norm,
+                    lvl=lvl + 1,
                 )
             # Case 3: We have a nested parallel layer -> call parallel method
             elif isinstance(adapter_stack_layer, Parallel):
                 hidden_states, input_tensor = self.adapter_parallel(
-                    adapter_stack_layer, hidden_states, input_tensor, layer_norm, lvl=lvl + 1
+                    adapter_stack_layer,
+                    hidden_states,
+                    input_tensor,
+                    layer_norm,
+                    lvl=lvl + 1,
                 )
             # Case 4: We have a nested batch split block -> call batchsplit method
             elif isinstance(adapter_stack_layer, BatchSplit):
                 hidden_states = self.adapter_batchsplit(
-                    adapter_stack_layer, hidden_states, input_tensor, layer_norm, lvl=lvl + 1
+                    adapter_stack_layer,
+                    hidden_states,
+                    input_tensor,
+                    layer_norm,
+                    lvl=lvl + 1,
                 )
             # Case 5: We have a single adapter which is part of this module -> forward pass
             elif adapter_stack_layer in self.adapters:
                 adapter_layer = self.adapters[adapter_stack_layer]
-                hidden_states, _, residual = adapter_layer.pre_forward(hidden_states, input_tensor, layer_norm)
+                hidden_states, _, residual = adapter_layer.pre_forward(
+                    hidden_states, input_tensor, layer_norm
+                )
                 context = ForwardContext.get_context()
                 layer_output = adapter_layer(
-                    hidden_states, residual_input=residual, output_gating=context.output_adapter_gating_scores
+                    hidden_states,
+                    residual_input=residual,
+                    output_gating=context.output_adapter_gating_scores,
                 )
                 hidden_states, up = layer_output[0], layer_output[2]
                 self._store_gating_score(adapter_stack_layer, layer_output[-1])
@@ -244,7 +294,9 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
         # or no adapter was found. In both cases, we don't need to set the second return value for fusion
         return hidden_states, None, input_tensor
 
-    def adapter_fusion(self, adapter_setup: Fuse, hidden_states, input_tensor, layer_norm, lvl=0):
+    def adapter_fusion(
+        self, adapter_setup: Fuse, hidden_states, input_tensor, layer_norm, lvl=0
+    ):
         """
         Performs adapter fusion with the given adapters for the given input.
         """
@@ -262,14 +314,18 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
         for adapter_block in adapter_setup:
             # Case 1: We have a nested stack -> call stack method
             if isinstance(adapter_block, Stack):
-                _, up, _ = self.adapter_stack(adapter_block, hidden_states, input_tensor, layer_norm, lvl=lvl + 1)
+                _, up, _ = self.adapter_stack(
+                    adapter_block, hidden_states, input_tensor, layer_norm, lvl=lvl + 1
+                )
                 if up is not None:  # could be none if stack is empty
                     up_list.append(up)
             # Case 2: We have a single adapter which is part of this module -> forward pass
             elif adapter_block in self.adapters:
                 adapter_layer = self.adapters[adapter_block]
                 layer_output = adapter_layer(
-                    hidden_states, residual_input=residual, output_gating=context.output_adapter_gating_scores
+                    hidden_states,
+                    residual_input=residual,
+                    output_gating=context.output_adapter_gating_scores,
                 )
                 up = layer_output[2]
                 self._store_gating_score(adapter_block, layer_output[-1])
@@ -278,7 +334,8 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
             elif isinstance(adapter_block, AdapterCompositionBlock):
                 raise ValueError(
                     "Invalid adapter setup. Cannot nest {} in {}".format(
-                        adapter_block.__class__.__name__, adapter_setup.__class__.__name__
+                        adapter_block.__class__.__name__,
+                        adapter_setup.__class__.__name__,
                     )
                 )
             # Case X: No adapter which is part of this module -> ignore
@@ -302,13 +359,17 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
 
         return hidden_states
 
-    def adapter_split(self, adapter_setup: Split, hidden_states, input_tensor, layer_norm, lvl=0):
+    def adapter_split(
+        self, adapter_setup: Split, hidden_states, input_tensor, layer_norm, lvl=0
+    ):
         """
         Splits the given input between the given adapters.
         """
         # config of _first_ of splitted adapters is significant
         first_adapter = self.adapters[adapter_setup.first()]
-        hidden_states, query, residual = first_adapter.pre_forward(hidden_states, input_tensor, layer_norm)
+        hidden_states, query, residual = first_adapter.pre_forward(
+            hidden_states, input_tensor, layer_norm
+        )
 
         # split hidden representations and residuals at split index
         split_hidden_states = [
@@ -328,17 +389,29 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
             # Case 1: We have a nested stack -> call stack method
             if isinstance(adapter_block, Stack):
                 split_hidden_states[i], _, _ = self.adapter_stack(
-                    adapter_block, split_hidden_states[i], split_input_tensor[i], layer_norm, lvl=lvl + 1
+                    adapter_block,
+                    split_hidden_states[i],
+                    split_input_tensor[i],
+                    layer_norm,
+                    lvl=lvl + 1,
                 )
             # Case 2: We have a nested split -> recursively call split
             elif isinstance(adapter_block, Split):
                 split_hidden_states[i] = self.adapter_split(
-                    adapter_block, split_hidden_states[i], split_input_tensor[i], layer_norm, lvl=lvl + 1
+                    adapter_block,
+                    split_hidden_states[i],
+                    split_input_tensor[i],
+                    layer_norm,
+                    lvl=lvl + 1,
                 )
             # Case 3: We have a nested batch split -> call batch split method
             elif isinstance(adapter_block, BatchSplit):
                 split_hidden_states[i] = self.adapter_batchsplit(
-                    adapter_block, split_hidden_states[i], split_input_tensor[i], layer_norm, lvl=lvl + 1
+                    adapter_block,
+                    split_hidden_states[i],
+                    split_input_tensor[i],
+                    layer_norm,
+                    lvl=lvl + 1,
                 )
             # Case 4: We have a single adapter which is part of this module -> forward pass
             elif adapter_block in self.adapters:
@@ -355,7 +428,8 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
             elif isinstance(adapter_block, AdapterCompositionBlock):
                 raise ValueError(
                     "Invalid adapter setup. Cannot nest {} in {}".format(
-                        adapter_block.__class__.__name__, adapter_setup.__class__.__name__
+                        adapter_block.__class__.__name__,
+                        adapter_setup.__class__.__name__,
                     )
                 )
             # Case X: No adapter which is part of this module -> ignore
@@ -363,7 +437,9 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
         hidden_states = torch.cat(split_hidden_states, dim=1)
         return hidden_states
 
-    def adapter_parallel(self, adapter_setup: Parallel, hidden_states, input_tensor, layer_norm, lvl=0):
+    def adapter_parallel(
+        self, adapter_setup: Parallel, hidden_states, input_tensor, layer_norm, lvl=0
+    ):
         """
         For parallel execution of the adapters on the same input. This means that the input is repeated N times before
         feeding it to the adapters (where N is the number of adapters).
@@ -372,8 +448,12 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
         context = ForwardContext.get_context()
         if not context.adapters_parallelized:
             orig_batch_size = input_tensor.shape[0]
-            input_tensor = input_tensor.repeat(self.config.adapters.active_setup.parallel_channels, 1, 1)
-            hidden_states = hidden_states.repeat(self.config.adapters.active_setup.parallel_channels, 1, 1)
+            input_tensor = input_tensor.repeat(
+                self.config.adapters.active_setup.parallel_channels, 1, 1
+            )
+            hidden_states = hidden_states.repeat(
+                self.config.adapters.active_setup.parallel_channels, 1, 1
+            )
             context.adapters_parallelized = True
         else:
             # The base model should handle replication of input.
@@ -387,7 +467,9 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
 
         # We assume all adapters have the same config
         first_adapter = self.adapters[adapter_setup.first()]
-        hidden_states, _, residual = first_adapter.pre_forward(hidden_states, input_tensor, layer_norm)
+        hidden_states, _, residual = first_adapter.pre_forward(
+            hidden_states, input_tensor, layer_norm
+        )
 
         # sequentially feed different parts of the blown-up batch into different adapters
         children_hidden = []
@@ -418,7 +500,9 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
                 context = ForwardContext.get_context()
                 layer_output = adapter_layer(
                     hidden_states[i * orig_batch_size : (i + 1) * orig_batch_size],
-                    residual_input=residual[i * orig_batch_size : (i + 1) * orig_batch_size],
+                    residual_input=residual[
+                        i * orig_batch_size : (i + 1) * orig_batch_size
+                    ],
                     output_gating=context.output_adapter_gating_scores,
                 )
                 child_hidden_states = layer_output[0]
@@ -433,13 +517,17 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
                 )
             # Case X: No adapter which is part of this module -> ignore
             else:
-                children_hidden.append(hidden_states[i * orig_batch_size : (i + 1) * orig_batch_size])
+                children_hidden.append(
+                    hidden_states[i * orig_batch_size : (i + 1) * orig_batch_size]
+                )
 
         # concatenate all outputs and return
         hidden_states = torch.cat(children_hidden, 0)
         return hidden_states, input_tensor
 
-    def adapter_batchsplit(self, adapter_setup: BatchSplit, hidden_states, input_tensor, layer_norm, lvl=0):
+    def adapter_batchsplit(
+        self, adapter_setup: BatchSplit, hidden_states, input_tensor, layer_norm, lvl=0
+    ):
         if not sum(adapter_setup.batch_sizes) == hidden_states.shape[0]:
             raise IndexError(
                 "The given batch has a size of {} which is not compatible with batch_sizes {}".format(
@@ -448,7 +536,9 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
             )
 
         first_adapter = self.adapters[adapter_setup.first()]
-        hidden_states, _, residual = first_adapter.pre_forward(hidden_states, input_tensor, layer_norm)
+        hidden_states, _, residual = first_adapter.pre_forward(
+            hidden_states, input_tensor, layer_norm
+        )
         children_hidden = []
         for i, adapter_block in enumerate(adapter_setup):
             # compute ids of sequences thet should be passed to the ith adapter
@@ -488,7 +578,6 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
                 children_hidden.append(child)
             # Case 4: We have a single adapter which is part of this module -> forward pass
             elif adapter_block in self.adapters:
-
                 adapter_layer = self.adapters[adapter_block]
                 context = ForwardContext.get_context()
                 layer_output = adapter_layer(
@@ -502,7 +591,8 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
             elif isinstance(adapter_block, AdapterCompositionBlock):
                 raise ValueError(
                     "Invalid adapter setup. Cannot nest {} in {}".format(
-                        adapter_block.__class__.__name__, adapter_setup.__class__.__name__
+                        adapter_block.__class__.__name__,
+                        adapter_setup.__class__.__name__,
                     )
                 )
             # Case X: No adapter which is part of this module -> ignore
@@ -538,9 +628,13 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
                     adapter_setup, hidden_states, residual_input, layer_norm
                 )
             elif isinstance(adapter_setup, Fuse):
-                hidden_states = self.adapter_fusion(adapter_setup, hidden_states, residual_input, layer_norm)
+                hidden_states = self.adapter_fusion(
+                    adapter_setup, hidden_states, residual_input, layer_norm
+                )
             elif isinstance(adapter_setup, Split):
-                hidden_states = self.adapter_split(adapter_setup, hidden_states, residual_input, layer_norm)
+                hidden_states = self.adapter_split(
+                    adapter_setup, hidden_states, residual_input, layer_norm
+                )
             elif isinstance(adapter_setup, Parallel):
                 # notice that we are overriding input tensor here to keep the same dim as hidden_states for the residual
                 # in case we were blowing up the batch for parallel processing of multiple adapters for the same input
@@ -548,12 +642,16 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
                     adapter_setup, hidden_states, residual_input, layer_norm
                 )
             elif isinstance(adapter_setup, BatchSplit):
-                hidden_states = self.adapter_batchsplit(adapter_setup, hidden_states, residual_input, layer_norm)
+                hidden_states = self.adapter_batchsplit(
+                    adapter_setup, hidden_states, residual_input, layer_norm
+                )
             else:
                 raise ValueError(f"Invalid adapter setup {adapter_setup}")
 
             last_adapter = self.adapters[adapter_setup.last()]
-            hidden_states = last_adapter.post_forward(hidden_states, input_hidden_states, residual_input, layer_norm)
+            hidden_states = last_adapter.post_forward(
+                hidden_states, input_hidden_states, residual_input, layer_norm
+            )
 
         elif layer_norm:
             hidden_states = layer_norm(hidden_states + residual_input)

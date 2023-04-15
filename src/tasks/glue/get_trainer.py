@@ -1,18 +1,14 @@
 import json
 import logging
 
+from transformers import (AdapterTrainer, AutoConfig, AutoTokenizer,
+                          EarlyStoppingCallback, Trainer)
+from transformers.adapters.configuration import PfeifferConfig
+from transformers.adapters.training import setup_adapter_training
+
 from arguments import get_args
 from model.utils import TaskType, get_model
 from tasks.glue.dataset import GlueDataset
-from transformers import (
-    AdapterTrainer,
-    AutoConfig,
-    AutoTokenizer,
-    EarlyStoppingCallback,
-    Trainer,
-)
-from transformers.adapters.training import setup_adapter_training
-from transformers.adapters.configuration import PfeifferConfig
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +67,12 @@ def get_trainer(args):
         af_config = json.load(open(fusion_args.fusion_load_dir))
         if data_args.max_train_pct != 100:
             seed = af_config[data_args.task_name][-1]
-            af_config[data_args.task_name] = af_config[data_args.task_name][:-1] + str(data_args.max_train_pct) + "/" + seed
+            af_config[data_args.task_name] = (
+                af_config[data_args.task_name][:-1]
+                + str(data_args.max_train_pct)
+                + "/"
+                + seed
+            )
         if fusion_args.fusion_adapter_config == "pfeiffer":
             adapter_config = PfeifferConfig()
         else:
@@ -89,7 +90,9 @@ def get_trainer(args):
 
         # Add a fusion layer and tell the model to train fusion
         model.add_adapter_fusion(adapter_setup[0], fusion_args.fusion_type)
-        model.train_adapter_fusion(adapter_setup, unfreeze_adapters=fusion_args.fusion_unfreeze_adapters)
+        model.train_adapter_fusion(
+            adapter_setup, unfreeze_adapters=fusion_args.fusion_unfreeze_adapters
+        )
 
     elif adapter_args.train_adapter:
         model.add_classification_head(

@@ -81,9 +81,9 @@ def evaluate_fn(trainer, data_args, dataset):
 def detect_last_checkpoint(training_arguments: transformers.TrainingArguments) -> str:
     checkpoint = None
     if (
-            os.path.isdir(training_arguments.output_dir)
-            and training_arguments.do_train
-            and not training_arguments.overwrite_output_dir
+        os.path.isdir(training_arguments.output_dir)
+        and training_arguments.do_train
+        and not training_arguments.overwrite_output_dir
     ):
         checkpoint = get_last_checkpoint(training_arguments.output_dir)
         if checkpoint is None and len(os.listdir(training_arguments.output_dir)) > 0:
@@ -92,7 +92,7 @@ def detect_last_checkpoint(training_arguments: transformers.TrainingArguments) -
                 "Use --overwrite_output_dir to overcome."
             )
         elif (
-                checkpoint is not None and training_arguments.resume_from_checkpoint is None
+            checkpoint is not None and training_arguments.resume_from_checkpoint is None
         ):
             logger.info(
                 f"Checkpoint detected, resuming training at {checkpoint}. To avoid this behavior, change "
@@ -167,7 +167,7 @@ def main() -> None:
     if fusion_args.train_fusion:
         logger.info("Saving Fusion.")
 
-        model.save_adapter_fusion(training_args.output_dir, ','.join(adapter_setup[0]))
+        model.save_adapter_fusion(training_args.output_dir, ",".join(adapter_setup[0]))
     elif adapter_args.train_adapter:
         logger.info("Saving adapter.")
         model.save_adapter(training_args.output_dir, data_args.task_name)
@@ -246,7 +246,7 @@ if __name__ == "__main__":
             "--seed",
             "0",
             "--overwrite_output_dir",
-            #"--no_cuda",
+            # "--no_cuda",
             "--max_steps",
             "1000",
             "--adapter_config",

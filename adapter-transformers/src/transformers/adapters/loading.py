@@ -8,19 +8,12 @@ from typing import Callable, Mapping, Sequence, Tuple
 import torch
 
 from .configuration import AdapterConfigBase, build_full_config
-from .head_utils import STATIC_TO_FLEX_HEAD_MAP, get_head_config_and_rename_list
-from .utils import (
-    ACTIVATION_RENAME,
-    ADAPTERFUSION_CONFIG_NAME,
-    ADAPTERFUSION_WEIGHTS_NAME,
-    CONFIG_NAME,
-    HEAD_CONFIG_NAME,
-    HEAD_WEIGHTS_NAME,
-    WEIGHTS_NAME,
-    AdapterType,
-    resolve_adapter_path,
-)
-
+from .head_utils import (STATIC_TO_FLEX_HEAD_MAP,
+                         get_head_config_and_rename_list)
+from .utils import (ACTIVATION_RENAME, ADAPTERFUSION_CONFIG_NAME,
+                    ADAPTERFUSION_WEIGHTS_NAME, CONFIG_NAME, HEAD_CONFIG_NAME,
+                    HEAD_WEIGHTS_NAME, WEIGHTS_NAME, AdapterType,
+                    resolve_adapter_path)
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +56,9 @@ class WeightsLoaderHelper:
         if not exists(save_directory):
             mkdir(save_directory)
         else:
-            assert isdir(save_directory), "Saving path should be a directory where the module weights can be saved."
+            assert isdir(
+                save_directory
+            ), "Saving path should be a directory where the module weights can be saved."
 
         # Get the state of all adapter modules for this task
         state_dict = self.state_dict(filter_func)
@@ -105,7 +100,13 @@ class WeightsLoaderHelper:
         def load(module, prefix=""):
             local_metadata = {} if metadata is None else metadata.get(prefix[:-1], {})
             module._load_from_state_dict(
-                state_dict, prefix, local_metadata, True, missing_keys, unexpected_keys, error_msgs
+                state_dict,
+                prefix,
+                local_metadata,
+                True,
+                missing_keys,
+                unexpected_keys,
+                error_msgs,
             )
             for name, child in module._modules.items():
                 if child is not None:
@@ -149,10 +150,16 @@ class WeightsLoaderHelper:
         # Make sure we are able to load base models as well as derived models (with heads)
         start_prefix = ""
         model_to_load = self.model
-        has_prefix_module = any(s.startswith(self.model.base_model_prefix) for s in state_dict.keys())
+        has_prefix_module = any(
+            s.startswith(self.model.base_model_prefix) for s in state_dict.keys()
+        )
         if not hasattr(self.model, self.model.base_model_prefix) and has_prefix_module:
             start_prefix = self.model.base_model_prefix + "."
-        if in_base_model and hasattr(self.model, self.model.base_model_prefix) and not has_prefix_module:
+        if (
+            in_base_model
+            and hasattr(self.model, self.model.base_model_prefix)
+            and not has_prefix_module
+        ):
             model_to_load = self.model.base_model
 
         missing_keys, unexpected_keys = self._load_module_state_dict(
@@ -162,13 +169,21 @@ class WeightsLoaderHelper:
         missing_keys = [k for k in missing_keys if filter_func(k)]
         if len(missing_keys) > 0:
             logger.info(
-                "Some module weights could not be found in loaded weights file: {}".format(", ".join(missing_keys))
+                "Some module weights could not be found in loaded weights file: {}".format(
+                    ", ".join(missing_keys)
+                )
             )
         if self.model._keys_to_ignore_on_load_unexpected:
-            unexpected_keys = [k for k in unexpected_keys if k not in self.model._keys_to_ignore_on_load_unexpected]
+            unexpected_keys = [
+                k
+                for k in unexpected_keys
+                if k not in self.model._keys_to_ignore_on_load_unexpected
+            ]
         if len(unexpected_keys) > 0:
             logger.info(
-                "Some weights of the state_dict could not be loaded into model: {}".format(", ".join(unexpected_keys))
+                "Some weights of the state_dict could not be loaded into model: {}".format(
+                    ", ".join(unexpected_keys)
+                )
             )
 
         if isinstance(loading_info, dict):
@@ -248,13 +263,17 @@ class WeightsLoader(ABC):
         meta_dict = kwargs.pop("meta_dict", None)
 
         # Save the adapter configuration
-        self.weights_helper.save_weights_config(save_directory, config_dict, meta_dict=meta_dict)
+        self.weights_helper.save_weights_config(
+            save_directory, config_dict, meta_dict=meta_dict
+        )
 
         # Save adapter weights
         filter_func = self.filter_func(name)
         self.weights_helper.save_weights(save_directory, filter_func)
 
-    def load(self, save_directory, load_as=None, loading_info=None, **kwargs) -> Tuple[str, str]:
+    def load(
+        self, save_directory, load_as=None, loading_info=None, **kwargs
+    ) -> Tuple[str, str]:
         """
         Loads the module weights from the given directory. Override this method for additional loading actions. If
         adding the loaded weights to the model passed to the loader class requires adding additional modules, this
@@ -269,7 +288,9 @@ class WeightsLoader(ABC):
             and the name of the loaded weights.
         """
         if not exists(join(save_directory, self.weights_helper.weights_name)):
-            raise ValueError("Loading path should be a directory where the weights are saved.")
+            raise ValueError(
+                "Loading path should be a directory where the weights are saved."
+            )
 
         # Load config
         config = self.weights_helper.load_weights_config(save_directory)
@@ -281,7 +302,10 @@ class WeightsLoader(ABC):
         else:
             rename_func = None
         self.weights_helper.load_weights(
-            save_directory, filter_func, rename_func=rename_func, loading_info=loading_info
+            save_directory,
+            filter_func,
+            rename_func=rename_func,
+            loading_info=loading_info,
         )
 
         return save_directory, load_as or config["name"]
@@ -331,15 +355,21 @@ class AdapterLoader(WeightsLoader):
     # catch this case here when loading pretrained adapters.
     def _fix_legacy_config(self, adapter_name, missing_keys):
         if self.adapter_type == AdapterType.text_task:
-            inv_adapter_keys = [x for x in missing_keys if f"invertible_adapters.{adapter_name}." in x]
+            inv_adapter_keys = [
+                x for x in missing_keys if f"invertible_adapters.{adapter_name}." in x
+            ]
             if len(inv_adapter_keys) > 0:
                 del self.model.base_model.invertible_adapters[adapter_name]
                 missing_keys = [k for k in missing_keys if k not in inv_adapter_keys]
                 # remove invertible_adapter from config
                 adapter_config_name = self.model.config.adapters.adapters[adapter_name]
                 if adapter_config_name in self.model.config.adapters.config_map:
-                    adapter_config = self.model.config.adapters.config_map[adapter_config_name]
-                    self.model.config.adapters.config_map[adapter_config_name] = adapter_config.replace(
+                    adapter_config = self.model.config.adapters.config_map[
+                        adapter_config_name
+                    ]
+                    self.model.config.adapters.config_map[
+                        adapter_config_name
+                    ] = adapter_config.replace(
                         inv_adapter=None, inv_adapter_reduction_factor=None
                     )
         return missing_keys
@@ -348,8 +378,14 @@ class AdapterLoader(WeightsLoader):
         return (
             lambda k: self._rename_legacy_weights(k)
             .replace("adapters.{}.".format(old_name), "adapters.{}.".format(new_name))
-            .replace(".prefix_tunings.{}.".format(old_name), ".prefix_tunings.{}.".format(new_name))
-            .replace(".prefix_gates.{}.".format(old_name), ".prefix_gates.{}.".format(new_name))
+            .replace(
+                ".prefix_tunings.{}.".format(old_name),
+                ".prefix_tunings.{}.".format(new_name),
+            )
+            .replace(
+                ".prefix_gates.{}.".format(old_name),
+                ".prefix_gates.{}.".format(new_name),
+            )
             .replace(".loras.{}.".format(old_name), ".loras.{}.".format(new_name))
         )
 
@@ -383,7 +419,9 @@ class AdapterLoader(WeightsLoader):
         )
 
         # Save the adapter configuration
-        self.weights_helper.save_weights_config(save_directory, config_dict, meta_dict=meta_dict)
+        self.weights_helper.save_weights_config(
+            save_directory, config_dict, meta_dict=meta_dict
+        )
 
         # Save adapter weights
         filter_func = self.filter_func(config_dict["name"])
@@ -399,7 +437,7 @@ class AdapterLoader(WeightsLoader):
         loading_info=None,
         leave_out=None,
         set_active=False,
-        **kwargs
+        **kwargs,
     ):
         """
         Loads a pre-trained pytorch adapter module from the local file system or a remote location.
@@ -434,14 +472,17 @@ class AdapterLoader(WeightsLoader):
         # Load config of adapter
         config = self.weights_helper.load_weights_config(resolved_folder)
         if self.adapter_type and "type" in config:
-            assert config["type"] == self.adapter_type, "Loaded adapter has to be a {} adapter.".format(
-                self.adapter_type
-            )
+            assert (
+                config["type"] == self.adapter_type
+            ), "Loaded adapter has to be a {} adapter.".format(self.adapter_type)
         elif "type" in config:
             self.adapter_type = config["type"]
         # post-loading drop of layers
         if leave_out is not None:
-            if "leave_out" in config["config"] and config["config"]["leave_out"] is not None:
+            if (
+                "leave_out" in config["config"]
+                and config["config"]["leave_out"] is not None
+            ):
                 # The conversion to a set and then back to a list removes all duplicates
                 leave_out = list(set(leave_out + config["config"]["leave_out"]))
             config["config"]["leave_out"] = leave_out
@@ -449,7 +490,9 @@ class AdapterLoader(WeightsLoader):
         adapter_name = load_as or config["name"]
         # If the adapter is not part of the model, add it
         if adapter_name not in self.model.config.adapters.adapters:
-            self.model.add_adapter(adapter_name, config=config["config"], set_active=set_active)
+            self.model.add_adapter(
+                adapter_name, config=config["config"], set_active=set_active
+            )
         else:
             logger.warning("Overwriting existing adapter '{}'.".format(adapter_name))
 
@@ -457,7 +500,11 @@ class AdapterLoader(WeightsLoader):
         filter_func = self.filter_func(adapter_name)
         rename_func = self.rename_func(config["name"], adapter_name)
         missing_keys, _ = self.weights_helper.load_weights(
-            resolved_folder, filter_func, rename_func=rename_func, loading_info=loading_info, in_base_model=True
+            resolved_folder,
+            filter_func,
+            rename_func=rename_func,
+            loading_info=loading_info,
+            in_base_model=True,
         )
         missing_keys = self._fix_legacy_config(adapter_name, missing_keys)
         if isinstance(loading_info, Mapping):
@@ -481,7 +528,8 @@ class AdapterFusionLoader(WeightsLoader):
 
     def rename_func(self, old_name, new_name):
         return lambda k: k.replace(
-            "adapter_fusion_layer.{}".format(old_name), "adapter_fusion_layer.{}".format(new_name)
+            "adapter_fusion_layer.{}".format(old_name),
+            "adapter_fusion_layer.{}".format(new_name),
         )
 
     def save(self, save_directory: str, name: str, meta_dict=None):
@@ -503,7 +551,9 @@ class AdapterFusionLoader(WeightsLoader):
         if not exists(save_directory):
             mkdir(save_directory)
         else:
-            assert isdir(save_directory), "Saving path should be a directory where the head can be saved."
+            assert isdir(
+                save_directory
+            ), "Saving path should be a directory where the head can be saved."
 
         adapter_fusion_config = self.model.config.adapters.get_fusion(name)
 
@@ -515,7 +565,9 @@ class AdapterFusionLoader(WeightsLoader):
             model_name=self.model.model_name,
             model_class=self.model.__class__.__name__,
         )
-        self.weights_helper.save_weights_config(save_directory, config_dict, meta_dict=meta_dict)
+        self.weights_helper.save_weights_config(
+            save_directory, config_dict, meta_dict=meta_dict
+        )
 
         # Save head weights
         filter_func = self.filter_func(name)
@@ -535,9 +587,13 @@ class AdapterFusionLoader(WeightsLoader):
         """
         if not exists(join(save_directory, ADAPTERFUSION_WEIGHTS_NAME)):
             if self.error_on_missing:
-                raise ValueError("Loading path should be a directory where AdapterFusion is saved.")
+                raise ValueError(
+                    "Loading path should be a directory where AdapterFusion is saved."
+                )
             else:
-                logger.debug("No matching adapter fusion found in '{}'".format(save_directory))
+                logger.debug(
+                    "No matching adapter fusion found in '{}'".format(save_directory)
+                )
                 return None, None
 
         config = self.weights_helper.load_weights_config(save_directory)
@@ -545,10 +601,17 @@ class AdapterFusionLoader(WeightsLoader):
         adapter_fusion_name = load_as or config["name"]
         if adapter_fusion_name not in self.model.config.adapters.fusions:
             self.model.add_adapter_fusion(
-                adapter_fusion_name, config["config"], overwrite_ok=True, set_active=kwargs.pop("set_active", True)
+                adapter_fusion_name,
+                config["config"],
+                overwrite_ok=True,
+                set_active=kwargs.pop("set_active", True),
             )
         else:
-            logger.warning("Overwriting existing adapter fusion module '{}'".format(adapter_fusion_name))
+            logger.warning(
+                "Overwriting existing adapter fusion module '{}'".format(
+                    adapter_fusion_name
+                )
+            )
 
         # Load AdapterFusion weights
         filter_func = self.filter_func(adapter_fusion_name)
@@ -557,7 +620,10 @@ class AdapterFusionLoader(WeightsLoader):
         else:
             rename_func = None
         self.weights_helper.load_weights(
-            save_directory, filter_func, rename_func=rename_func, loading_info=loading_info
+            save_directory,
+            filter_func,
+            rename_func=rename_func,
+            loading_info=loading_info,
         )
 
         return save_directory, adapter_fusion_name
@@ -594,12 +660,17 @@ class PredictionHeadLoader(WeightsLoader):
                 )
 
         if head_name:
-            return lambda x: not x.startswith(self.model.base_model_prefix) and "heads.{}".format(head_name) in x
+            return (
+                lambda x: not x.startswith(self.model.base_model_prefix)
+                and "heads.{}".format(head_name) in x
+            )
         else:
             return lambda x: not x.startswith(self.model.base_model_prefix)
 
     def rename_func(self, old_name, new_name):
-        return lambda k: k.replace("heads.{}".format(old_name), "heads.{}".format(new_name))
+        return lambda k: k.replace(
+            "heads.{}".format(old_name), "heads.{}".format(new_name)
+        )
 
     def save(self, save_directory: str, name: str = None):
         """
@@ -616,7 +687,9 @@ class PredictionHeadLoader(WeightsLoader):
                     if self.error_on_missing:
                         raise ValueError(f"Unknown head_name '{name}'.")
                     else:
-                        logger.debug(f"No prediction head with name '{name}' available.")
+                        logger.debug(
+                            f"No prediction head with name '{name}' available."
+                        )
                         return
             else:
                 # we haven't found a prediction head configuration, so we assume there is only one (unnamed) head
@@ -626,7 +699,9 @@ class PredictionHeadLoader(WeightsLoader):
         if not exists(save_directory):
             mkdir(save_directory)
         else:
-            assert isdir(save_directory), "Saving path should be a directory where the head can be saved."
+            assert isdir(
+                save_directory
+            ), "Saving path should be a directory where the head can be saved."
 
         # if we use a custom head, save it
         if name and hasattr(self.model, "heads"):
@@ -669,9 +744,13 @@ class PredictionHeadLoader(WeightsLoader):
         """
         if not exists(join(save_directory, HEAD_WEIGHTS_NAME)):
             if self.error_on_missing:
-                raise ValueError("Loading path should be a directory where the head is saved.")
+                raise ValueError(
+                    "Loading path should be a directory where the head is saved."
+                )
             else:
-                logger.info("No matching prediction head found in '{}'".format(save_directory))
+                logger.info(
+                    "No matching prediction head found in '{}'".format(save_directory)
+                )
                 return None, None
         # label2id map used to override default
         custom_id2label = kwargs.pop("id2label", None)
@@ -687,7 +766,10 @@ class PredictionHeadLoader(WeightsLoader):
         if isfile(join(save_directory, HEAD_CONFIG_NAME)):
             config = self.weights_helper.load_weights_config(save_directory)
             # make sure that the model class of the loaded head matches the current class
-            if not self.convert_to_flex_head and self.model.__class__.__name__ != config["model_class"]:
+            if (
+                not self.convert_to_flex_head
+                and self.model.__class__.__name__ != config["model_class"]
+            ):
                 error_msg = (
                     f"Model class '{config['model_class']}' of found prediction head does not match current model"
                     " class."
@@ -705,7 +787,9 @@ class PredictionHeadLoader(WeightsLoader):
                     head_name = load_as or config["name"]
                     head_config = config["config"]
                 elif config["model_class"].endswith("ModelWithHeads"):
-                    this_class = self.model.__class__.__name__.replace("AdapterModel", "")
+                    this_class = self.model.__class__.__name__.replace(
+                        "AdapterModel", ""
+                    )
                     other_class = config["model_class"].replace("ModelWithHeads", "")
                     if this_class == other_class:
                         head_name = load_as or config["name"]
@@ -716,13 +800,19 @@ class PredictionHeadLoader(WeightsLoader):
                             " flex head."
                         )
                 # try to convert a static head to a flex head
-                elif self.convert_to_flex_head and config["model_class"] in STATIC_TO_FLEX_HEAD_MAP:
+                elif (
+                    self.convert_to_flex_head
+                    and config["model_class"] in STATIC_TO_FLEX_HEAD_MAP
+                ):
                     head_name = kwargs.pop("main_load_name", load_as)
                     if head_name is None:
                         raise ValueError(
                             "Could not identify a name for the prediction head to be loaded. Please specify 'load_as'."
                         )
-                    head_config, conversion_rename_func = get_head_config_and_rename_list(
+                    (
+                        head_config,
+                        conversion_rename_func,
+                    ) = get_head_config_and_rename_list(
                         config["model_class"],
                         head_name,
                         custom_label2id or config.get("label2id"),
@@ -739,20 +829,33 @@ class PredictionHeadLoader(WeightsLoader):
                 # make sure the label2id map is correct
                 custom_label2id = custom_label2id or head_config.get("label2id", None)
                 if custom_label2id:
-                    head_config["id2label"] = {int(id_): label for label, id_ in custom_label2id.items()}
-                    head_config["label2id"] = {label: int(id_) for label, id_ in custom_label2id.items()}
+                    head_config["id2label"] = {
+                        int(id_): label for label, id_ in custom_label2id.items()
+                    }
+                    head_config["label2id"] = {
+                        label: int(id_) for label, id_ in custom_label2id.items()
+                    }
 
                 self.model.add_prediction_head_from_config(
-                    head_name, head_config, overwrite_ok=True, set_active=kwargs.pop("set_active", True)
+                    head_name,
+                    head_config,
+                    overwrite_ok=True,
+                    set_active=kwargs.pop("set_active", True),
                 )
             # model with static head
             else:
                 if self.convert_to_flex_head:
-                    raise ValueError("Cannot set convert_flex_head on model class with static head.")
+                    raise ValueError(
+                        "Cannot set convert_flex_head on model class with static head."
+                    )
                 custom_label2id = custom_label2id or config.get("label2id", None)
                 if custom_label2id:
-                    self.model.config.id2label = {int(id_): label for label, id_ in custom_label2id.items()}
-                    self.model.config.label2id = {label: int(id_) for label, id_ in custom_label2id.items()}
+                    self.model.config.id2label = {
+                        int(id_): label for label, id_ in custom_label2id.items()
+                    }
+                    self.model.config.label2id = {
+                        label: int(id_) for label, id_ in custom_label2id.items()
+                    }
 
         # Load head weights
         filter_func = self.filter_func(head_name)
@@ -762,7 +865,10 @@ class PredictionHeadLoader(WeightsLoader):
         if conversion_rename_func:
             rename_funcs.append(conversion_rename_func)
         self.weights_helper.load_weights(
-            save_directory, filter_func, rename_func=rename_funcs, loading_info=loading_info
+            save_directory,
+            filter_func,
+            rename_func=rename_funcs,
+            loading_info=loading_info,
         )
 
         return save_directory, head_name

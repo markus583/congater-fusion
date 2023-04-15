@@ -47,7 +47,7 @@ class DataTrainingArguments:
         default=None,
         metadata={
             "help": "The name of the task to train on: "
-                    + ", ".join(task_to_keys.keys())
+            + ", ".join(task_to_keys.keys())
         },
     )
     dataset_name: Optional[str] = field(
@@ -153,7 +153,7 @@ class DataTrainingArguments:
             ], "`train_file` should be a csv or a json file."
             validation_extension = self.validation_file.split(".")[-1]
             assert (
-                    validation_extension == train_extension
+                validation_extension == train_extension
             ), "`validation_file` should have the same extension (csv or json) as `train_file`."
 
 
@@ -234,39 +234,42 @@ class FusionArguments:
     into argparse arguments to be able to specify them on
     the command line.
     """
+
     train_fusion: bool = field(
-        default=False,
-        metadata={"help": "Whether to train fusion or not."}
+        default=False, metadata={"help": "Whether to train fusion or not."}
     )
     fusion_type: str = field(
-        default="dynamic",
-        metadata={"help": "Type of fusion to perform."}
+        default="dynamic", metadata={"help": "Type of fusion to perform."}
     )
     fusion_with_head: bool = field(
-        default=False,
-        metadata={"help": "Whether to include the head in the fusion."}
+        default=False, metadata={"help": "Whether to include the head in the fusion."}
     )
 
     fusion_adapter_config: str = field(
         default="pfeiffer",
-        metadata={"help": "Type of adapter config to use for fusion."}
+        metadata={"help": "Type of adapter config to use for fusion."},
     )
 
     fusion_load_dir: str = field(
         default="scripts/st-a_fusion/af_config.json",
-        metadata={"help": "Json specifying paths to adapters to be loaded fur fusion."}
+        metadata={"help": "Json specifying paths to adapters to be loaded fur fusion."},
     )
 
     fusion_unfreeze_adapters: str = field(
-        default=None,
-        metadata={"help": "Whether to unfreeze adapters."}
+        default=None, metadata={"help": "Whether to unfreeze adapters."}
     )
 
 
 def get_args():
     """Parse all the args."""
     parser = HfArgumentParser(
-        (ModelArguments, DataTrainingArguments, TrainingArguments, AdapterArguments, FusionArguments)
+        (
+            ModelArguments,
+            DataTrainingArguments,
+            TrainingArguments,
+            AdapterArguments,
+            FusionArguments,
+        )
     )
 
     args = parser.parse_args_into_dataclasses()
