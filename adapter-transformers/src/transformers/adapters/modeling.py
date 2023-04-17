@@ -47,6 +47,7 @@ class Adapter(nn.Module):
         self.add_layer_norm_after = config["ln_after"]
         self.adapter_residual_before_ln = config["adapter_residual_before_ln"]
         self.use_gating = config["use_gating"]
+        self.use_tsigmoid_gating = config["use_tsigmoid_gating"]
 
         # Params related to input & output of adapter
         self.residual_before_ln = config["residual_before_ln"]
@@ -129,8 +130,15 @@ class Adapter(nn.Module):
         # if we want to initialize with the bert strategy then this function is called for all the linear layers
         if config["init_weights"] == "bert":
             self.adapter_down.apply(self.init_bert_weights)
-            # Congater: only one W, no up-projection
-            # self.adapter_up.apply(self.init_bert_weights)
+            self.adapter_up.apply(self.init_bert_weights)
+            if self.use_gating:
+                self.gate.apply(self.init_bert_weights)
+        elif config["init_weights"] == "congater-zeros":
+            # idea is to keep identity mapping at beginning
+            # because of gating with the (t-)sigmoid, this means we can set the weights to (almost) zeros and bias to
+            # a high value
+            self.adapter_down.apply(self.init_bert_weights)
+            self.adapter_up.apply(self.init_congater_custom_weights)
             if self.use_gating:
                 self.gate.apply(self.init_bert_weights)
         elif config["init_weights"] == "mam_adapter":
@@ -142,9 +150,7 @@ class Adapter(nn.Module):
                 if self.use_gating:
                     self.gate.apply(self.init_bert_weights)
         else:
-            raise ValueError(
-                "Unknown init_weights type: {}".format(config["init_weights"])
-            )
+            raise ValueError("Unknown init_weights type: {}".format(config["init_weights"]))
 
     def pre_forward(
         self,
@@ -189,12 +195,11 @@ class Adapter(nn.Module):
     def forward(self, x, residual_input, output_gating=False):
         if not self.only_one_w:
             down = self.adapter_down(x)
-
             up = self.adapter_up(down)
             up = up * self.scaling
             output = up
         else:
-            # Congater
+            # Congater (old)
             output = self.adapter_down(x) * self.scaling
             down = None
             up = None
@@ -206,9 +211,11 @@ class Adapter(nn.Module):
             gate = torch.sigmoid(self.gate(x))
             gate = torch.mean(gate, dim=1).unsqueeze(-1)
             output = output * gate
+        elif self.use_tsigmoid_gating:
+            output = output * x
 
-        # apply residual connection before layer norm if configured in this way
         if not self.kill_adapter_residual:
+            # apply residual connection before layer norm if configured in this way
             if self.adapter_residual_before_ln:
                 output = output + residual_input
 
@@ -241,7 +248,6 @@ class Adapter(nn.Module):
         Returns:
             The modified hidden states.
         """
-        # TODO: remove residual for congater
         if self.original_ln_after:
             if layer_norm:
                 hidden_states = layer_norm(hidden_states + input_tensor)
@@ -262,6 +268,14 @@ class Adapter(nn.Module):
             module.weight.data.fill_(1.0)
         if isinstance(module, nn.Linear) and module.bias is not None:
             module.bias.data.zero_()
+
+    @staticmethod
+    def init_congater_custom_weights(module):
+        """Initialize the weights."""
+        if isinstance(module, (nn.Linear, nn.Embedding)):
+            # TODO: try normal distribution with very small std
+            module.weight.data.zero_()
+            module.bias.data.fill_(4.0)
 
 
 class ParallelAdapter(Adapter):

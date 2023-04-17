@@ -222,7 +222,9 @@ class AdapterConfig(AdapterConfigBase):
         kill_adapter_residual (:obj:`bool`, optional):
             If True, do not apply the residual connection around the adapter modules.
             Defaults to False
-
+        use_tsigmoid_gating (:obj:`bool`, optional):
+            If True, use the t-sigmoid output for gating.
+            Defaults to False
     """
 
     # Required options
@@ -262,6 +264,7 @@ class AdapterConfig(AdapterConfigBase):
     apply_tsigmoid: Optional[bool] = False
     only_one_w: Optional[bool] = False
     kill_adapter_residual: Optional[bool] = False
+    use_tsigmoid_gating : Optional[bool] = False
 
     # We want to emulate a simple form of immutability while keeping the ability to add custom attributes.
     # Therefore, we don't allow changing attribute values if set once.
@@ -302,13 +305,15 @@ class PfeifferConfig(AdapterConfig):
 class OriginalCongaterConfig(PfeifferConfig):
     """
     The original ConGater architecture proposed by Masoudian et al. (2023).
-    It computes: g(W * h + b), where g = t-sigmoid
+    It computes: g(W_u(tanh(W_d * x)), where g = t-sigmoid
     """
 
-    non_linearity: str = "linear"
+    non_linearity: str = "tanh"
     apply_tsigmoid: bool = True
-    only_one_w: bool = True
+    # only_one_w: bool = True (no longer latest version --> no longer relevant!)
     kill_adapter_residual: bool = True
+    use_tsigmoid_gating: bool = True
+    # init_weights: str = "congater-zeros"
 
 
 @dataclass(eq=False)
