@@ -3,7 +3,7 @@ import os
 import random
 import sys
 
-sys.path.append("../adapter-transformers/src")
+# sys.path.append("../adapter-transformers/src")
 
 import datasets
 import transformers
@@ -58,23 +58,23 @@ def evaluate_fn(trainer, data_args, dataset):
         combined = {}
 
     for ds, task in zip(test_datasets, tasks):
-        metrics = trainer.evaluate(eval_dataset=ds)
+        metrics = trainer.evaluate(eval_dataset=ds, metric_key_prefix="test")
 
         max_eval_samples = (
             data_args.max_eval_samples
             if data_args.max_eval_samples is not None
             else len(ds)
         )
-        metrics["eval_samples"] = min(max_eval_samples, len(ds))
+        metrics["test_samples"] = min(max_eval_samples, len(ds))
 
         if task == "mnli-mm":
             metrics = {k + "_mm": v for k, v in metrics.items()}
         if task is not None and "mnli" in task:
             combined.update(metrics)
 
-        trainer.log_metrics("eval", metrics)
+        trainer.log_metrics("test", metrics)
         trainer.save_metrics(
-            "eval", combined if task is not None and "mnli" in task else metrics
+            "test", combined if task is not None and "mnli" in task else metrics
         )
 
 
@@ -124,12 +124,20 @@ def setup_logging(training_args: transformers.TrainingArguments) -> None:
 def main() -> None:
     args = get_args()
     model_args, data_args, training_args, adapter_args, fusion_args = args
-    if fusion_args.train_fusion:
+
+    print(adapter_args.train_adapter)
+    if adapter_args.train_adapter:
+        if adapter_args.adapter_config == "pfeiffer":
+            WANDBPROJECT = "THESIS_st-a"
+        else:
+            WANDBPROJECT = "THESIS_ct_1-a"
+    elif fusion_args.train_fusion:
         WANDBPROJECT = "THESIS_st-a-fusion"
-    elif adapter_args.train_adapter:
-        WANDBPROJECT = "THESIS_st-a"
-    else:
+    elif not adapter_args.train_adapter and not fusion_args.train_fusion:
         WANDBPROJECT = "THESIS_full"
+    else:
+        raise NotImplementedError
+
     os.environ["WANDB_PROJECT"] = WANDBPROJECT
     os.environ[
         "WANDB_NAME"
@@ -246,11 +254,11 @@ if __name__ == "__main__":
             "--seed",
             "0",
             "--overwrite_output_dir",
-            # "--no_cuda",
+            "--no_cuda",
             "--max_steps",
             "1000",
             "--adapter_config",
-            "congater-original"
+            "congater-original[reduction_factor=4]",
             # "compacter"
         ]
     main()

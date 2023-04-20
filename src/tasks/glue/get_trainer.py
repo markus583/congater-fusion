@@ -1,8 +1,13 @@
 import json
 import logging
 
-from transformers import (AdapterTrainer, AutoConfig, AutoTokenizer,
-                          EarlyStoppingCallback, Trainer)
+from transformers import (
+    AdapterTrainer,
+    AutoConfig,
+    AutoTokenizer,
+    EarlyStoppingCallback,
+    Trainer,
+)
 from transformers.adapters.configuration import PfeifferConfig
 from transformers.adapters.training import setup_adapter_training
 

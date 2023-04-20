@@ -3,8 +3,12 @@ import logging
 import evaluate
 import numpy as np
 from datasets.load import load_dataset, load_metric
-from transformers import (AutoTokenizer, DataCollatorWithPadding,
-                          EvalPrediction, default_data_collator)
+from transformers import (
+    AutoTokenizer,
+    DataCollatorWithPadding,
+    EvalPrediction,
+    default_data_collator,
+)
 
 task_to_keys = {
     "cola": ("sentence", None),

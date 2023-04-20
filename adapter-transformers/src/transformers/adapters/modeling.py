@@ -133,12 +133,13 @@ class Adapter(nn.Module):
             self.adapter_up.apply(self.init_bert_weights)
             if self.use_gating:
                 self.gate.apply(self.init_bert_weights)
-        elif config["init_weights"] == "congater-zeros":
+        elif isinstance(config["init_weights"], float):
             # idea is to keep identity mapping at beginning
             # because of gating with the (t-)sigmoid, this means we can set the weights to (almost) zeros and bias to
             # a high value
             self.adapter_down.apply(self.init_bert_weights)
-            self.adapter_up.apply(self.init_congater_custom_weights)
+            nn.init.zeros_(self.adapter_up.weight)
+            nn.init.ones_(self.adapter_up.bias) * config["init_weights"]
             if self.use_gating:
                 self.gate.apply(self.init_bert_weights)
         elif config["init_weights"] == "mam_adapter":
@@ -209,6 +210,7 @@ class Adapter(nn.Module):
         if self.use_gating:
             # x.shape = (batch_size, seq_len, hidden_size)
             gate = torch.sigmoid(self.gate(x))
+            # take mean over sequence length, add dimension --> (batch_size, 1, 1)
             gate = torch.mean(gate, dim=1).unsqueeze(-1)
             output = output * gate
         elif self.use_tsigmoid_gating:
@@ -268,14 +270,6 @@ class Adapter(nn.Module):
             module.weight.data.fill_(1.0)
         if isinstance(module, nn.Linear) and module.bias is not None:
             module.bias.data.zero_()
-
-    @staticmethod
-    def init_congater_custom_weights(module):
-        """Initialize the weights."""
-        if isinstance(module, (nn.Linear, nn.Embedding)):
-            # TODO: try normal distribution with very small std
-            module.weight.data.zero_()
-            module.bias.data.fill_(4.0)
 
 
 class ParallelAdapter(Adapter):

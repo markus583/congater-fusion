@@ -313,7 +313,7 @@ class OriginalCongaterConfig(PfeifferConfig):
     # only_one_w: bool = True (no longer latest version --> no longer relevant!)
     kill_adapter_residual: bool = True
     use_tsigmoid_gating: bool = True
-    # init_weights: str = "congater-zeros"
+    init_weights: Union[str, float] = "bert"
 
 
 @dataclass(eq=False)

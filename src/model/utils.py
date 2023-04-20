@@ -1,11 +1,18 @@
 from enum import Enum
 
-from transformers import (AutoConfig, AutoModelForMultipleChoice,
-                          AutoModelForQuestionAnswering,
-                          AutoModelForSequenceClassification,
-                          AutoModelForTokenClassification)
-from transformers.adapters import (AdapterArguments, AdapterTrainer,
-                                   AutoAdapterModel, setup_adapter_training)
+from transformers import (
+    AutoConfig,
+    AutoModelForMultipleChoice,
+    AutoModelForQuestionAnswering,
+    AutoModelForSequenceClassification,
+    AutoModelForTokenClassification,
+)
+from transformers.adapters import (
+    AdapterArguments,
+    AdapterTrainer,
+    AutoAdapterModel,
+    setup_adapter_training,
+)
 
 
 class TaskType(Enum):

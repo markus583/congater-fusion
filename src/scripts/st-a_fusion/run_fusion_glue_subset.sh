@@ -22,7 +22,7 @@ if [ "${SEED_ARRAY[0]}" -eq -1 ]; then
 fi
 
 
-for TASK in sst2 cola stsb qnli mnli qqp; do
+for TASK in mnli qqp; do
   for SEED in "${SEED_ARRAY[@]}"; do
     if [ $TASK = "cola" ]; then
         EVAL_METRIC="eval_matthews_correlation"

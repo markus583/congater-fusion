@@ -29,11 +29,20 @@ import numpy as np
 import transformers
 from datasets import load_dataset
 from hf_arguments import DataTrainingArguments, ModelArguments
-from transformers import (AutoConfig, AutoModelForSequenceClassification,
-                          AutoTokenizer, DataCollatorWithPadding,
-                          EarlyStoppingCallback, EvalPrediction,
-                          HfArgumentParser, PretrainedConfig, Trainer,
-                          TrainingArguments, default_data_collator, set_seed)
+from transformers import (
+    AutoConfig,
+    AutoModelForSequenceClassification,
+    AutoTokenizer,
+    DataCollatorWithPadding,
+    EarlyStoppingCallback,
+    EvalPrediction,
+    HfArgumentParser,
+    PretrainedConfig,
+    Trainer,
+    TrainingArguments,
+    default_data_collator,
+    set_seed,
+)
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version
 from transformers.utils.versions import require_version
