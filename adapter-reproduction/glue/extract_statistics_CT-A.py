@@ -5,7 +5,9 @@ import warnings
 import numpy as np
 import pandas as pd
 
-warnings.filterwarnings('ignore')
+warnings.filterwarnings("ignore")
+os.chdir(os.path.dirname(os.path.realpath(__file__)))
+
 # runs are located in:
 # runs/st-a/$TASK_NAME/$MODEL_NAME/$SEED/checkpoint-xxxxx
 
@@ -16,13 +18,47 @@ warnings.filterwarnings('ignore')
 MODEL_NAME = "bert-base-uncased"
 OUT_FILES = [
     "results/CT-A_bert-init-RELU.csv",
+    "results/CT-A_bert-init-RELU-LN_BEFORE.csv",
+    "results/CT-A_bert-init-RELU-LN_AFTER.csv",
     "results/CT-A_bert-init-RF4.csv",
     "results/CT-A_bert-init-RELU-PLUS.csv",
+    "results/CT-A_bert-init-RELU-PLUS-LN_AFTER.csv",
+    "results/CT-A_bert-init-RELU-PLUS-LN_BEFORE.csv",
+    "results/CT-A_bert-init-RELU-PLUS-LN_BEFORE-AFTER.csv",
+    "results/CT-A_custom-init-V2-RELU-PLUS.csv",
+    "results/CT-A_bert-init-RELU-PLUS-LN_BEFORE_0-1.csv",
+    "results/CT-A_bert-init-RELU-PLUS-LN_BEFORE_0-0.csv",
+    "results/CT-A_bert-init-SWISH-PLUS-LN_BEFORE.csv",
+    "results/CT-A_bert-init-GELU-PLUS-LN_BEFORE.csv",
+    "results/CT-A_bert-init-RELU-gate_adapter.csv",
+    "results/CT-A_bert-init-RELU-LN_AFTER-gate_adapter.csv",
+    "results/CT-A_bert-init-RELU-LN_BEFORE-gate_adapter.csv",
+    "results/CT-A_bert-init-RELU-LN_AB-gate_adapter.csv",
+    "results/CT-A_bert-init-RELU-PLUS-gate_adapter.csv",
+    "results/CT-A_bert-init-RELU-PLUS-LN_BEFORE-gate_adapter.csv",
+    "results/CT-A_bert-init-RELU-PLUS-LN_AFTER-gate_adapter.csv",
 ]
 DIR_NAMES = [
     "ct_0-a-RELU",
+    "ct_0-a-RELU-LN_BEFORE",
+    "ct_0-a-RELU-LN_AFTER",
     "ct_0-a-rf4",
-    "ct_0-a-RELU-PLUS"
+    "ct_0-a-RELU-PLUS",
+    "ct_0-a-RELU-PLUS-LN_AFTER",
+    "ct_0-a-RELU-PLUS-LN_BEFORE",
+    "ct_0-a-RELU-PLUS-LN_BEFORE-AFTER",
+    "ct_1-a-V2-RELU-PLUS",
+    "ct_0-a-RELU-PLUS-LN_BEFORE_0-1",
+    "ct_0-a-RELU-PLUS-LN_BEFORE_0-0",
+    "ct_0-a-SWISH-PLUS-LN_BEFORE",
+    "ct_0-a-GELU-PLUS-LN_BEFORE",
+    "ct_2-a-RELU-gate_adapter",
+    "ct_2-a-RELU-LN_AFTER-gate_adapter",
+    "ct_2-a-RELU-LN_BEFORE-gate_adapter",
+    "ct_2-a-RELU-LN_AB-gate_adapter",
+    "ct_2-a-RELU-PLUS-gate_adapter",
+    "ct_2-a-RELU-PLUS-LN_BEFORE-gate_adapter",
+    "ct_2-a-RELU-PLUS-LN_AFTER-gate_adapter"
 ]
 
 for output_file, dir_name in zip(OUT_FILES, DIR_NAMES):
@@ -52,7 +88,9 @@ for output_file, dir_name in zip(OUT_FILES, DIR_NAMES):
             continue
         subfolder_content = os.listdir(subfolder)
         # filter: only 10, 25, 50 of subfolder_content remain
-        TRAIN_PCT_LIST = [x for x in ["10", "25", "50", "100"] if x in subfolder_content]
+        TRAIN_PCT_LIST = [
+            x for x in ["10", "25", "50", "100"] if x in subfolder_content
+        ]
         for TRAIN_PCT in TRAIN_PCT_LIST:
             subfolder = os.path.join(
                 "..", "..", "src", "runs", dir_name, task, MODEL_NAME, TRAIN_PCT
@@ -114,15 +152,18 @@ for output_file, dir_name in zip(OUT_FILES, DIR_NAMES):
                     continue
                 if task == "cola":
                     if (
-                            all_metrics[seed]["matthews_correlation"]
-                            > all_metrics[best_seed]["matthews_correlation"]
+                        all_metrics[seed]["matthews_correlation"]
+                        > all_metrics[best_seed]["matthews_correlation"]
                     ):
                         best_seed = seed
                 elif task == "stsb":
                     if all_metrics[seed]["pearson"] > all_metrics[best_seed]["pearson"]:
                         best_seed = seed
                 else:
-                    if all_metrics[seed]["accuracy"] > all_metrics[best_seed]["accuracy"]:
+                    if (
+                        all_metrics[seed]["accuracy"]
+                        > all_metrics[best_seed]["accuracy"]
+                    ):
                         best_seed = seed
             for metric in [
                 "accuracy",
@@ -158,7 +199,10 @@ for output_file, dir_name in zip(OUT_FILES, DIR_NAMES):
                 ignore_index=True,
             )
 
+    # print number of datasets with train_pct 100
     df.to_csv(output_file, index=False)
     print(f"Saved {output_file}")
+
+
 
 print("DONE!")

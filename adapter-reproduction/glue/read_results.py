@@ -1,8 +1,11 @@
 from itertools import combinations
+import os
 
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+
+os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
 full = pd.read_csv("results/FULL.csv")
 st_a = pd.read_csv("results/ST-A.csv")
@@ -11,8 +14,18 @@ ct_a_bert = pd.read_csv("results/CT-A_bert-init.csv")
 ct_a_custom = pd.read_csv("results/CT-A_custom-init.csv")
 ct_a_bert_LN = pd.read_csv("results/CT-A_bert-init-LN.csv")
 ct_a_bert_RELU = pd.read_csv("results/CT-A_bert-init-RELU.csv")
+ct_a_bert_RELU_ln_before = pd.read_csv("results/CT-A_bert-init-RELU-LN_BEFORE.csv")
+ct_a_bert_SWISH_ln_before = pd.read_csv("results/CT-A_bert-init-SWISH-PLUS-LN_BEFORE.csv")
+ct_a_bert_GELU_ln_before = pd.read_csv("results/CT-A_bert-init-GELU-PLUS-LN_BEFORE.csv")
+ct_a_bert_RELU_ln_after = pd.read_csv("results/CT-A_bert-init-RELU-LN_AFTER.csv")
 ct_a_bert_rf4 = pd.read_csv("results/CT-A_bert-init-RF4.csv")
 ct_a_bert_relu_plus = pd.read_csv("results/CT-A_bert-init-RELU-PLUS.csv")
+ct_a_bert_relu_plus_ln_after = pd.read_csv("results/CT-A_bert-init-RELU-PLUS-LN_AFTER.csv")
+ct_a_bert_relu_plus_ln_before = pd.read_csv("results/CT-A_bert-init-RELU-PLUS-LN_BEFORE.csv")
+ct_a_bert_relu_plus_ln_before_after = pd.read_csv("results/CT-A_bert-init-RELU-PLUS-LN_BEFORE-AFTER.csv")
+ct_a_custom_v2_relu_plus = pd.read_csv("results/CT-A_custom-init-V2-RELU-PLUS.csv")
+ct_a_bert_relu_plus_ln_before_01 = pd.read_csv("results/CT-A_bert-init-RELU-PLUS-LN_BEFORE_0-1.csv")
+ct_a_bert_relu_plus_ln_before_00 = pd.read_csv("results/CT-A_bert-init-RELU-PLUS-LN_BEFORE_0-0.csv")
 
 result_dict = {
     "Full": full,
@@ -20,10 +33,20 @@ result_dict = {
     "ST-A Fusion": st_a_fusion,
     "CT-A_Bert-init": ct_a_bert,
     "CT-A Bert-init RELU": ct_a_bert_RELU,
+    "CT-A Bert-init RELU, LN BEFORE x": ct_a_bert_RELU_ln_before,
+    "CT-A Bert-init RELU, LN AFTER x": ct_a_bert_RELU_ln_after,
     "CT-A_Bert-init-LN": ct_a_bert_LN,
     "CT-A_Custom-init": ct_a_custom,
     "CT-A_Bert-init-rf4": ct_a_bert_rf4,
     "CT-A_Bert-init RELU ADDITIVE": ct_a_bert_relu_plus,
+    "CT-A_Bert-init RELU ADDITIVE, LN AFTER +": ct_a_bert_relu_plus_ln_after,
+    "CT-A_Bert-init RELU ADDITIVE, LN BEFORE +": ct_a_bert_relu_plus_ln_before,
+    "CT-A_Bert-init SWISH ADDITIVE, LN BEFORE +": ct_a_bert_SWISH_ln_before,
+    "CT-A_Bert-init GELU ADDITIVE, LN BEFORE +": ct_a_bert_GELU_ln_before,
+    "CT-A_Bert-init RELU ADDITIVE, LN BEFORE+AFTER +": ct_a_bert_relu_plus_ln_before_after,
+    "CT-A_Bert-init RELU ADDITIVE, LN BEFORE 0-1 +": ct_a_bert_relu_plus_ln_before_01,
+    "CT-A_Bert-init RELU ADDITIVE, LN BEFORE 0-0 +": ct_a_bert_relu_plus_ln_before_00,
+    "CT-A_Custom-init V2 RELU ADDITIVE": ct_a_custom_v2_relu_plus,
 }
 
 for setup in result_dict.keys():
@@ -78,6 +101,7 @@ for name, df in result_dict.items():
     s.fig.set_size_inches((10, 6))
     plt.tight_layout()
     s.savefig(f"results/plots/{name.split(' (')[0]}.png")
+    plt.close()
 
     # df.to_csv(f"results/{name}_proc.csv", index=False)
     # same but only take content before ( of name
@@ -107,6 +131,8 @@ for name, df in differences.items():
     s.fig.set_size_inches((10, 6))
     plt.tight_layout()
     s.savefig(f"results/differences/plots/{name}.png")
+    # close
+    plt.close()
 
     # df.to_csv(f"results/{name}_proc.csv", index=False)
     # same but only take content before ( of name

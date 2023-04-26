@@ -1,8 +1,11 @@
 import json
 import os
+os.chdir(os.path.dirname(os.path.realpath(__file__)))
+
 
 import numpy as np
 import pandas as pd
+
 
 # runs are located in:
 # runs/st-a/$TASK_NAME/$MODEL_NAME/$SEED/checkpoint-xxxxx
@@ -33,6 +36,7 @@ df = pd.DataFrame(
         "matthews_correlation_STD",
     ]
 )
+
 
 for task in ["rte", "mnli", "qqp", "sst2", "mrpc", "qnli", "stsb", "cola"]:
     # get all directories in subfolder
@@ -216,4 +220,4 @@ for task in ["rte", "mnli", "qqp", "sst2", "mrpc", "qnli", "stsb", "cola"]:
         )
 
 
-df.to_csv(output_file, index=False)
+# df.to_csv(output_file, index=False)

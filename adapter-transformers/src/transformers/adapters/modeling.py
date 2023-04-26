@@ -1,4 +1,6 @@
 import math
+from typing import Optional, Union
+import copy
 
 import torch
 from torch import nn
@@ -47,7 +49,6 @@ class Adapter(nn.Module):
         self.add_layer_norm_after = config["ln_after"]
         self.adapter_residual_before_ln = config["adapter_residual_before_ln"]
         self.use_gating = config["use_gating"]
-        self.use_tsigmoid_gating = config["use_tsigmoid_gating"]
 
         # Params related to input & output of adapter
         self.residual_before_ln = config["residual_before_ln"]
@@ -57,7 +58,10 @@ class Adapter(nn.Module):
         # Congater related params
         self.only_one_w = config["only_one_w"]
         self.apply_tsigmoid = config["apply_tsigmoid"]
+        self.use_tsigmoid_gating = config["use_tsigmoid_gating"]
         self.kill_adapter_residual = config["kill_adapter_residual"]
+        self.add_second_adapter = config["add_second_adapter"]
+        self.second_adapter_input = config["second_adapter_input"]
 
         self.tsigmoid = Tsigmoid()
 
@@ -138,8 +142,9 @@ class Adapter(nn.Module):
             # because of gating with the (t-)sigmoid, this means we can set the weights to (almost) zeros and bias to
             # a high value
             self.adapter_down.apply(self.init_bert_weights)
-            nn.init.zeros_(self.adapter_up.weight)
-            nn.init.ones_(self.adapter_up.bias) * config["init_weights"]
+            # n.init.zeros_(self.adapter_up.weight)
+            self.adapter_up.apply(self.init_bert_weights)
+            nn.init.constant_(self.adapter_up.bias, val=config["init_weights"])
             if self.use_gating:
                 self.gate.apply(self.init_bert_weights)
         elif config["init_weights"] == "mam_adapter":
@@ -152,6 +157,21 @@ class Adapter(nn.Module):
                     self.gate.apply(self.init_bert_weights)
         else:
             raise ValueError("Unknown init_weights type: {}".format(config["init_weights"]))
+        
+        # second adapter
+        if self.add_second_adapter:
+            # TODO: consider more options for second adapter
+            # like different non-linearity, different scaling, LayerNorm, etc.
+            self.adapter_down_2 = copy.deepcopy(self.adapter_down)
+            self.adapter_up_2 = copy.deepcopy(self.adapter_up)
+            if self.use_gating:
+                self.gate_2 = copy.deepcopy(self.gate)
+            # weight init
+            if config["init_weights"] == "bert":
+                self.adapter_down_2.apply(self.init_bert_weights)
+                self.adapter_up_2.apply(self.init_bert_weights)
+                if self.use_gating:
+                    self.gate_2.apply(self.init_bert_weights)
 
     def pre_forward(
         self,
@@ -194,18 +214,29 @@ class Adapter(nn.Module):
         return hidden_states, query, residual
 
     def forward(self, x, residual_input, output_gating=False):
-        if not self.only_one_w:
-            down = self.adapter_down(x)
-            up = self.adapter_up(down)
-            up = up * self.scaling
-            output = up
+        down = self.adapter_down(x)
+        up = self.adapter_up(down)
+        up = up * self.scaling
+        adapter_output = up
+            
+        # second adapter
+        if self.add_second_adapter:
+            if self.second_adapter_input == "adp":
+                input_2 = adapter_output
+            else:
+                input_2 = x
+            down_2 = self.adapter_down_2(input_2)
+            up_2 = self.adapter_up_2(down_2)
+            up_2 = up_2 * self.scaling
+            adapter_output_2 = up_2
+            # always apply t-sigmoid in this case
+            output_2 = self.tsigmoid(adapter_output_2)  # g
+            output = adapter_output # v
         else:
-            # Congater (old)
-            output = self.adapter_down(x) * self.scaling
-            down = None
-            up = None
-        if self.apply_tsigmoid:
-            output = self.tsigmoid(output)
+            if self.apply_tsigmoid:
+                output = self.tsigmoid(adapter_output)
+            else:
+                output = adapter_output
 
         if self.use_gating:
             # x.shape = (batch_size, seq_len, hidden_size)
@@ -213,8 +244,12 @@ class Adapter(nn.Module):
             # take mean over sequence length, add dimension --> (batch_size, 1, 1)
             gate = torch.mean(gate, dim=1).unsqueeze(-1)
             output = output * gate
-        elif self.use_tsigmoid_gating:
+        elif self.use_tsigmoid_gating == "input":
             output = output * x
+        elif self.use_tsigmoid_gating == "adp":
+            output = output * adapter_output
+        elif self.use_tsigmoid_gating == "adp2":
+            output = output * output_2  # v * g
 
         if not self.kill_adapter_residual:
             # apply residual connection before layer norm if configured in this way

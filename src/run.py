@@ -3,7 +3,9 @@ import os
 import random
 import sys
 
-# sys.path.append("../adapter-transformers/src")
+os.chdir(os.path.dirname(os.path.realpath(__file__)))
+
+sys.path.append("/home/markus-frohmann/congater-fusion/adapter-transformers/src")
 
 import datasets
 import transformers
@@ -258,7 +260,6 @@ if __name__ == "__main__":
             "--max_steps",
             "1000",
             "--adapter_config",
-            "congater-original[reduction_factor=4]",
-            # "compacter"
+            "congater[use_tsigmoid_gating=adp]"
         ]
     main()

@@ -222,9 +222,18 @@ class AdapterConfig(AdapterConfigBase):
         kill_adapter_residual (:obj:`bool`, optional):
             If True, do not apply the residual connection around the adapter modules.
             Defaults to False
-        use_tsigmoid_gating (:obj:`bool`, optional):
-            If True, use the t-sigmoid output for gating.
+        use_tsigmoid_gating (:obj:`str`, optional):
+            If 'input', use the t-sigmoid output for gating the input.
+            If 'adp', use the t-sigmoid output for gating the adapter output (i.e., before applying t-sigmoid)
+            If 'adp2', use the 2nd adapter output after applying t-sigmoid for gating the adapter output
             Defaults to False
+        add_second_adapter (:obj:`bool`, optional):
+            If True, add another Adapter with the same setup as the first one.
+            Defaults to False
+        second_adapter_input (:obj:`str`, optional):
+            If 'input', use the input, x, as input to the second Adapter.
+            If 'adp', use the output of the first Adapter, v, as input to the second Adapter.
+            Defaults to None
     """
 
     # Required options
@@ -264,7 +273,9 @@ class AdapterConfig(AdapterConfigBase):
     apply_tsigmoid: Optional[bool] = False
     only_one_w: Optional[bool] = False
     kill_adapter_residual: Optional[bool] = False
-    use_tsigmoid_gating : Optional[bool] = False
+    use_tsigmoid_gating : Optional[Union[bool, str]] = False
+    add_second_adapter: Optional[bool] = False
+    second_adapter_input: Optional[Union[None, str]] = None
 
     # We want to emulate a simple form of immutability while keeping the ability to add custom attributes.
     # Therefore, we don't allow changing attribute values if set once.
@@ -312,9 +323,52 @@ class OriginalCongaterConfig(PfeifferConfig):
     apply_tsigmoid: bool = True
     # only_one_w: bool = True (no longer latest version --> no longer relevant!)
     kill_adapter_residual: bool = True
-    use_tsigmoid_gating: bool = True
+    use_tsigmoid_gating: str = "input"
     init_weights: Union[str, float] = "bert"
 
+@dataclass(eq=False)
+class CongaterConfig(PfeifferConfig):
+    """
+    The custom ConGater architecture proposed by xyz.
+    """
+
+    non_linearity: str = "relu"
+    apply_tsigmoid: bool = True
+    # only_one_w: bool = True (no longer latest version --> no longer relevant!)
+    kill_adapter_residual: bool = True
+    use_tsigmoid_gating: str = "input"
+    init_weights: Union[str, float] = "bert"
+
+@dataclass(eq=False)
+class CongaterV3Config(PfeifferConfig):
+    """
+    The custom ConGater architecture proposed by xyz.
+    """
+    non_linearity: str = "relu"
+    init_weights: Union[str, float] = "bert"
+    # ConGater
+    apply_tsigmoid: bool = True
+    kill_adapter_residual: bool = False  # + x
+    use_tsigmoid_gating: str = "adp2"  # o = x + v * g
+    add_second_adapter: bool = True  # fn2
+    second_adapter_input: Optional[Union[None, str]] = 'input'  # fn2(x)
+    reduction_factor: Union[float, Mapping] = 32  # same # of params as Pfeiffer
+
+@dataclass(eq=False)
+class CongaterV4Config(PfeifferConfig):
+    """
+    The custom ConGater architecture proposed by xyz.
+    """
+    non_linearity: str = "relu"
+    init_weights: Union[str, float] = "bert"
+    # ConGater
+    apply_tsigmoid: bool = True
+    kill_adapter_residual: bool = False  # + x
+    use_tsigmoid_gating: str = "adp2"  # o = x + v * g
+    add_second_adapter: bool = True  # fn2
+    second_adapter_input: Optional[Union[None, str]] = 'input'  # fn2(x)
+    reduction_factor: Union[float, Mapping] = 32  # same # of params as Pfeiffer
+    second_adapter_input: Optional[Union[None, str]] = 'adp'  # fn2(x)
 
 @dataclass(eq=False)
 class CompacterPlusPlusConfig(PfeifferConfig):
@@ -666,6 +720,11 @@ ADAPTER_CONFIG_MAP = {
     "mam": MAMConfig(),
     "unipelt": UniPELTConfig(),
     "congater-original": OriginalCongaterConfig(),
+    "congater": CongaterConfig(),
+    "congaterV3": CongaterV3Config(),
+    "congaterV4": CongaterV4Config(),
+
+
 }
 
 DEFAULT_ADAPTER_CONFIG = "pfeiffer"
