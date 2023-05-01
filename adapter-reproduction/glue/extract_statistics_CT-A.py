@@ -37,6 +37,8 @@ OUT_FILES = [
     "results/CT-A_bert-init-RELU-PLUS-gate_adapter.csv",
     "results/CT-A_bert-init-RELU-PLUS-LN_BEFORE-gate_adapter.csv",
     "results/CT-A_bert-init-RELU-PLUS-LN_AFTER-gate_adapter.csv",
+    "results/V3.csv",
+    "results/V4.csv",
 ]
 DIR_NAMES = [
     "ct_0-a-RELU",
@@ -58,7 +60,9 @@ DIR_NAMES = [
     "ct_2-a-RELU-LN_AB-gate_adapter",
     "ct_2-a-RELU-PLUS-gate_adapter",
     "ct_2-a-RELU-PLUS-LN_BEFORE-gate_adapter",
-    "ct_2-a-RELU-PLUS-LN_AFTER-gate_adapter"
+    "ct_2-a-RELU-PLUS-LN_AFTER-gate_adapter",
+    "ct_3-a-V3",
+    "ct_3-a-V4"
 ]
 
 for output_file, dir_name in zip(OUT_FILES, DIR_NAMES):
@@ -199,7 +203,6 @@ for output_file, dir_name in zip(OUT_FILES, DIR_NAMES):
                 ignore_index=True,
             )
 
-    # print number of datasets with train_pct 100
     df.to_csv(output_file, index=False)
     print(f"Saved {output_file}")
 
