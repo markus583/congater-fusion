@@ -38,7 +38,9 @@ OUT_FILES = [
     "results/CT-A_bert-init-RELU-PLUS-LN_BEFORE-gate_adapter.csv",
     "results/CT-A_bert-init-RELU-PLUS-LN_AFTER-gate_adapter.csv",
     "results/V3.csv",
+    "results/V3-RF16.csv",
     "results/V4.csv",
+    "results/V4-RF16.csv",
 ]
 DIR_NAMES = [
     "ct_0-a-RELU",
@@ -62,7 +64,9 @@ DIR_NAMES = [
     "ct_2-a-RELU-PLUS-LN_BEFORE-gate_adapter",
     "ct_2-a-RELU-PLUS-LN_AFTER-gate_adapter",
     "ct_3-a-V3",
-    "ct_3-a-V4"
+    "ct_3-a-V3-RF16",
+    "ct_3-a-V4",
+    "ct_3-a-V4-RF16"
 ]
 
 for output_file, dir_name in zip(OUT_FILES, DIR_NAMES):

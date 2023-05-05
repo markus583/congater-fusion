@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 
 from transformers import (
     AdapterTrainer,
@@ -8,7 +9,7 @@ from transformers import (
     EarlyStoppingCallback,
     Trainer,
 )
-from transformers.adapters.configuration import PfeifferConfig
+from transformers.adapters.configuration import PfeifferConfig, AdapterConfig
 from transformers.adapters.training import setup_adapter_training
 
 from arguments import get_args
@@ -87,7 +88,8 @@ def get_trainer(args):
             )
         for _, adapter_dir in af_config.items():
             model.load_adapter(
-                "../../../adapter-reproduction/glue/" + adapter_dir,
+                f"{os.path.expanduser('~')}/congater-fusion/adapter-reproduction/glue/"
+                + adapter_dir,
                 config=adapter_config,
                 with_head=fusion_args.fusion_with_head,
             )
@@ -100,15 +102,29 @@ def get_trainer(args):
         )
 
     elif adapter_args.train_adapter:
-        model.add_classification_head(
-            data_args.task_name or "glue",
-            num_labels=dataset.num_labels,
-            id2label={i: v for i, v in enumerate(dataset.label_list)}
-            if not dataset.is_regression
-            else None,
-        )
-        # Setup adapters
-        setup_adapter_training(model, adapter_args, data_args.task_name or "glue")
+        if data_args.eval_adapter:
+            config = AdapterConfig.load(training_args.output_dir + "/adapter_config.json")
+            # config = AdapterConfig.load("pfeiffer")
+            config.omega = model_args.omega
+            model.load_adapter(
+               training_args.output_dir,
+               config=config,
+               with_head=True,
+            )
+            # model.load_adapter("sentiment/sst-2@ukp", config=config)
+            model.train_adapter([data_args.task_name])
+            model.set_active_adapters(data_args.task_name)
+        else:
+            model.add_classification_head(
+                data_args.task_name or "glue",
+                num_labels=dataset.num_labels,
+                id2label={i: v for i, v in enumerate(dataset.label_list)}
+                if not dataset.is_regression
+                else None,
+            )
+            # Setup adapters
+            # TODO: setup variable omega for training also (not only eval mode, i.e. data_args.eval_adapter = True)
+            setup_adapter_training(model, adapter_args, data_args.task_name or "glue")
     else:
         if adapter_args.load_adapter:
             raise ValueError(

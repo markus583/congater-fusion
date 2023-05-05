@@ -30,10 +30,10 @@ class AdapterConfigBase(Mapping):
     # We want to emulate a simple form of immutability while keeping the ability to add custom attributes.
     # Therefore, we don't allow changing attribute values if set once.
     def __setattr__(self, name, value):
-        if name in self.__dict__:
-            raise FrozenInstanceError()
-        else:
-            object.__setattr__(self, name, value)
+        # if name in self.__dict__:
+        #     raise FrozenInstanceError()
+        # else:
+        object.__setattr__(self, name, value)
 
     def __delattr__(self, name):
         raise FrozenInstanceError()
@@ -234,6 +234,9 @@ class AdapterConfig(AdapterConfigBase):
             If 'input', use the input, x, as input to the second Adapter.
             If 'adp', use the output of the first Adapter, v, as input to the second Adapter.
             Defaults to None
+        omega (:obj:`float`, optional):
+            If not None, use the omega value for the t-sigmoid function.
+            Otherwise, use the default value of 1.0.
     """
 
     # Required options
@@ -276,22 +279,23 @@ class AdapterConfig(AdapterConfigBase):
     use_tsigmoid_gating : Optional[Union[bool, str]] = False
     add_second_adapter: Optional[bool] = False
     second_adapter_input: Optional[Union[None, str]] = None
+    omega: Optional[Union[float, Mapping]] = 1.0
 
     # We want to emulate a simple form of immutability while keeping the ability to add custom attributes.
     # Therefore, we don't allow changing attribute values if set once.
-    def __setattr__(self, name, value):
-        if name in self.__dict__:
-            raise FrozenInstanceError()
-        elif name == "invertible_adapter":
-            # This is for backwards compatibility. In v1, invertible adapters were specified in a nested config dict.
-            # Now, we have two config keys directly in the adapter config.
-            if value:
-                object.__setattr__(self, "inv_adapter", value["block_type"])
-                object.__setattr__(
-                    self, "inv_adapter_reduction_factor", value["reduction_factor"]
-                )
-        else:
-            object.__setattr__(self, name, value)
+    # def __setattr__(self, name, value):
+    #     if name in self.__dict__:
+    #         raise FrozenInstanceError()
+    #     elif name == "invertible_adapter":
+    #         # This is for backwards compatibility. In v1, invertible adapters were specified in a nested config dict.
+    #         # Now, we have two config keys directly in the adapter config.
+    #         if value:
+    #             object.__setattr__(self, "inv_adapter", value["block_type"])
+    #             object.__setattr__(
+    #                 self, "inv_adapter_reduction_factor", value["reduction_factor"]
+    #             )
+    #     else:
+    #         object.__setattr__(self, name, value)
 
 
 @dataclass(eq=False)

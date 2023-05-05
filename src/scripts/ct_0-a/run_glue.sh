@@ -23,7 +23,7 @@ else
   SEED=$NEW_SEED
 fi
 
-for TASK in mrpc rte cola stsb sst2 qnli mnli qqp; do
+for TASK in mrpc rte sst2 cola stsb qnli mnli qqp; do
   for SEED in $SEED; do
     if [ $TASK = "cola" ]; then
         EVAL_METRIC="eval_matthews_correlation"
@@ -51,8 +51,8 @@ for TASK in mrpc rte cola stsb sst2 qnli mnli qqp; do
         --learning_rate 1e-4 \
         --num_train_epochs 30 \
         --train_adapter \
-        --adapter_config congater-original[non_linearity=relu] \
-        --output_dir ../../runs/ct_0-a-RELU/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED \
+        --adapter_config congater[kill_adapter_residual=False,ln_before=True] \
+        --output_dir ../../runs/ct_0-a-RELU-PLUS-LN_BEFORE/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED \
         --logging_strategy epoch \
         --save_strategy epoch \
         --evaluation_strategy epoch \
@@ -61,7 +61,7 @@ for TASK in mrpc rte cola stsb sst2 qnli mnli qqp; do
         --load_best_model_at_end True \
         --metric_for_best_model $EVAL_METRIC \
         --report_to wandb \
-        --run_name $TASK-$MODEL_NAME-$TRAIN_PCT-$SEED-RELU-PLUS-LN_AFTER-gate_adapter \
+        --run_name $TASK-$MODEL_NAME-$TRAIN_PCT-$SEED-RELU-PLUS-LN_BEFORE \
         --max_train_pct $TRAIN_PCT \
         --seed $SEED \
         --overwrite_output_dir

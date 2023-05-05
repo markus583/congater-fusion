@@ -3,7 +3,7 @@ import os
 import random
 import sys
 
-os.chdir(os.path.dirname(os.path.realpath(__file__)))
+# os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
 sys.path.append("/home/markus-frohmann/congater-fusion/adapter-transformers/src")
 
@@ -90,9 +90,10 @@ def detect_last_checkpoint(training_arguments: transformers.TrainingArguments) -
         checkpoint = get_last_checkpoint(training_arguments.output_dir)
         if checkpoint is None and len(os.listdir(training_arguments.output_dir)) > 0:
             raise ValueError(
-                f"Output directory ({training_arguments.output_dir}) already exists and is not empty. "
+            f"Output directory ({training_arguments.output_dir}) already exists and is not empty. "
                 "Use --overwrite_output_dir to overcome."
             )
+            
         elif (
             checkpoint is not None and training_arguments.resume_from_checkpoint is None
         ):
@@ -127,7 +128,6 @@ def main() -> None:
     args = get_args()
     model_args, data_args, training_args, adapter_args, fusion_args = args
 
-    print(adapter_args.train_adapter)
     if adapter_args.train_adapter:
         if adapter_args.adapter_config == "pfeiffer":
             WANDBPROJECT = "THESIS_st-a"
@@ -156,8 +156,10 @@ def main() -> None:
                 data_args.task_name, ", ".join(TASKS)
             )
         )
-
-    last_checkpoint = detect_last_checkpoint(training_arguments=training_args)
+    if not data_args.eval_adapter:
+        last_checkpoint = detect_last_checkpoint(training_arguments=training_args)
+    else:
+        last_checkpoint = None
 
     set_seed(training_args.seed)
 
@@ -210,7 +212,7 @@ if __name__ == "__main__":
             "--model_name_or_path",
             "bert-base-uncased",
             "--task_name",
-            "stsb",
+            "rte",
             "--dataset_name",
             "glue",
             "--max_seq_length",
@@ -232,7 +234,9 @@ if __name__ == "__main__":
             "--fusion_load_dir",
             "scripts/st-a_fusion/af_config.json",
             "--output_dir",
-            "runs/st-a-fusion/rte-TEST-2",
+            "runs/TEST",
+            "--eval_adapter",
+            "True",
             "--logging_strategy",
             "epoch",
             "--evaluation_strategy",
@@ -246,7 +250,7 @@ if __name__ == "__main__":
             "--load_best_model_at_end",
             "True",
             "--metric_for_best_model",
-            "eval_pearson",
+            "eval_accuracy",
             "--report_to",
             "wandb",
             "--run_name",
@@ -255,11 +259,13 @@ if __name__ == "__main__":
             "100",
             "--seed",
             "0",
-            "--overwrite_output_dir",
+            # "--overwrite_output_dir",
             "--no_cuda",
             "--max_steps",
             "1000",
             "--adapter_config",
-            "congater[use_tsigmoid_gating=adp]"
+            "congaterV4[omega=0.0]",
+            "--omega",
+            "0.5"
         ]
     main()

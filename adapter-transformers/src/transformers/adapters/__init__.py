@@ -145,6 +145,7 @@ _import_structure = {
         "list_adapters",
     ],
     "t_sigmoid": ["Tsigmoid"],
+    "tt_sigmoid": ["TTsigmoid"],
 }
 
 if TYPE_CHECKING:

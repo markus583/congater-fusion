@@ -18,7 +18,9 @@ ct_a_bert_relu_plus_ln_before = pd.read_csv("results/CT-A_bert-init-RELU-PLUS-LN
 ct_a_bert_relu_plus_gateadp = pd.read_csv("results/CT-A_bert-init-RELU-PLUS-gate_adapter.csv")
 ct_a_bert_relu_plus_gateadp_ln_before = pd.read_csv("results/CT-A_bert-init-RELU-PLUS-LN_BEFORE-gate_adapter.csv")
 V3 = pd.read_csv("results/V3.csv")
+V3_rf16 = pd.read_csv("results/V3-RF16.csv")
 V4 = pd.read_csv("results/V4.csv")
+V4_rf16 = pd.read_csv("results/V4-RF16.csv")
 
 # This code is used to store the results of the various models in a dictionary
 # so that they can be easily accessed later.
@@ -40,7 +42,9 @@ result_dict = {
     "C-V2": ct_a_bert_relu_plus_gateadp,
     "CT-V2 LN before x": ct_a_bert_relu_plus_gateadp_ln_before,
     "V3": V3,
+    "V3-RF16": V3_rf16,
     "V4": V4,
+    "V4-RF16": V4_rf16,
 }
 
 
@@ -50,6 +54,7 @@ for setup in result_dict.keys():
 
 result_dict_drop = {k: v.drop(columns=["best_seed", "seeds"]).set_index(["task", "train_pct"]) for k, v in result_dict.items()}
 
+# this is a message
 # now the same with differences as dict
 differences = {}
 
@@ -159,8 +164,17 @@ for name, df in differences.items():
     # title
     s.fig.suptitle(f"{name.replace('_', ' ')} (higher means first is better) ({df['n_runs_0'][0], df['n_runs_1'][0]} seeds)")
     s.ax.grid(True)
+    # y axis ticks in 0.01 steps
+    # but we need min and max of differences for scaling
+    max = df["metric_MEAN"].max()
+    min = df["metric_MEAN"].min()
+    if min < - 0.05 or max > 0.1:
+        plt.yticks([i / 100 for i in range(int(min * 100), int(max * 100) + 1)])
+    else:
+        # if min and max are smaller than 0.1, we can use 0.01 steps from -0.1 to 0.1
+        plt.yticks([i / 100 for i in range(-5, 11)])
 
-    s.fig.set_size_inches((10, 6))
+    s.fig.set_size_inches((12, 6))
     # plt.tight_layout()
     s.savefig(f"results/v3/differences/plots/{name}.png")
     # close

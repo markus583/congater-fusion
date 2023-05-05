@@ -5,7 +5,7 @@ import copy
 import torch
 from torch import nn
 from transformers.activations import get_activation
-from transformers.adapters.t_sigmoid import Tsigmoid
+from transformers.adapters.t_sigmoid import Tsigmoid, TTsigmoid
 
 from .configuration import AdapterConfig, AdapterFusionConfig
 from .context import ForwardContext
@@ -62,8 +62,12 @@ class Adapter(nn.Module):
         self.kill_adapter_residual = config["kill_adapter_residual"]
         self.add_second_adapter = config["add_second_adapter"]
         self.second_adapter_input = config["second_adapter_input"]
+        self.omega = config["omega"]
 
-        self.tsigmoid = Tsigmoid()
+        if self.omega == 1.0:
+            self.tsigmoid = Tsigmoid()
+        else:
+            self.tsigmoid = TTsigmoid()
 
         # list for all modules of the adapter, passed into nn.Sequential()
         seq_list = []
@@ -156,8 +160,10 @@ class Adapter(nn.Module):
                 if self.use_gating:
                     self.gate.apply(self.init_bert_weights)
         else:
-            raise ValueError("Unknown init_weights type: {}".format(config["init_weights"]))
-        
+            raise ValueError(
+                "Unknown init_weights type: {}".format(config["init_weights"])
+            )
+
         # second adapter
         if self.add_second_adapter:
             # TODO: consider more options for second adapter
@@ -218,7 +224,7 @@ class Adapter(nn.Module):
         up = self.adapter_up(down)
         up = up * self.scaling
         adapter_output = up
-            
+
         # second adapter
         if self.add_second_adapter:
             if self.second_adapter_input == "adp":
@@ -230,11 +236,11 @@ class Adapter(nn.Module):
             up_2 = up_2 * self.scaling
             adapter_output_2 = up_2
             # always apply t-sigmoid in this case
-            output_2 = self.tsigmoid(adapter_output_2)  # g
-            output = adapter_output # v
+            output_2 = self.tsigmoid(adapter_output_2, w=self.omega)  # g
+            output = adapter_output  # v
         else:
             if self.apply_tsigmoid:
-                output = self.tsigmoid(adapter_output)
+                output = self.tsigmoid(adapter_output, w=self.omega)
             else:
                 output = adapter_output
 
@@ -379,69 +385,6 @@ class ParallelAdapter(Adapter):
         """
         hidden_states = hidden_states + input_hidden_states
 
-        if self.original_ln_after:
-            if layer_norm:
-                hidden_states = layer_norm(hidden_states + input_tensor)
-            else:
-                hidden_states = hidden_states + input_tensor
-
-        return hidden_states
-
-
-class Congater(Adapter):
-    """
-    Implementation of a base ConGater block with a single W matrix, a t-sigmoid, and no residual connection.
-    """
-
-    def __init__(self, adapter_name, input_size, down_sample, config: AdapterConfig):
-        super().__init__(adapter_name, input_size, down_sample, config)
-
-    def forward(self, x, residual_input, output_gating=False):
-        output = self.adapter_down(x) * self.scaling
-        # TODO: ingtgrate into Adapter
-        # output = tsigmoid(output)
-
-        if self.use_gating:
-            # x.shape = (batch_size, seq_len, hidden_size)
-            gate = torch.sigmoid(self.gate(x))
-            gate = torch.mean(gate, dim=1).unsqueeze(-1)
-            output = output * gate
-
-        # apply residual connection before layer norm if configured in this way
-        if not self.kill_adapter_residual:
-            if self.adapter_residual_before_ln:
-                output = output + residual_input
-
-        # apply layer norm if available
-        if self.add_layer_norm_after:
-            output = self.adapter_norm_after(output)
-
-        # if residual should be applied after layer norm, apply it here
-        if not self.kill_adapter_residual:
-            if not self.adapter_residual_before_ln:
-                output = output + residual_input
-
-        if self.use_gating and output_gating:
-            return output, output, output, gate
-        return output, output, output
-
-    def post_forward(
-        self, hidden_states, input_hidden_states, input_tensor, layer_norm
-    ):
-        """
-        Performs computations after the forward pass of the adapter block(s). This e.g. includes applying the residual
-        connection and layer norm if configured in this way.
-
-        Args:
-            hidden_states: The hidden states outputted by the adapter block(s).
-            input_hidden_states: Residual connection before the adapter block(s).
-            input_tensor: Residual connection before the Transformer FFN/ attention layer.
-            layer_norm: Transformer LayerNorm.
-
-        Returns:
-            The modified hidden states.
-        """
-        # TODO: remove residual for congater
         if self.original_ln_after:
             if layer_norm:
                 hidden_states = layer_norm(hidden_states + input_tensor)

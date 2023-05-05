@@ -417,6 +417,9 @@ class AdapterLoader(WeightsLoader):
             name=name,
             model_class=self.model.__class__.__name__,
         )
+        print("OMEGA:", config_dict["config"]["omega"])
+        # now, log it
+        logger.info("OMEGA: {}".format(config_dict["config"]["omega"]))
 
         # Save the adapter configuration
         self.weights_helper.save_weights_config(
@@ -477,6 +480,9 @@ class AdapterLoader(WeightsLoader):
             ), "Loaded adapter has to be a {} adapter.".format(self.adapter_type)
         elif "type" in config:
             self.adapter_type = config["type"]
+        # only do if key is in config
+        if requested_config is not None:
+            config["config"]["omega"] = requested_config["omega"]
         # post-loading drop of layers
         if leave_out is not None:
             if (

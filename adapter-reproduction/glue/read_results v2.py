@@ -22,6 +22,9 @@ ct_a_bert_relu_gateadp_ln_ab = pd.read_csv("results/CT-A_bert-init-RELU-LN_AB-ga
 ct_a_bert_relu_plus_gateadp = pd.read_csv("results/CT-A_bert-init-RELU-PLUS-gate_adapter.csv")
 ct_a_bert_relu_plus_gateadp_ln_before = pd.read_csv("results/CT-A_bert-init-RELU-PLUS-LN_BEFORE-gate_adapter.csv")
 ct_a_bert_relu_plus_gateadp_ln_after = pd.read_csv("results/CT-A_bert-init-RELU-PLUS-LN_AFTER-gate_adapter.csv")
+V3 = pd.read_csv("results/V3.csv")
+V4 = pd.read_csv("results/V4.csv")
+
 
 # This code is used to store the results of the various models in a dictionary
 # so that they can be easily accessed later.
@@ -43,6 +46,8 @@ result_dict = {
     "CT-A Bert-init RELU ADDITIVE GATE ADAPTER": ct_a_bert_relu_plus_gateadp,
     "CT-A Bert-init RELU ADDITIVE GATE ADAPTER, LN BEFORE +": ct_a_bert_relu_plus_gateadp_ln_before,
     "CT-A Bert-init RELU ADDITIVE GATE ADAPTER, LN AFTER +": ct_a_bert_relu_plus_gateadp_ln_after,
+    "V3": V3,
+    "V4": V4,
 }
 
 

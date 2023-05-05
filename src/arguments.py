@@ -142,6 +142,11 @@ class DataTrainingArguments:
         default=None,
         metadata={"help": "A csv or a json file containing the test data."},
     )
+    
+    eval_adapter: Optional[str] = field(
+        default=False,
+        metadata={"help": "The adapter to evaluate."},
+    )
 
     def __post_init__(self):
         if self.task_name is not None:
@@ -234,6 +239,11 @@ class ModelArguments:
     early_stopping_patience: int = field(
         default=5,
         metadata={"help": "Patience for early stopping."},
+    )
+    
+    omega: float = field(
+        default=1.0,
+        metadata={"help": "Static value of omega to use for t-sigmoid"}
     )
 
 
