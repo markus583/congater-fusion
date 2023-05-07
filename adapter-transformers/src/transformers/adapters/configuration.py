@@ -237,6 +237,9 @@ class AdapterConfig(AdapterConfigBase):
         omega (:obj:`float`, optional):
             If not None, use the omega value for the t-sigmoid function.
             Otherwise, use the default value of 1.0.
+        use_ttsigmoid (:obj:`bool`, optional):
+            If True, use the TTsigmoid function instead of the Tsigmoid function.
+            Defaults to False
     """
 
     # Required options
@@ -280,6 +283,7 @@ class AdapterConfig(AdapterConfigBase):
     add_second_adapter: Optional[bool] = False
     second_adapter_input: Optional[Union[None, str]] = None
     omega: Optional[Union[float, Mapping]] = 1.0
+    use_ttsigmoid: Optional[bool] = False
 
     # We want to emulate a simple form of immutability while keeping the ability to add custom attributes.
     # Therefore, we don't allow changing attribute values if set once.
@@ -335,13 +339,23 @@ class CongaterConfig(PfeifferConfig):
     """
     The custom ConGater architecture proposed by xyz.
     """
-
     non_linearity: str = "relu"
     apply_tsigmoid: bool = True
     # only_one_w: bool = True (no longer latest version --> no longer relevant!)
     kill_adapter_residual: bool = True
     use_tsigmoid_gating: str = "input"
     init_weights: Union[str, float] = "bert"
+    
+@dataclass(eq=False)
+class CongaterV2Config(PfeifferConfig):
+    """
+    The new ConGater architecture from now on.
+    """
+    apply_tsigmoid: bool = True
+    kill_adapter_residual: bool = False
+    use_tsigmoid_gating: str = "adp"
+    init_weights: Union[str, float] = "bert"
+    use_ttsigmoid: bool = True
 
 @dataclass(eq=False)
 class CongaterV3Config(PfeifferConfig):
@@ -357,6 +371,7 @@ class CongaterV3Config(PfeifferConfig):
     add_second_adapter: bool = True  # fn2
     second_adapter_input: Optional[Union[None, str]] = 'input'  # fn2(x)
     reduction_factor: Union[float, Mapping] = 32  # same # of params as Pfeiffer
+    use_ttsigmoid: bool = True
 
 @dataclass(eq=False)
 class CongaterV4Config(PfeifferConfig):
@@ -373,7 +388,8 @@ class CongaterV4Config(PfeifferConfig):
     second_adapter_input: Optional[Union[None, str]] = 'input'  # fn2(x)
     reduction_factor: Union[float, Mapping] = 32  # same # of params as Pfeiffer
     second_adapter_input: Optional[Union[None, str]] = 'adp'  # fn2(x)
-
+    use_ttsigmoid: bool = True
+    
 @dataclass(eq=False)
 class CompacterPlusPlusConfig(PfeifferConfig):
     """
@@ -725,6 +741,7 @@ ADAPTER_CONFIG_MAP = {
     "unipelt": UniPELTConfig(),
     "congater-original": OriginalCongaterConfig(),
     "congater": CongaterConfig(),
+    "congaterV2": CongaterV2Config(),
     "congaterV3": CongaterV3Config(),
     "congaterV4": CongaterV4Config(),
 

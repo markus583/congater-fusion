@@ -18,7 +18,8 @@ os.chdir(os.path.dirname(os.path.realpath(__file__)))
 MODEL_NAME = "bert-base-uncased"
 
 DIR_NAMES = [
-    "PROBE/ct_0-a-RELU",
+    # "PROBE/ct_0-a-RELU-PLUS-LN_BEFORE",
+    "PROBE/ct_0-a-RELUcopy",
     "PROBE/ct_2-a-RELU-PLUS-gate_adapter",
     "PROBE/ct_2-a-RELU-PLUS-LN_BEFORE-gate_adapter",
     "PROBE/ct_3-a-V3",

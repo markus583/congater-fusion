@@ -2,7 +2,7 @@ import logging
 
 import evaluate
 import numpy as np
-from datasets.load import load_dataset, load_metric
+from datasets.load import load_dataset
 from transformers import (
     AutoTokenizer,
     DataCollatorWithPadding,

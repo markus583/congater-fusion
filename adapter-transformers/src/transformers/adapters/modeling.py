@@ -63,11 +63,14 @@ class Adapter(nn.Module):
         self.add_second_adapter = config["add_second_adapter"]
         self.second_adapter_input = config["second_adapter_input"]
         self.omega = config["omega"]
+        self.use_ttsigmoid = config["use_ttsigmoid"]
 
-        if self.omega == 1.0:
-            self.tsigmoid = Tsigmoid()
-        else:
+        if self.use_ttsigmoid:
+            print("use TTsigmoid")
             self.tsigmoid = TTsigmoid()
+        else:
+            print("use Tsigmoid")
+            self.tsigmoid = Tsigmoid()
 
         # list for all modules of the adapter, passed into nn.Sequential()
         seq_list = []

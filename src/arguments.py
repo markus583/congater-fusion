@@ -42,6 +42,14 @@ task_to_keys = {
     "sst2": ("sentence", None),
     "stsb": ("sentence1", "sentence2"),
     "wnli": ("sentence1", "sentence2"),
+    "boolq": ("question", "passage"),
+    "cb": ("premise", "hypothesis"),
+    "rte": ("premise", "hypothesis"),
+    "wic": ("processed_sentence1", None),
+    "wsc": ("span2_word_text", "span1_text"),
+    "copa": (None, None),
+    "record": (None, None),
+    "multirc": ("paragraph", "question_answer"),
 }
 
 
@@ -93,6 +101,16 @@ class DataTrainingArguments:
                 "If False, will pad the samples dynamically when batching to the maximum length in the batch."
             )
         },
+    )
+    template_id: Optional[int] = field(
+        default=1,
+        metadata={
+            "help": "The specific prompt string to use"
+        },
+    )
+    pilot: Optional[str] = field(
+        default=None, 
+        metadata={"help": "do the pilot experiments."}
     )
     max_train_samples: Optional[int] = field(
         default=None,

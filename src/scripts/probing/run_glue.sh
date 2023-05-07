@@ -23,7 +23,7 @@ else
   SEED=$NEW_SEED
 fi
 
-for TASK in mrpc rte sst2 cola stsb qnli mnli; do
+for TASK in qqp; do
   for SEED in $SEED; do
     if [ $TASK = "cola" ]; then
         EVAL_METRIC="eval_matthews_correlation"
@@ -78,7 +78,7 @@ for TASK in mrpc rte sst2 cola stsb qnli mnli; do
           --max_steps 1 \
           --train_adapter \
           --adapter_config congaterV3[omega=$omega] \
-          --output_dir ../../runs/PROBE/ct_0-a-RELU-PLUS-LN_BEFORE/$OMEGA/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED \
+          --output_dir ../../runs/PROBE/ct_0-a-RELUcopy/$OMEGA/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED \
           --logging_strategy epoch \
           --save_strategy epoch \
           --evaluation_strategy epoch \
@@ -87,7 +87,7 @@ for TASK in mrpc rte sst2 cola stsb qnli mnli; do
           --load_best_model_at_end True \
           --metric_for_best_model $EVAL_METRIC \
           --report_to wandb \
-          --run_name $TASK-$MODEL_NAME-$TRAIN_PCT-$SEED-PROBE-V0-LN-$OMEGA \
+          --run_name $TASK-$MODEL_NAME-$TRAIN_PCT-$SEED-PROBE-V1-FIX-$OMEGA \
           --max_train_pct $TRAIN_PCT \
           --seed $SEED \
           --omega $omega

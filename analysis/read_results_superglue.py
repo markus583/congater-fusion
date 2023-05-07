@@ -10,19 +10,7 @@ import seaborn as sns
 warnings.filterwarnings("ignore")
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
-# full = pd.read_csv("results/FULL.csv")
-st_a = pd.read_csv("results/ST-A.csv")
-# st_a_fusion = pd.read_csv("results/ST-A_FUSION.csv")
-ct_a_bert_RELU = pd.read_csv("results/CT-A_bert-init-RELU.csv")
-ct_a_bert_relu_plus_ln_before = pd.read_csv("results/CT-A_bert-init-RELU-PLUS-LN_BEFORE.csv")
-ct_a_bert_relu_plus_gateadp = pd.read_csv("results/CT-A_bert-init-RELU-PLUS-gate_adapter.csv")
-ct_a_bert_relu_plus_gateadp_ln_before = pd.read_csv("results/CT-A_bert-init-RELU-PLUS-LN_BEFORE-gate_adapter.csv")
-V3 = pd.read_csv("results/V3.csv")
-V3_rf16 = pd.read_csv("results/V3-RF16.csv")
-V3_tanh = pd.read_csv("results/V3-tanh.csv")
-V4 = pd.read_csv("results/V4.csv")
-V4_rf16 = pd.read_csv("results/V4-RF16.csv")
-V2 = pd.read_csv("results/C-V2.csv")
+full = pd.read_csv("results/FULL.csv")
 
 # This code is used to store the results of the various models in a dictionary
 # so that they can be easily accessed later.
@@ -36,19 +24,7 @@ V2 = pd.read_csv("results/C-V2.csv")
 # os.makedirs("results/v3/differences/plots", exist_ok=True)
     
 result_dict = {
-    # "Full": full,
-    "ST-A": st_a,
-    # "ST-A Fusion": st_a_fusion,
-    "C-V1": ct_a_bert_RELU,
-    "C-V0 LN before x": ct_a_bert_relu_plus_ln_before,
-    "C-V2": ct_a_bert_relu_plus_gateadp,
-    "CT-V2 LN before x": ct_a_bert_relu_plus_gateadp_ln_before,
-    "V3": V3,
-    "V3-RF16": V3_rf16,
-    "V3-tanh": V3_tanh,
-    "V4": V4,
-    "V4-RF16": V4_rf16,
-    "V2": V2,
+    "Full": full,
 }
 
 
@@ -72,10 +48,8 @@ for setup in combinations(result_dict.keys(), 2):
 
 # add new column to full, st_a, difference, based on
 def compute_main_metric(task):
-    if task == "cola":
-        metric = "matthews_correlation"
-    elif task == "stsb":
-        metric = "pearson"
+    if task in ["multirc", "record"]:
+        metric = "f1"
     else:
         metric = "accuracy"
     return metric
@@ -134,13 +108,13 @@ for name, df in result_dict.items():
     s.ax.grid(True)
 
     s.fig.set_size_inches((10, 6))
-    plt.tight_layout()
-    s.savefig(f"results/v3/plots/{name.split(' (')[0]}.png")
+    # plt.tight_layout()
+    s.savefig(f"results/plots/{name.split(' (')[0]}.png")
     plt.close()
 
     # df.to_csv(f"results/{name}_proc.csv", index=False)
     # same but only take content before ( of name
-    df.to_csv(f"results/v3/{name.split(' (')[0]}_proc.csv", index=False)
+    df.to_csv(f"results/csv/{name.split(' (')[0]}_proc.csv", index=False)
 
 
 for name, df in differences.items():
@@ -180,11 +154,11 @@ for name, df in differences.items():
 
     s.fig.set_size_inches((12, 6))
     # plt.tight_layout()
-    s.savefig(f"results/v3/differences/plots/{name}.png")
+    s.savefig(f"results/plots/differences/plots/{name}.png")
     # close
     plt.close()
 
     # df.to_csv(f"results/{name}_proc.csv", index=False)
     # same but only take content before ( of name
-    df.to_csv(f"results/v3/differences/{name}.csv", index=False)
+    df.to_csv(f"results/csv/differences/{name}.csv", index=False)
 print("done")

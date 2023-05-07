@@ -9,12 +9,13 @@ from transformers import (
     EarlyStoppingCallback,
     Trainer,
 )
-from transformers.adapters.configuration import PfeifferConfig, AdapterConfig, CongaterV2Config
+from transformers.adapters.configuration import PfeifferConfig, AdapterConfig
 from transformers.adapters.training import setup_adapter_training
 
 from arguments import get_args
 from model.utils import TaskType, get_model
-from tasks.glue.dataset import GlueDataset
+from tasks.superglue.dataset import SuperGlueDataset
+from tasks.superglue.dataset_record import SuperGlueDatasetForRecord
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +32,12 @@ def get_trainer(args):
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
     )
-    dataset = GlueDataset(tokenizer, data_args, training_args)
+    if data_args.task_name == "recordTEST":
+        dataset = SuperGlueDatasetForRecord(tokenizer, data_args, training_args)
+    else:
+        dataset = SuperGlueDataset(tokenizer, data_args, training_args)
 
-    if not dataset.is_regression:
+    if not dataset.multiple_choice:
         config = AutoConfig.from_pretrained(
             model_args.config_name
             if model_args.config_name
@@ -57,11 +61,11 @@ def get_trainer(args):
             cache_dir=model_args.cache_dir,
             use_auth_token=True if model_args.use_auth_token else None,
         )
-    model = get_model(
-        args=args,
-        config=config,
-        task_type=TaskType.SEQUENCE_CLASSIFICATION,
-    )
+    if not dataset.multiple_choice:
+        model = get_model(args=args, task_type=TaskType.SEQUENCE_CLASSIFICATION, config=config)
+    else:
+        # TODO: check fix_bert from original 
+        model = get_model(args=args, task_type=TaskType.MULTIPLE_CHOICE, config=config)
 
     adapter_setup = None
     if fusion_args.train_fusion:
@@ -71,42 +75,26 @@ def get_trainer(args):
                 "Set --train_adapter to False to enable fusion training"
             )
         af_config = json.load(open(fusion_args.fusion_load_dir))
+        if data_args.max_train_pct != 100:
+            seed = af_config[data_args.task_name][-1]
+            af_config[data_args.task_name] = (
+                af_config[data_args.task_name][:-1]
+                + str(data_args.max_train_pct)
+                + "/"
+                + seed
+            )
         if fusion_args.fusion_adapter_config == "pfeiffer":
             adapter_config = PfeifferConfig()
-        elif fusion_args.fusion_adapter_config == "congaterV2":
-            adapter_config = CongaterV2Config()
         else:
             # TODO: implement for ConGater
             raise ValueError(
-                "Only pfeiffer & CongaterV2 is currently supported for fusion training."
+                "Only pfeiffer is currently supported for fusion training."
                 "Set --fusion_adapter_config to pfeiffer"
             )
-        
-        for _, task in af_config.items():
-            task = task.split("/")[-3]
-            seed = af_config[task][-1]
-            print(task)
-            # use max_train_pct for task, else 100
-            if task == data_args.task_name:       
-                af_config[task] = (
-                    af_config[task][:-1]
-                    + str(data_args.max_train_pct)
-                    + "/"
-                    + seed
-                )
-            else:
-                af_config[task] = (
-                    af_config[task][:-1]
-                    + "100"
-                    + "/"
-                    + seed
-                    )
-
-        print(af_config)
         for _, adapter_dir in af_config.items():
-            print(adapter_dir)
+            # TODO: switch to superglue/combination
             model.load_adapter(
-                f"{os.path.expanduser('~')}/congater-fusion/src/"
+                f"{os.path.expanduser('~')}/congater-fusion/adapter-reproduction/glue/"
                 + adapter_dir,
                 config=adapter_config,
                 with_head=fusion_args.fusion_with_head,
@@ -129,20 +117,25 @@ def get_trainer(args):
                config=config,
                with_head=True,
             )
-            # model.load_adapter("sentiment/sst-2@ukp", config=config)
             model.train_adapter([data_args.task_name])
             model.set_active_adapters(data_args.task_name)
         else:
-            model.add_classification_head(
-                data_args.task_name or "superglue",
-                num_labels=dataset.num_labels,
-                id2label={i: v for i, v in enumerate(dataset.label_list)}
-                if not dataset.is_regression
-                else None,
-            )
+            if dataset.multiple_choice:
+                model.add_multiple_choice_head(
+                    data_args.task_name or "superglue",
+                    num_choices=2
+                )
+            else:
+                model.add_classification_head(
+                    data_args.task_name or "superglue",
+                    num_labels=dataset.num_labels,
+                    id2label={i: v for i, v in enumerate(dataset.label_list)}
+                    if not dataset.is_regression
+                    else None,
+                )
             # Setup adapters
             # TODO: setup variable omega for training also (not only eval mode, i.e. data_args.eval_adapter = True)
-            setup_adapter_training(model, adapter_args, data_args.task_name or "glue")
+            setup_adapter_training(model, adapter_args, data_args.task_name or "superglue")
     else:
         if adapter_args.load_adapter:
             raise ValueError(

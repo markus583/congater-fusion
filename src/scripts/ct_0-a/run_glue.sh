@@ -51,8 +51,8 @@ for TASK in mrpc rte sst2 cola stsb qnli mnli qqp; do
         --learning_rate 1e-4 \
         --num_train_epochs 30 \
         --train_adapter \
-        --adapter_config congater[kill_adapter_residual=False,ln_before=True] \
-        --output_dir ../../runs/ct_0-a-RELU-PLUS-LN_BEFORE/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED \
+        --adapter_config congaterV2 \
+        --output_dir ../../runs/C-V2/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED \
         --logging_strategy epoch \
         --save_strategy epoch \
         --evaluation_strategy epoch \
@@ -61,7 +61,7 @@ for TASK in mrpc rte sst2 cola stsb qnli mnli qqp; do
         --load_best_model_at_end True \
         --metric_for_best_model $EVAL_METRIC \
         --report_to wandb \
-        --run_name $TASK-$MODEL_NAME-$TRAIN_PCT-$SEED-RELU-PLUS-LN_BEFORE \
+        --run_name $TASK-$MODEL_NAME-$TRAIN_PCT-$SEED-C-V2-RELU \
         --max_train_pct $TRAIN_PCT \
         --seed $SEED \
         --overwrite_output_dir

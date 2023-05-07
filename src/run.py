@@ -15,7 +15,7 @@ from transformers.utils import check_min_version
 from transformers.utils.versions import require_version
 
 from arguments import get_args
-from tasks.utils import GLUE_DATASETS, TASKS
+from tasks.utils import GLUE_DATASETS, SUPERGLUE_DATASETS, TASKS
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
 check_min_version("4.26.0")
@@ -150,6 +150,9 @@ def main() -> None:
     if data_args.dataset_name.lower() == "glue":
         assert data_args.task_name.lower() in GLUE_DATASETS
         from tasks.glue.get_trainer import get_trainer
+    elif data_args.dataset_name.lower() == "superglue":
+        assert data_args.task_name.lower() in SUPERGLUE_DATASETS
+        from tasks.superglue.get_trainer import get_trainer
     else:
         raise NotImplementedError(
             "Task {} is not implemented. Please choose a task from: {}".format(
@@ -212,9 +215,9 @@ if __name__ == "__main__":
             "--model_name_or_path",
             "bert-base-uncased",
             "--task_name",
-            "rte",
+            "record",
             "--dataset_name",
-            "glue",
+            "superglue",
             "--max_seq_length",
             "128",
             "--do_train",
@@ -226,17 +229,17 @@ if __name__ == "__main__":
             "--per_device_eval_batch_size",
             "32",
             "--learning_rate",
-            "5e-5",
+            "1e-5",
             "--num_train_epochs",
             "2",
-            "--train_adapter",
+            # "--train_adapter",
             # "--train_fusion",
             "--fusion_load_dir",
             "scripts/st-a_fusion/af_config.json",
             "--output_dir",
             "runs/TEST",
-            "--eval_adapter",
-            "True",
+            # "--eval_adapter",
+            # "True",
             "--logging_strategy",
             "epoch",
             "--evaluation_strategy",
@@ -259,12 +262,12 @@ if __name__ == "__main__":
             "100",
             "--seed",
             "0",
-            # "--overwrite_output_dir",
-            "--no_cuda",
+            "--overwrite_output_dir",
+            # "--no_cuda",
             "--max_steps",
             "1000",
             "--adapter_config",
-            "congaterV4[omega=0.0]",
+            "congater[reduction_factor=64]",
             "--omega",
             "0.5"
         ]
