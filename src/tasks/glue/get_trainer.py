@@ -134,7 +134,7 @@ def get_trainer(args):
             model.set_active_adapters(data_args.task_name)
         else:
             model.add_classification_head(
-                data_args.task_name or "superglue",
+                data_args.task_name or "glue",
                 num_labels=dataset.num_labels,
                 id2label={i: v for i, v in enumerate(dataset.label_list)}
                 if not dataset.is_regression

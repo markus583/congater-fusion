@@ -1,0 +1,14 @@
+{
+    "rte": "runs/C-V2/rte/bert-base-uncased/0",
+    "mrpc": "runs/C-V2/mrpc/bert-base-uncased/0",
+    "mnli": "runs/C-V2/mnli/bert-base-uncased/0",
+    "qnli": "runs/C-V2/qnli/bert-base-uncased/0",
+    "qqp": "runs/C-V2/qqp/bert-base-uncased/0",
+    "sst2": "runs/C-V2/sst2/bert-base-uncased/0",
+    "stsb": "runs/C-V2/stsb/bert-base-uncased/0",
+    "cb": "runs/C-V2/cb/bert-base-uncased/0",
+    "wsc": "runs/C-V2/wsc/bert-base-uncased/0",
+    "wic": "runs/C-V2/wic/bert-base-uncased/0",
+    "copa": "runs/C-V2/copa/bert-base-uncased/0",
+    "boolq": "runs/C-V2/boolq/bert-base-uncased/0"
+}

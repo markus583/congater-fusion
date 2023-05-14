@@ -34,7 +34,6 @@ class SuperGlueDataset:
 
         self.multiple_choice = data_args.task_name in ["copa"]
         self.is_regression = data_args.task_name == "stsb"
-        # TODO: check this
 
         if data_args.task_name == "record":
             self.num_labels = 2
@@ -272,6 +271,7 @@ class SuperGlueDataset:
         return result
 
     def compute_metrics(self, p: EvalPrediction):
+        print("compute metrics now")
         preds = p.predictions[0] if isinstance(p.predictions, tuple) else p.predictions
         preds = np.argmax(preds, axis=1)
 
@@ -299,9 +299,9 @@ class SuperGlueDataset:
             exact_match_score,
             metric_max_over_ground_truths,
         )
-
+        print("compute metrics now, record")
         probs = p.predictions[0] if isinstance(p.predictions, tuple) else p.predictions
-        examples = self.train_dataset
+        examples = self.eval_dataset
         qid2pred = defaultdict(list)
         qid2ans = {}
         for prob, example in zip(probs, examples):

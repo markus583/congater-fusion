@@ -1,0 +1,10 @@
+{
+    "rte": "runs/C-V2/rte/bert-base-uncased/0",
+    "mrpc": "runs/C-V2/mrpc/bert-base-uncased/0",
+    "cola": "runs/C-V2/cola/bert-base-uncased/0",
+    "mnli": "runs/C-V2/mnli/bert-base-uncased/0",
+    "qnli": "runs/C-V2/qnli/bert-base-uncased/0",
+    "qqp": "runs/C-V2/qqp/bert-base-uncased/2",
+    "sst2": "runs/C-V2/sst2/bert-base-uncased/0",
+    "stsb": "runs/C-V2/stsb/bert-base-uncased/0"
+}

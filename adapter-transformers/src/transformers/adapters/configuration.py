@@ -283,7 +283,7 @@ class AdapterConfig(AdapterConfigBase):
     add_second_adapter: Optional[bool] = False
     second_adapter_input: Optional[Union[None, str]] = None
     omega: Optional[Union[float, Mapping]] = 1.0
-    use_ttsigmoid: Optional[bool] = False
+    use_ttsigmoid: Optional[bool] = True
 
     # We want to emulate a simple form of immutability while keeping the ability to add custom attributes.
     # Therefore, we don't allow changing attribute values if set once.

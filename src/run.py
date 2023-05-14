@@ -147,6 +147,19 @@ def main() -> None:
 
     setup_logging(training_args)
 
+    if not data_args.dataset_name:
+        # infer dataset and task from task_name
+        if data_args.task_name.lower() in GLUE_DATASETS:
+            data_args.dataset_name = "glue"
+        elif data_args.task_name.lower() in SUPERGLUE_DATASETS:
+            data_args.dataset_name = "superglue"
+        else:
+            raise ValueError(
+                f"Task {data_args.task_name} not found. Should be one of {TASKS}"
+            )
+    print("dataset_name", data_args.dataset_name)
+    print("task_name", data_args.task_name)
+        
     if data_args.dataset_name.lower() == "glue":
         assert data_args.task_name.lower() in GLUE_DATASETS
         from tasks.glue.get_trainer import get_trainer
@@ -215,9 +228,9 @@ if __name__ == "__main__":
             "--model_name_or_path",
             "bert-base-uncased",
             "--task_name",
-            "record",
+            "rte",
             "--dataset_name",
-            "superglue",
+            "glue",
             "--max_seq_length",
             "128",
             "--do_train",
@@ -233,9 +246,9 @@ if __name__ == "__main__":
             "--num_train_epochs",
             "2",
             # "--train_adapter",
-            # "--train_fusion",
+            "--train_fusion",
             "--fusion_load_dir",
-            "scripts/st-a_fusion/af_config.json",
+            "scripts/st-a_fusion/af_config_GSG.json",
             "--output_dir",
             "runs/TEST",
             # "--eval_adapter",
@@ -259,15 +272,15 @@ if __name__ == "__main__":
             "--run_name",
             "st-a-fusion-rte-TEST",
             "--max_train_pct",
-            "100",
+            "10",
             "--seed",
             "0",
             "--overwrite_output_dir",
-            # "--no_cuda",
+            "--no_cuda",
             "--max_steps",
             "1000",
             "--adapter_config",
-            "congater[reduction_factor=64]",
+            "pfeiffer",
             "--omega",
             "0.5"
         ]

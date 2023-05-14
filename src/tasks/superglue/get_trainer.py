@@ -32,10 +32,7 @@ def get_trainer(args):
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
     )
-    if data_args.task_name == "recordTEST":
-        dataset = SuperGlueDatasetForRecord(tokenizer, data_args, training_args)
-    else:
-        dataset = SuperGlueDataset(tokenizer, data_args, training_args)
+    dataset = SuperGlueDataset(tokenizer, data_args, training_args)
 
     if not dataset.multiple_choice:
         config = AutoConfig.from_pretrained(
@@ -75,26 +72,42 @@ def get_trainer(args):
                 "Set --train_adapter to False to enable fusion training"
             )
         af_config = json.load(open(fusion_args.fusion_load_dir))
-        if data_args.max_train_pct != 100:
-            seed = af_config[data_args.task_name][-1]
-            af_config[data_args.task_name] = (
-                af_config[data_args.task_name][:-1]
-                + str(data_args.max_train_pct)
-                + "/"
-                + seed
-            )
         if fusion_args.fusion_adapter_config == "pfeiffer":
             adapter_config = PfeifferConfig()
+        elif fusion_args.fusion_adapter_config == "congaterV2":
+            adapter_config = CongaterV2Config()
         else:
             # TODO: implement for ConGater
             raise ValueError(
-                "Only pfeiffer is currently supported for fusion training."
+                "Only pfeiffer & CongaterV2 is currently supported for fusion training."
                 "Set --fusion_adapter_config to pfeiffer"
             )
+        
+        for _, task in af_config.items():
+            task = task.split("/")[-3]
+            seed = af_config[task][-1]
+            print(task)
+            # use max_train_pct for task, else 100
+            if task == data_args.task_name:       
+                af_config[task] = (
+                    af_config[task][:-1]
+                    + str(data_args.max_train_pct)
+                    + "/"
+                    + seed
+                )
+            else:
+                af_config[task] = (
+                    af_config[task][:-1]
+                    + "100"
+                    + "/"
+                    + seed
+                    )
+
+        print(af_config)
         for _, adapter_dir in af_config.items():
-            # TODO: switch to superglue/combination
+            print(adapter_dir)
             model.load_adapter(
-                f"{os.path.expanduser('~')}/congater-fusion/adapter-reproduction/glue/"
+                f"{os.path.expanduser('~')}/congater-fusion/src/"
                 + adapter_dir,
                 config=adapter_config,
                 with_head=fusion_args.fusion_with_head,
