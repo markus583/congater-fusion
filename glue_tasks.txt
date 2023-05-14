@@ -1,5 +1,0 @@
--MRPC
--RTE
--MNLI
--QQP
--SST - 2
