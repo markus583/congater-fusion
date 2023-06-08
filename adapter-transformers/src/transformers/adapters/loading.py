@@ -8,12 +8,20 @@ from typing import Callable, Mapping, Sequence, Tuple
 import torch
 
 from .configuration import AdapterConfigBase, build_full_config
-from .head_utils import (STATIC_TO_FLEX_HEAD_MAP,
-                         get_head_config_and_rename_list)
-from .utils import (ACTIVATION_RENAME, ADAPTERFUSION_CONFIG_NAME,
-                    ADAPTERFUSION_WEIGHTS_NAME, CONFIG_NAME, HEAD_CONFIG_NAME,
-                    HEAD_WEIGHTS_NAME, WEIGHTS_NAME, AdapterType,
-                    resolve_adapter_path)
+from .head_utils import STATIC_TO_FLEX_HEAD_MAP, get_head_config_and_rename_list
+from .utils import (
+    ACTIVATION_RENAME,
+    ADAPTERFUSION_CONFIG_NAME,
+    ADAPTERFUSION_WEIGHTS_NAME,
+    CONGOSITION_CONFIG_NAME,
+    CONGOSITION_WEIGHTS_NAME,
+    CONFIG_NAME,
+    HEAD_CONFIG_NAME,
+    HEAD_WEIGHTS_NAME,
+    WEIGHTS_NAME,
+    AdapterType,
+    resolve_adapter_path,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -607,6 +615,122 @@ class AdapterFusionLoader(WeightsLoader):
         adapter_fusion_name = load_as or config["name"]
         if adapter_fusion_name not in self.model.config.adapters.fusions:
             self.model.add_adapter_fusion(
+                adapter_fusion_name,
+                config["config"],
+                overwrite_ok=True,
+                set_active=kwargs.pop("set_active", True),
+            )
+        else:
+            logger.warning(
+                "Overwriting existing adapter fusion module '{}'".format(
+                    adapter_fusion_name
+                )
+            )
+
+        # Load AdapterFusion weights
+        filter_func = self.filter_func(adapter_fusion_name)
+        if load_as:
+            rename_func = self.rename_func(config["name"], load_as)
+        else:
+            rename_func = None
+        self.weights_helper.load_weights(
+            save_directory,
+            filter_func,
+            rename_func=rename_func,
+            loading_info=loading_info,
+        )
+
+        return save_directory, adapter_fusion_name
+
+
+class CongositionV1Loader(WeightsLoader):
+    """
+    A class providing methods for saving and loading AdapterFusion modules from the file system.
+
+    """
+
+    def __init__(self, model, error_on_missing=True):
+        super().__init__(model, CONGOSITION_WEIGHTS_NAME, CONGOSITION_CONFIG_NAME)
+        self.error_on_missing = error_on_missing
+
+    def filter_func(self, adapter_fusion_name):
+        return lambda x: "adapter_fusion_layer.{}".format(adapter_fusion_name) in x
+
+    def rename_func(self, old_name, new_name):
+        return lambda k: k.replace(
+            "adapter_fusion_layer.{}".format(old_name),
+            "adapter_fusion_layer.{}".format(new_name),
+        )
+
+    def save(self, save_directory: str, name: str, meta_dict=None):
+        """
+        Saves a AdapterFusion module into the given directory.
+
+        Args:
+            save_directory (str): The directory to save the weights in.
+            name (str, optional): The AdapterFusion name.
+        """
+
+        if name not in self.model.config.adapters.fusions:
+            if self.error_on_missing:
+                raise ValueError(f"Unknown Congosition '{name}'.")
+            else:
+                logger.debug(f"No Congosition with name '{name}' available.")
+                return
+
+        if not exists(save_directory):
+            mkdir(save_directory)
+        else:
+            assert isdir(
+                save_directory
+            ), "Saving path should be a directory where the head can be saved."
+
+        adapter_fusion_config = self.model.config.adapters.get_congosition_v1(name)
+
+        # Save the adapter fusion configuration
+        config_dict = build_full_config(
+            adapter_fusion_config,
+            self.model.config,
+            name=name,
+            model_name=self.model.model_name,
+            model_class=self.model.__class__.__name__,
+        )
+        self.weights_helper.save_weights_config(
+            save_directory, config_dict, meta_dict=meta_dict
+        )
+
+        # Save head weights
+        filter_func = self.filter_func(name)
+        self.weights_helper.save_weights(save_directory, filter_func)
+
+    def load(self, save_directory, load_as=None, loading_info=None, **kwargs):
+        """
+        Loads a AdapterFusion module from the given directory.
+
+        Args:
+            save_directory (str): The directory from where to load the weights.
+            load_as (str, optional): Load the weights with this name. Defaults to None.
+
+        Returns:
+            Tuple[str, str]: A tuple consisting of the local file system directory from which the weights where loaded
+            and the name of the loaded weights.
+        """
+        if not exists(join(save_directory, CONGOSITION_WEIGHTS_NAME)):
+            if self.error_on_missing:
+                raise ValueError(
+                    "Loading path should be a directory where AdapterFusion is saved."
+                )
+            else:
+                logger.debug(
+                    "No matching adapter fusion found in '{}'".format(save_directory)
+                )
+                return None, None
+
+        config = self.weights_helper.load_weights_config(save_directory)
+
+        adapter_fusion_name = load_as or config["name"]
+        if adapter_fusion_name not in self.model.config.adapters.fusions:
+            self.model.add_congosition_v1(
                 adapter_fusion_name,
                 config["config"],
                 overwrite_ok=True,

@@ -146,6 +146,9 @@ _import_structure = {
     ],
     "t_sigmoid": ["Tsigmoid"],
     "tt_sigmoid": ["TTsigmoid"],
+    "tttanh": ["TTTanh"],
+    "ttselu": ["TTSELU"],
+    "ttseluv2": ["TTSELUv2"],
 }
 
 if TYPE_CHECKING:

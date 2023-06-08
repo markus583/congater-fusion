@@ -5,9 +5,16 @@ import copy
 import torch
 from torch import nn
 from transformers.activations import get_activation
-from transformers.adapters.t_sigmoid import Tsigmoid, TTsigmoid
+from transformers.adapters.t_sigmoid import (
+    Tsigmoid,
+    TTsigmoid,
+    TTTanh,
+    TTTanhV2,
+    TTSelu,
+    TTSeluV2,
+)
 
-from .configuration import AdapterConfig, AdapterFusionConfig
+from .configuration import AdapterConfig, AdapterFusionConfig, CongositionV1Config
 from .context import ForwardContext
 
 
@@ -62,17 +69,34 @@ class Adapter(nn.Module):
         self.kill_adapter_residual = config["kill_adapter_residual"]
         self.add_second_adapter = config["add_second_adapter"]
         self.second_adapter_input = config["second_adapter_input"]
-        self.omega = config["omega"]
+        self.variable_omega = config["variable_omega"]
+        self.gating_type = config["gating_type"]
+        if self.variable_omega:
+            self.omega = nn.Parameter(torch.tensor(config["omega"]), requires_grad=True)
+        else:
+            self.omega = nn.Parameter(
+                torch.tensor(config["omega"]), requires_grad=False
+            )
+            self.omega.requires_grad = False
         self.use_ttsigmoid = config["use_ttsigmoid"]
-        
-        
+
         if self.apply_tsigmoid:
-            if self.use_ttsigmoid:
-                print("use TTsigmoid")
-                self.tsigmoid = TTsigmoid()
+            if self.gating_type == "tanh":
+                self.tsigmoid = TTTanh(variable_omega=self.variable_omega)
+                print("use TTTanh")
+            elif self.gating_type == "selu":
+                print("use TTSelu")
+                self.tsigmoid = TTSelu(variable_omega=self.variable_omega)
+            elif self.gating_type == "seluV2":
+                print("use TTSeluV2")
+                self.tsigmoid = TTSeluV2(variable_omega=self.variable_omega)
             else:
-                print("use Tsigmoid")
-                self.tsigmoid = Tsigmoid()
+                if self.use_ttsigmoid:
+                    print("use TTsigmoid")
+                    self.tsigmoid = TTsigmoid(variable_omega=self.variable_omega)
+                else:
+                    print("use Tsigmoid")
+                    self.tsigmoid = Tsigmoid(variable_omega=self.variable_omega)
 
         # list for all modules of the adapter, passed into nn.Sequential()
         seq_list = []
@@ -224,7 +248,17 @@ class Adapter(nn.Module):
 
         return hidden_states, query, residual
 
-    def forward(self, x, residual_input, output_gating=False):
+    def forward(
+        self,
+        x,
+        residual_input,
+        output_gating=False,
+        omega=None,
+        train: bool = False,
+        skip_tt: bool = False,
+    ):
+        if omega is not None and train:
+            omega.retain_grad()
         down = self.adapter_down(x)
         up = self.adapter_up(down)
         up = up * self.scaling
@@ -241,13 +275,25 @@ class Adapter(nn.Module):
             up_2 = up_2 * self.scaling
             adapter_output_2 = up_2
             # always apply t-sigmoid in this case
-            output_2 = self.tsigmoid(adapter_output_2, w=self.omega)  # g
+            if omega is not None:
+                output_2 = self.tsigmoid(adapter_output_2, w=omega)  # g
+            else:
+                output_2 = self.tsigmoid(adapter_output_2, w=self.omega)  # g
             output = adapter_output  # v
         else:
             if self.apply_tsigmoid:
-                output = self.tsigmoid(adapter_output, w=self.omega)
+                if omega is not None:
+                    output = self.tsigmoid(adapter_output, w=omega)
+                else:
+                    output = self.tsigmoid(adapter_output, w=self.omega)
             else:
-                output = adapter_output
+                if not self.apply_tsigmoid and self.omega is not None:
+                    # print("scaling st-a with omega")
+                    output = adapter_output * self.omega
+                else:
+                    output = adapter_output
+
+        # up = output
 
         if self.use_gating:
             # x.shape = (batch_size, seq_len, hidden_size)
@@ -261,6 +307,9 @@ class Adapter(nn.Module):
             output = output * adapter_output
         elif self.use_tsigmoid_gating == "adp2":
             output = output * output_2  # v * g
+
+        if not skip_tt:
+            up = output
 
         if not self.kill_adapter_residual:
             # apply residual connection before layer norm if configured in this way
@@ -423,6 +472,8 @@ class BertFusion(nn.Module):
         self.dense_size = dense_size
         self.dropout = nn.Dropout(attention_probs_dropout_prob)
 
+        # self.tsigmoid = TTsigmoid()
+
         if (
             not self.config["query"]
             and not self.config["key"]
@@ -432,27 +483,113 @@ class BertFusion(nn.Module):
 
         if self.config["query"]:
             self.query = nn.Linear(self.dense_size, self.dense_size)
+            # normal distribution with mean 0, std 0.02
             self.query.apply(Adapter.init_bert_weights)
 
         if self.config["key"]:
             self.key = nn.Linear(self.dense_size, self.dense_size)
             self.key.apply(Adapter.init_bert_weights)
+        if self.config["omega"] and not self.config["att_scores_as_omega"]:
+            if self.config["omega_init"] is not None:
+                if self.config["omega_init_12_only"]:
+                    self.omega = nn.Parameter(
+                        torch.normal(
+                            self.config["omega_init"],
+                            0.02,
+                            (12, 1),
+                            requires_grad=True,
+                        )
+                    )
+                elif self.config["omega_init_BIG"]:
+                    self.omega = nn.Parameter(
+                        torch.normal(
+                            self.config["omega_init"],
+                            0.02,
+                            (1, 128, 12, 768),
+                            requires_grad=True,
+                        )
+                    )
+                elif self.config["omega_init_MID"]:
+                    self.omega = nn.Parameter(
+                        torch.normal(
+                            self.config["omega_init"],
+                            0.02,
+                            (1, 128, 12, 1),
+                            requires_grad=True,
+                        )
+                    )
+                else:
+                    self.omega = nn.Parameter(
+                        torch.normal(
+                            self.config["omega_init"],
+                            0.02,
+                            (12, 768),
+                            requires_grad=True,
+                        )
+                    )
+                # 32, 1, 12, 768
+                # 32, 1, 12, 1
+            else:
+                self.omega = nn.Parameter(
+                    torch.zeros(12, self.dense_size, requires_grad=True),
+                    requires_grad=True,
+                )
+        elif self.config["w_omega"]:
+            self.w_omega = nn.Linear(self.dense_size, self.dense_size)
+            self.w_omega.apply(Adapter.init_bert_weights)
+
+        if self.config["ttsigmoid"]:
+            self.gating_function = TTsigmoid(
+                omega_offset=self.config["ttsigmoid_omega_offset"]
+            )
+        elif self.config["tttanhV2"]:
+            self.gating_function = TTTanhV2(
+                omega_offset=self.config["ttsigmoid_omega_offset"]
+            )
+        
 
         if self.config["value"]:
             self.value = nn.Linear(self.dense_size, self.dense_size, bias=False)
             self.value.apply(Adapter.init_bert_weights)
             if self.config["value_initialized"]:
-                self.value.weight.data = (
-                    torch.zeros(self.dense_size, self.dense_size) + 0.000001
-                ).fill_diagonal_(1.0)
+                # may improve convergence, but not focus of study. Defaults to False.
+                if self.config["value_initialized_normal"]:
+                    # 1 on diagonal, normal distribution with mean 0, std 0.02 everywhere else
+                    self.value.weight.data = (
+                        torch.normal(
+                            0.000001, 0.0000001, size=(self.dense_size, self.dense_size)
+                        )
+                    ).fill_diagonal_(self.config["value_initialized"])
+                else:
+                    # 1 on diagonal, 0.000001 everywhere else
+                    self.value.weight.data = (
+                        torch.zeros(self.dense_size, self.dense_size) + 0.000001
+                    ).fill_diagonal_(self.config["value_initialized"])
 
         if self.config["temperature"]:
+            # defaults to False
             self.T = 50.0
         else:
             self.T = 1.0
         self.reduction = self.T / 1000.0
 
+        if self.config["add_dk_scaling"]:
+            # defaults to False
+            self.d_k = self.dense_size**0.5
+        else:
+            self.d_k = 1.0
+
     def forward(self, query, key, value, residual, output_attentions: bool = False):
+        """
+        The forward pass for the AdapterFusion block.
+
+        Args:
+            query: The query input tensor, x.
+            key: The key input tensor: [v_1, v_2, ..., v_n].
+            value: The value input tensor: [v_1, v_2, ..., v_n].
+            residual: The residual connection.
+            output_attentions: Whether to output the attention weights. Used for visualization.
+        """
         if self.config["residual_before"]:
             value += residual[:, :, None, :].repeat(1, 1, value.size(2), 1)
 
@@ -472,21 +609,117 @@ class BertFusion(nn.Module):
         else:
             value_layer = value
 
-        # Take the dot product between "query" and "key" to get the raw attention scores.
-        attention_scores = torch.squeeze(
-            torch.matmul(query_layer.unsqueeze(2), key_layer.transpose(-2, -1)), dim=2
-        )
+        if self.config["w_omega"]:
+            if self.config["w_omega_input"] == "key":
+                omega = self.w_omega(key_layer)
+            elif self.config["w_omega_input"] == "v_N":
+                # input are v_i, ..., v_N
+                omega = self.w_omega(value_layer)
+            else:
+                raise ValueError("w_omega_input must be 'key' or 'v_N'")
 
+        # Take the dot product between "query" and "key" to get the raw attention scores.
+        attention_scores = (
+            torch.squeeze(
+                torch.matmul(query_layer.unsqueeze(2), key_layer.transpose(-2, -1)),
+                dim=2,
+            )
+            / self.d_k
+        )
         attention_scores = self.dropout(attention_scores)
 
+        if self.config["w_omega"]:
+            omega_scores = (
+                torch.squeeze(
+                    torch.matmul(query_layer.unsqueeze(2), omega.transpose(-2, -1)),
+                    dim=2,
+                )
+                / self.d_k
+            )
+            omega_scores = self.dropout(omega_scores)
+
         # Normalize the attention scores to probabilities.
-        attention_probs = nn.Softmax(dim=-1)(attention_scores / self.T)
+        if self.config["softmax"]:
+            if not self.config["att_scores_as_omega"]:
+                attention_probs = nn.Softmax(dim=-1)(attention_scores / self.T)
+                if self.config["w_omega"]:
+                    if self.config["w_omega_sigmoid"]:
+                        omega_probs = torch.sigmoid(omega_scores / self.T)
+                    else:
+                        omega_probs = nn.Softmax(dim=-1)(omega_scores / self.T)
+            else:
+                # attention_scores = attention_scores ** 2
+                attention_probs = nn.Softmax(dim=-1)(attention_scores / self.T) 
+        else:
+            # non-destructive version (no target task adapter here9 --> sigmoid
+            attention_probs = torch.sigmoid(attention_scores / self.T)
         self.T = max(self.T - self.reduction, 1.0)
 
-        context_layer = torch.squeeze(
-            torch.matmul(attention_probs.unsqueeze(2), value_layer), dim=2
-        )
+        if self.config["w_omega"]:
+            gating_input = (omega_probs.unsqueeze(-1) + 1) * value_layer
+            if self.config["w_omega_softmax"]:
+                gating_input = nn.Softmax(dim=-1)(gating_input)
+            else:
+                gating_output = self.gating_function(
+                    gating_input, clamp_omega=self.config["clamp_omega"]
+                )
+                context_layer = torch.squeeze(
+                    torch.matmul(attention_probs.unsqueeze(2), gating_output),
+                    dim=2,
+                )
 
+        elif self.config["tttanh"]:
+            # o = omega (alpha) * tanh(value)
+            context_layer = torch.squeeze(
+                torch.matmul(attention_probs.unsqueeze(2), torch.tanh(value_layer)),
+                dim=2,
+            )
+        elif self.config["ttsigmoid"]:
+            # o = alpha * sigmoid(value)
+            context_layer = torch.squeeze(
+                torch.matmul(attention_probs.unsqueeze(2), torch.sigmoid(value_layer)),
+                dim=2,
+            )
+        elif self.config["omega"]:
+            # if self.config["omega_init"]:
+            #     ttsigmoid_output = self.ttsigmoid(value_layer, torch.sigmoid(self.omega), clamp_omega=self.config["clamp_omega"])
+            # else:
+            if self.config["att_scores_as_omega"]:
+                if self.config["att_scores_as_omega_MEAN"]:
+                    # print("mean")
+                    # print(attention_probs.shape, value_layer.shape)
+                    context_layer = (attention_probs.unsqueeze(-1) * value_layer).mean(dim=-2)
+                else:
+                    context_layer = torch.squeeze(
+                        torch.matmul(attention_probs.unsqueeze(2), value_layer),
+                        dim=2,
+                    )
+                context_layer = torch.tanh(context_layer).clone()
+            else:
+                if self.config["w_omega_softmax"]:
+                    gating_input = nn.Softmax(dim=-2)(self.omega) * value_layer
+                elif self.config["tttanhV3"]:
+                    gating_input = ((self.omega + 1) ** 2) * value_layer
+
+                else:
+                    gating_input = (self.omega + 1) * value_layer
+                gating_output = self.gating_function(
+                    gating_input, clamp_omega=self.config["clamp_omega"]
+                )
+                context_layer = torch.squeeze(
+                    torch.matmul(attention_probs.unsqueeze(2), gating_output),
+                    dim=2,
+                )
+        else:
+            # o = alpha * value
+            context_layer = torch.squeeze(
+                torch.matmul(attention_probs.unsqueeze(2), value_layer),
+                dim=2,
+            )
+
+        if self.config["omega"]:
+            # print(self.omega)
+            pass
         if self.config["value"] and not self.config["value_before_softmax"]:
             # key/value have dims => batch, toks, number-of-adapters, feats
             context_layer = self.value(context_layer)
@@ -501,6 +734,49 @@ class BertFusion(nn.Module):
             return context_layer, attention_probs
         else:
             return context_layer
+
+
+# Congosition V1
+
+
+class CongositionV1(nn.Module):
+    def __init__(
+        self,
+        config: CongositionV1Config,
+        dense_size,
+        n_congaters: int,
+    ):
+        super(CongositionV1, self).__init__()
+        self.config = config
+        self.dense_size = dense_size
+        self.n_congaters = n_congaters
+
+        self.dense = nn.Linear(self.dense_size, self.dense_size)
+        # make requires grad
+        self.dense.weight.requires_grad = True
+        self.dense.weight.retain_grad()
+        self.non_linearity = nn.ReLU()
+        self.dense2 = nn.Linear(self.dense_size, self.n_congaters)
+        self.dense2.weight.requires_grad = True
+        self.dense2.weight.retain_grad()
+
+        self.softmax = nn.Softmax(dim=-1)
+        # self.sigmoid = nn.Sigmoid()
+
+        with torch.no_grad():
+            nn.init.kaiming_uniform_(self.dense.weight, a=math.sqrt(5))
+            nn.init.kaiming_uniform_(self.dense2.weight, a=math.sqrt(5))
+
+    def forward(self, x):
+        # TODO: enforce [0,1] range
+        # x: (batch_size, seq_len, hidden_size)
+        # x: 32, 128, 768
+        x = torch.mean(x, dim=1)
+        # x: 32, 768
+        x = self.dense(x)
+        x = self.non_linearity(x)
+        x = self.dense2(x)
+        return self.softmax(x)
 
 
 # Invertible Adapters

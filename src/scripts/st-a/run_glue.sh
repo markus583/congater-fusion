@@ -21,7 +21,7 @@ if [ ${#SEEDS[@]} -eq 0 ]; then
   SEEDS=($GPU_ID)
 fi
 
-for TASK in rte mrpc stsb sst2 qnli mnli qqp; do
+for TASK in mnli; do
   for SEED in "${SEEDS[@]}"; do
     if [ $TASK = "cola" ]; then
         EVAL_METRIC="eval_matthews_correlation"
@@ -33,7 +33,7 @@ for TASK in rte mrpc stsb sst2 qnli mnli qqp; do
 
     for TRAIN_PCT in 100; do
       echo $RUN_NAME
-      echo $SEED, $SEEDS
+      echo $SEED, ${SEEDS[@]}
       echo $TASK
       echo $TRAIN_PCT
 

@@ -22,7 +22,7 @@ if [ ${#SEEDS[@]} -eq 0 ]; then
 fi
 
 
-for TASK in mrpc rte cb wsc wic stsb boolq sst qnli mnli qqp; do
+for TASK in mrpc rte cb wsc wic stsb boolq sst2 qnli mnli qqp; do
   for SEED in "${SEEDS[@]}"; do
     if [ $TASK = "cola" ]; then
         EVAL_METRIC="eval_matthews_correlation"

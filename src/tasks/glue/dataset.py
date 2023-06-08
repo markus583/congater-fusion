@@ -35,6 +35,8 @@ class GlueDataset:
         self.data_args = data_args
         # labels
         self.is_regression = data_args.task_name == "stsb"
+        self.multiple_choice = False
+        
         if not self.is_regression:
             self.label_list = raw_datasets["train"].features["label"].names
             self.num_labels = len(self.label_list)

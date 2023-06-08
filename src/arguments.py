@@ -1,36 +1,13 @@
-import logging
-import os
-import random
-import sys
 from dataclasses import dataclass, field
 from typing import Optional
 
-import datasets
-import evaluate
-import numpy as np
-import transformers
-from datasets import load_dataset
 from transformers import (
-    AutoConfig,
-    AutoTokenizer,
-    DataCollatorWithPadding,
-    EvalPrediction,
     HfArgumentParser,
-    PretrainedConfig,
-    Trainer,
     TrainingArguments,
-    default_data_collator,
-    set_seed,
 )
 from transformers.adapters import (
     AdapterArguments,
-    AdapterTrainer,
-    AutoAdapterModel,
-    setup_adapter_training,
 )
-from transformers.trainer_utils import get_last_checkpoint
-from transformers.utils import check_min_version
-from transformers.utils.versions import require_version
 
 task_to_keys = {
     "cola": ("sentence", None),
@@ -44,7 +21,6 @@ task_to_keys = {
     "wnli": ("sentence1", "sentence2"),
     "boolq": ("question", "passage"),
     "cb": ("premise", "hypothesis"),
-    "rte": ("premise", "hypothesis"),
     "wic": ("processed_sentence1", None),
     "wsc": ("span2_word_text", "span1_text"),
     "copa": (None, None),
@@ -165,6 +141,14 @@ class DataTrainingArguments:
         default=False,
         metadata={"help": "The adapter to evaluate."},
     )
+    train_probing_head: Optional[bool] = field(
+        default=False,
+        metadata={"help": "Whether to train a probing head."},
+    )
+    source_task: Optional[str] = field(
+        default=None,
+        metadata={"help": "The target task for probing."},
+    )
 
     def __post_init__(self):
         if self.task_name is not None:
@@ -237,8 +221,7 @@ class ModelArguments:
         default=False,
         metadata={
             "help": (
-                "Will use the token generated when running `huggingface-cli login` (necessary to use this script "
-                "with private models)."
+                "Will use the token generated when running `huggingface-cli login` (necessary to use this script with private models)."
             )
         },
     )
@@ -298,6 +281,20 @@ class FusionArguments:
     fusion_unfreeze_adapters: str = field(
         default=None, metadata={"help": "Whether to unfreeze adapters."}
     )
+    
+    learn_omega: bool = field(
+        default=False, metadata={"help": "Whether to learn omega or not."}
+    )
+    
+@dataclass
+class CongaterArguments:
+    debug_congater: bool = field(
+        default=False, metadata={"help": "Whether to debug or not."}
+    )
+    congosition_type: str = field(
+        default=None, metadata={"help": "Type of congosition to perform."}
+    )
+    
 
 
 def get_args():
@@ -309,6 +306,7 @@ def get_args():
             TrainingArguments,
             AdapterArguments,
             FusionArguments,
+            CongaterArguments
         )
     )
 

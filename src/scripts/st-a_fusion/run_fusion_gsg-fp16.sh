@@ -22,7 +22,7 @@ if [ ${#SEEDS[@]} -eq 0 ]; then
 fi
 
 
-for TASK in mrpc rte cb wsc wic stsb sst boolq qnli mnli qqp; do
+for TASK in qnli qqp mnli; do
   for SEED in "${SEEDS[@]}"; do
     if [ $TASK = "cola" ]; then
         EVAL_METRIC="eval_matthews_correlation"
@@ -36,9 +36,9 @@ for TASK in mrpc rte cb wsc wic stsb sst boolq qnli mnli qqp; do
         EVAL_METRIC="eval_accuracy"
     fi
 
-    for TRAIN_PCT in 10 25 50 100; do
+    for TRAIN_PCT in 100; do
       echo $RUN_NAME
-      echo $SEED, ${SEEDS[-1]}
+      echo $SEED, ${SEEDS[@]}
       echo $TASK
       echo $TRAIN_PCT
 
@@ -52,7 +52,7 @@ for TASK in mrpc rte cb wsc wic stsb sst boolq qnli mnli qqp; do
         --fusion_load_dir af_config_GSG.json \
         --per_device_train_batch_size 32 \
         --per_device_eval_batch_size 32 \
-        --dataloader_num_workers 0 \
+        --dataloader_num_workers 4 \
         --learning_rate 5e-5 \
         --num_train_epochs 10 \
         --output_dir ../../runs/$RUN_NAME/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED \

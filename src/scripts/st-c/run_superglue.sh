@@ -1,4 +1,4 @@
-RUN_NAME=C-V2
+RUN_NAME=C-V5
 
 MODEL_NAME=bert-base-uncased
 GPU_ID=0
@@ -21,7 +21,7 @@ if [ ${#SEEDS[@]} -eq 0 ]; then
   SEEDS=($GPU_ID)
 fi
 
-for TASK in cb wsc wic copa boolq; do
+for TASK in cb wsc copa wic boolq; do
   for SEED in "${SEEDS[@]}"; do
     if [ $TASK = "multirc" ]; then
         EVAL_METRIC="eval_f1"
@@ -51,10 +51,10 @@ for TASK in cb wsc wic copa boolq; do
       --learning_rate 1e-4 \
       --num_train_epochs 30 \
       --train_adapter \
-      --adapter_config congaterV2 \
+      --adapter_config congaterV5 \
       --output_dir ../../runs/$RUN_NAME/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED \
       --logging_strategy steps \
-      --logging_steps 100 \
+      --logging_steps 20 \
       --save_strategy epoch \
       --evaluation_strategy epoch \
       --early_stopping True \

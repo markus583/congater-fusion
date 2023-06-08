@@ -1,4 +1,4 @@
-RUN_NAME=C-V2
+RUN_NAME=C-V5
 
 MODEL_NAME=bert-base-uncased
 GPU_ID=0
@@ -21,7 +21,7 @@ if [ ${#SEEDS[@]} -eq 0 ]; then
   SEEDS=($GPU_ID)
 fi
 
-for TASK in mrpc rte stsb; do
+for TASK in cola; do
   for SEED in "${SEEDS[@]}"; do
     if [ $TASK = "cola" ]; then
         EVAL_METRIC="eval_matthews_correlation"
@@ -33,7 +33,7 @@ for TASK in mrpc rte stsb; do
 
     for TRAIN_PCT in 100; do
       echo $RUN_NAME
-      echo $SEED, $SEEDS
+      echo $SEED, ${SEEDS[@]}
       echo $TASK
       echo $TRAIN_PCT
 
@@ -50,9 +50,10 @@ for TASK in mrpc rte stsb; do
         --learning_rate 1e-4 \
         --num_train_epochs 30 \
         --train_adapter \
-        --adapter_config congaterV2 \
+        --adapter_config congaterV5 \
         --output_dir ../../runs/$RUN_NAME/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED \
-        --logging_strategy epoch \
+        --logging_strategy steps \
+        --logging_steps 100 \
         --save_strategy epoch \
         --evaluation_strategy epoch \
         --early_stopping True \

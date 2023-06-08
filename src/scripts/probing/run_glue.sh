@@ -1,13 +1,14 @@
+RUN_NAME=C-V5
+
 MODEL_NAME=bert-base-uncased
 GPU_ID=0
-SEED=$GPU_ID
-NEW_SEED=-1
+SEEDS=()
 
 while getopts ":g:s:" opt; do
   case $opt in
     g) GPU_ID="$OPTARG"
     ;;
-    s) NEW_SEED="$OPTARG"
+    s) SEEDS+=("$OPTARG")
     ;;
     \?) echo "Invalid option -$OPTARG" >&3
         exit 1
@@ -15,16 +16,13 @@ while getopts ":g:s:" opt; do
   esac
 done
 
-# if NEW_SEED is not -1, use it as new seed. otherwise, use GPU_ID as seed
-# shellcheck disable=SC2086
-if [ $NEW_SEED -eq -1 ]; then
-  SEED=$GPU_ID
-else
-  SEED=$NEW_SEED
+# if no seeds are specified, use GPU_ID as seed
+if [ ${#SEEDS[@]} -eq 0 ]; then
+  SEEDS=($GPU_ID)
 fi
 
-for TASK in mrpc rte sst2 cola stsb qnli mnli qqp; do
-  for SEED in $SEED; do
+for TASK in mnli; do
+  for SEED in "${SEEDS[@]}"; do
     if [ $TASK = "cola" ]; then
         EVAL_METRIC="eval_matthews_correlation"
     elif [ $TASK = "stsb" ]; then
@@ -33,10 +31,12 @@ for TASK in mrpc rte sst2 cola stsb qnli mnli qqp; do
         EVAL_METRIC="eval_accuracy"
     fi
 
-    for TRAIN_PCT in 10 25 50 100; do
-      echo $SEED
+    for TRAIN_PCT in 100; do
+      echo $RUN_NAME
+      echo $SEED, ${SEEDS[@]}
       echo $TASK
       echo $TRAIN_PCT
+
       for OMEGA in 00 01 03 05 07 09 1; do
         echo $OMEGA
         # change omega: 00 --> 0.0
@@ -64,7 +64,6 @@ for TASK in mrpc rte sst2 cola stsb qnli mnli qqp; do
 
         CUDA_VISIBLE_DEVICES=$GPU_ID python ../../run.py \
           --model_name_or_path $MODEL_NAME \
-          --dataset_name glue \
           --task_name $TASK \
           --max_seq_length 128 \
           --do_train \
@@ -77,9 +76,10 @@ for TASK in mrpc rte sst2 cola stsb qnli mnli qqp; do
           --num_train_epochs 30 \
           --max_steps 1 \
           --train_adapter \
-          --adapter_config congaterV3[omega=$omega] \
-          --output_dir ../../runs/PROBE/ct_0-a-RELU-PLUS-LN_BEFORE/$OMEGA/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED \
-          --logging_strategy epoch \
+          --adapter_config congaterV5[omega=$omega] \
+          --output_dir ../../runs/PROBE/$RUN_NAME/$OMEGA/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED \
+          --logging_strategy steps \
+          --logging_steps 20 \
           --save_strategy epoch \
           --evaluation_strategy epoch \
           --early_stopping True \
@@ -87,7 +87,7 @@ for TASK in mrpc rte sst2 cola stsb qnli mnli qqp; do
           --load_best_model_at_end True \
           --metric_for_best_model $EVAL_METRIC \
           --report_to wandb \
-          --run_name $TASK-$MODEL_NAME-$TRAIN_PCT-$SEED-PROBE-V0-$OMEGA \
+          --run_name $TASK-$MODEL_NAME-$TRAIN_PCT-$SEED-$RUN_NAME-$OMEGA \
           --max_train_pct $TRAIN_PCT \
           --seed $SEED \
           --omega $omega

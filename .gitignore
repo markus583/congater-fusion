@@ -1,5 +1,10 @@
 adapter-reproduction/glue/__pycache__/hf_arguments.cpython-39.pyc
 src/scripts/ct_0-a/run_glue.sh
+*./bin
+*./pyc
+# wandb
+*/wandb
+*.json
 adapter-reproduction/glue/runs/full/cola/bert-base-uncased/0/all_results.json
 adapter-reproduction/glue/runs/full/cola/bert-base-uncased/0/config.json
 adapter-reproduction/glue/runs/full/cola/bert-base-uncased/0/eval_results.json

@@ -20,7 +20,10 @@ logger = logging.getLogger(__name__)
 
 
 def get_trainer(args):
-    model_args, data_args, training_args, adapter_args, fusion_args = get_args()
+    model_args, data_args, training_args, adapter_args, fusion_args, congater_args = get_args()
+    if congater_args.debug_congater:
+        os.chdir(os.path.dirname(os.path.realpath(__file__)))
+        fusion_args.fusion_load_dir = "../../" + fusion_args.fusion_load_dir
 
     tokenizer = AutoTokenizer.from_pretrained(
         model_args.tokenizer_name
@@ -76,7 +79,6 @@ def get_trainer(args):
         elif fusion_args.fusion_adapter_config == "congaterV2":
             adapter_config = CongaterV2Config()
         else:
-            # TODO: implement for ConGater
             raise ValueError(
                 "Only pfeiffer & CongaterV2 is currently supported for fusion training."
                 "Set --fusion_adapter_config to pfeiffer"
@@ -85,7 +87,7 @@ def get_trainer(args):
         for _, task in af_config.items():
             task = task.split("/")[-3]
             seed = af_config[task][-1]
-            print(task)
+            logger.info(task)
             # use max_train_pct for task, else 100
             if task == data_args.task_name:       
                 af_config[task] = (
@@ -102,9 +104,9 @@ def get_trainer(args):
                     + seed
                     )
 
-        print(af_config)
+        logger.info(af_config)
         for _, adapter_dir in af_config.items():
-            print(adapter_dir)
+            logger.info(adapter_dir)
             model.load_adapter(
                 f"{os.path.expanduser('~')}/congater-fusion/src/"
                 + adapter_dir,
@@ -114,10 +116,16 @@ def get_trainer(args):
         adapter_setup = [list(af_config.keys())]
 
         # Add a fusion layer and tell the model to train fusion
-        model.add_adapter_fusion(adapter_setup[0], fusion_args.fusion_type)
-        model.train_adapter_fusion(
-            adapter_setup, unfreeze_adapters=fusion_args.fusion_unfreeze_adapters
-        )
+        if congater_args.congosition_type:
+            model.add_congosition_v1(adapter_setup[0], fusion_args.fusion_type)
+            model.train_adapter_fusion(
+                adapter_setup, unfreeze_adapters=fusion_args.fusion_unfreeze_adapters
+            )
+        else:
+            model.add_adapter_fusion(adapter_setup[0], fusion_args.fusion_type)
+            model.train_adapter_fusion(
+                adapter_setup, unfreeze_adapters=fusion_args.fusion_unfreeze_adapters
+            )
 
     elif adapter_args.train_adapter:
         if data_args.eval_adapter:
@@ -149,13 +157,13 @@ def get_trainer(args):
                 "Adapters can only be loaded in adapters training mode."
                 "Use --train_adapter to enable adapter training"
             )
-    # TODO: fix or remove
+    
     param_optimizer = list(model.named_parameters())
     logger.info("Trainable parameters:")
     for n, p in param_optimizer:
         if p.requires_grad:
             logger.info(f"{n}")
-            # print(n)
+            # print(n, len(p))
 
     trainer_cls = (
         AdapterTrainer

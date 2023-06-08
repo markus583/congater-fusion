@@ -5,7 +5,7 @@ import sys
 
 # os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
-sys.path.append("/home/markus-frohmann/congater-fusion/adapter-transformers/src")
+# sys.path.append("/home/markus-frohmann/congater-fusion/adapter-transformers/src")
 
 import datasets
 import transformers
@@ -16,6 +16,8 @@ from transformers.utils.versions import require_version
 
 from arguments import get_args
 from tasks.utils import GLUE_DATASETS, SUPERGLUE_DATASETS, TASKS
+from training.get_trainer import get_trainer
+
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
 check_min_version("4.26.0")
@@ -25,7 +27,8 @@ require_version(
 )
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 os.environ["WANDB_PROJECT"] = "THESIS_st-a"
-
+os.environ["WANDB_WATCH"] = "all"
+os.environ["WANDB_LOG_MODEL "] = "true"
 logger = logging.getLogger(__name__)
 
 
@@ -126,7 +129,7 @@ def setup_logging(training_args: transformers.TrainingArguments) -> None:
 
 def main() -> None:
     args = get_args()
-    model_args, data_args, training_args, adapter_args, fusion_args = args
+    model_args, data_args, training_args, adapter_args, fusion_args, congater_args = args
 
     if adapter_args.train_adapter:
         if adapter_args.adapter_config == "pfeiffer":
@@ -139,6 +142,8 @@ def main() -> None:
         WANDBPROJECT = "THESIS_full"
     else:
         raise NotImplementedError
+    os.environ["WANDB_WATCH"] = "all"
+    os.environ["WANDB_LOG_MODEL "] = "true"
 
     os.environ["WANDB_PROJECT"] = WANDBPROJECT
     os.environ[
@@ -160,18 +165,6 @@ def main() -> None:
     print("dataset_name", data_args.dataset_name)
     print("task_name", data_args.task_name)
         
-    if data_args.dataset_name.lower() == "glue":
-        assert data_args.task_name.lower() in GLUE_DATASETS
-        from tasks.glue.get_trainer import get_trainer
-    elif data_args.dataset_name.lower() == "superglue":
-        assert data_args.task_name.lower() in SUPERGLUE_DATASETS
-        from tasks.superglue.get_trainer import get_trainer
-    else:
-        raise NotImplementedError(
-            "Task {} is not implemented. Please choose a task from: {}".format(
-                data_args.task_name, ", ".join(TASKS)
-            )
-        )
     if not data_args.eval_adapter:
         last_checkpoint = detect_last_checkpoint(training_arguments=training_args)
     else:
@@ -195,10 +188,16 @@ def main() -> None:
     if fusion_args.train_fusion:
         logger.info("Saving Fusion.")
 
-        model.save_adapter_fusion(training_args.output_dir, ",".join(adapter_setup[0]))
+        if congater_args.congosition_type is not None:
+            model.save_congosition(training_args.output_dir, ",".join(adapter_setup[0]))
+        else:
+            model.save_adapter_fusion(training_args.output_dir, ",".join(adapter_setup[0]))
     elif adapter_args.train_adapter:
         logger.info("Saving adapter.")
-        model.save_adapter(training_args.output_dir, data_args.task_name)
+        if data_args.source_task:
+            model.save_adapter(training_args.output_dir, data_args.source_task)
+        else:
+            model.save_adapter(training_args.output_dir, data_args.task_name)
 
     if training_args.do_eval:
         logger.info("*** Evaluate ***")
@@ -210,9 +209,13 @@ def main() -> None:
     }
     if data_args.task_name is not None:
         kwargs["language"] = "en"
-        kwargs["dataset_tags"] = data_args.dataset_name
         kwargs["dataset_args"] = data_args.task_name
-        kwargs["dataset"] = f"GLUE {data_args.task_name.upper()}"
+        if data_args.dataset_name.lower() == "glue":
+            kwargs["dataset_tags"] = data_args.dataset_name
+            kwargs["dataset"] = f"GLUE {data_args.task_name.upper()}"
+        elif data_args.dataset_name.lower() == "superglue":
+            kwargs["dataset_tags"] = data_args.dataset_name
+            kwargs["dataset"] = f"SuperGLUE {data_args.task_name.upper()}"
 
     if training_args.push_to_hub:
         trainer.push_to_hub(**kwargs)
@@ -228,9 +231,9 @@ if __name__ == "__main__":
             "--model_name_or_path",
             "bert-base-uncased",
             "--task_name",
-            "rte",
+            "cb",
             "--dataset_name",
-            "glue",
+            "superglue",
             "--max_seq_length",
             "128",
             "--do_train",
@@ -242,13 +245,16 @@ if __name__ == "__main__":
             "--per_device_eval_batch_size",
             "32",
             "--learning_rate",
-            "1e-5",
+            "5e-5",
             "--num_train_epochs",
             "2",
             # "--train_adapter",
+            # "True",
             "--train_fusion",
+            "--fusion_type",
+            "dynamic_congaterV5_omega_normal0_minus1_att-as-omega",
             "--fusion_load_dir",
-            "scripts/st-a_fusion/af_config_GSG.json",
+            "scripts/st-c5_fusion/cf_config_GSG.json",
             "--output_dir",
             "runs/TEST",
             # "--eval_adapter",
@@ -270,9 +276,9 @@ if __name__ == "__main__":
             "--report_to",
             "wandb",
             "--run_name",
-            "st-a-fusion-rte-TEST",
+            "i0-rte-TEST",
             "--max_train_pct",
-            "10",
+            "100",
             "--seed",
             "0",
             "--overwrite_output_dir",
@@ -280,8 +286,18 @@ if __name__ == "__main__":
             "--max_steps",
             "1000",
             "--adapter_config",
-            "pfeiffer",
+            "pfeiffer[omega=0.5]",
             "--omega",
-            "0.5"
+            "0.5",
+            "--debug_congater",
+            "True",
+            # "--congosition_type",
+            # "v1",
+            # "--fusion_type",
+            # "dynamic_omega",
+            # "--learn_omega",
+            # "False",
+            "--train_probing_head",
+            "True",
         ]
     main()

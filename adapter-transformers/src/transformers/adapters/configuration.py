@@ -240,6 +240,9 @@ class AdapterConfig(AdapterConfigBase):
         use_ttsigmoid (:obj:`bool`, optional):
             If True, use the TTsigmoid function instead of the Tsigmoid function.
             Defaults to False
+        variable_omega (:obj:`bool`, optional):
+            If True, use a variable omega value for the t-sigmoid function.
+            Otherwise, use the default value of 1.0.
     """
 
     # Required options
@@ -279,11 +282,13 @@ class AdapterConfig(AdapterConfigBase):
     apply_tsigmoid: Optional[bool] = False
     only_one_w: Optional[bool] = False
     kill_adapter_residual: Optional[bool] = False
-    use_tsigmoid_gating : Optional[Union[bool, str]] = False
+    use_tsigmoid_gating: Optional[Union[bool, str]] = False
     add_second_adapter: Optional[bool] = False
     second_adapter_input: Optional[Union[None, str]] = None
     omega: Optional[Union[float, Mapping]] = 1.0
     use_ttsigmoid: Optional[bool] = True
+    variable_omega: Optional[bool] = False
+    gating_type: str = "sigmoid"
 
     # We want to emulate a simple form of immutability while keeping the ability to add custom attributes.
     # Therefore, we don't allow changing attribute values if set once.
@@ -334,34 +339,110 @@ class OriginalCongaterConfig(PfeifferConfig):
     use_tsigmoid_gating: str = "input"
     init_weights: Union[str, float] = "bert"
 
+
 @dataclass(eq=False)
 class CongaterConfig(PfeifferConfig):
     """
     The custom ConGater architecture proposed by xyz.
     """
+
     non_linearity: str = "relu"
     apply_tsigmoid: bool = True
     # only_one_w: bool = True (no longer latest version --> no longer relevant!)
     kill_adapter_residual: bool = True
     use_tsigmoid_gating: str = "input"
     init_weights: Union[str, float] = "bert"
-    
+
+
 @dataclass(eq=False)
 class CongaterV2Config(PfeifferConfig):
     """
     The new ConGater architecture from now on.
     """
+
     apply_tsigmoid: bool = True
     kill_adapter_residual: bool = False
     use_tsigmoid_gating: str = "adp"
     init_weights: Union[str, float] = "bert"
     use_ttsigmoid: bool = True
 
+
+@dataclass(eq=False)
+class CongaterV0Config(PfeifferConfig):
+    """
+    The new ConGater architecture from now on.
+    """
+
+    apply_tsigmoid: bool = True
+    kill_adapter_residual: bool = False
+    init_weights: Union[str, float] = "bert"
+    use_ttsigmoid: bool = True
+    ln_before: bool = True
+    use_tsigmoid_gating: bool = False
+
+
+@dataclass(eq=False)
+class CongaterV5Config(PfeifferConfig):
+    """
+    The new ConGater architecture from now on.
+    """
+
+    apply_tsigmoid: bool = True
+    kill_adapter_residual: bool = False
+    init_weights: Union[str, float] = "bert"
+    use_ttsigmoid: bool = True
+    use_tsigmoid_gating: bool = False
+    gating_type: str = "tanh"
+
+
+@dataclass(eq=False)
+class CongaterV6Config(PfeifferConfig):
+    """
+    The new ConGater architecture from now on.
+    """
+
+    apply_tsigmoid: bool = True
+    kill_adapter_residual: bool = False
+    init_weights: Union[str, float] = "bert"
+    use_ttsigmoid: bool = True
+    use_tsigmoid_gating: bool = False
+    gating_type: str = "selu"
+
+
+@dataclass(eq=False)
+class CongaterV7Config(PfeifferConfig):
+    """
+    The new ConGater architecture from now on.
+    """
+
+    apply_tsigmoid: bool = True
+    kill_adapter_residual: bool = False
+    init_weights: Union[str, float] = "bert"
+    use_ttsigmoid: bool = True
+    use_tsigmoid_gating: bool = False
+    gating_type: str = "seluV2"
+
+
+@dataclass(eq=False)
+class CongaterV8Config(PfeifferConfig):
+    """
+    The new ConGater architecture from now on.
+    """
+
+    apply_tsigmoid: bool = True
+    kill_adapter_residual: bool = False
+    init_weights: Union[str, float] = "bert"
+    use_ttsigmoid: bool = True
+    use_tsigmoid_gating: str = "adp"
+    gating_type: str = "tanh"
+
+
 @dataclass(eq=False)
 class CongaterV3Config(PfeifferConfig):
     """
     The custom ConGater architecture proposed by xyz.
     """
+
     non_linearity: str = "relu"
     init_weights: Union[str, float] = "bert"
     # ConGater
@@ -369,15 +450,17 @@ class CongaterV3Config(PfeifferConfig):
     kill_adapter_residual: bool = False  # + x
     use_tsigmoid_gating: str = "adp2"  # o = x + v * g
     add_second_adapter: bool = True  # fn2
-    second_adapter_input: Optional[Union[None, str]] = 'input'  # fn2(x)
+    second_adapter_input: Optional[Union[None, str]] = "input"  # fn2(x)
     reduction_factor: Union[float, Mapping] = 32  # same # of params as Pfeiffer
     use_ttsigmoid: bool = True
+
 
 @dataclass(eq=False)
 class CongaterV4Config(PfeifferConfig):
     """
     The custom ConGater architecture proposed by xyz.
     """
+
     non_linearity: str = "relu"
     init_weights: Union[str, float] = "bert"
     # ConGater
@@ -385,11 +468,12 @@ class CongaterV4Config(PfeifferConfig):
     kill_adapter_residual: bool = False  # + x
     use_tsigmoid_gating: str = "adp2"  # o = x + v * g
     add_second_adapter: bool = True  # fn2
-    second_adapter_input: Optional[Union[None, str]] = 'input'  # fn2(x)
+    second_adapter_input: Optional[Union[None, str]] = "input"  # fn2(x)
     reduction_factor: Union[float, Mapping] = 32  # same # of params as Pfeiffer
-    second_adapter_input: Optional[Union[None, str]] = 'adp'  # fn2(x)
+    second_adapter_input: Optional[Union[None, str]] = "adp"  # fn2(x)
     use_ttsigmoid: bool = True
-    
+
+
 @dataclass(eq=False)
 class CompacterPlusPlusConfig(PfeifferConfig):
     """
@@ -741,11 +825,14 @@ ADAPTER_CONFIG_MAP = {
     "unipelt": UniPELTConfig(),
     "congater-original": OriginalCongaterConfig(),
     "congater": CongaterConfig(),
+    "congaterV0": CongaterV0Config(),
     "congaterV2": CongaterV2Config(),
     "congaterV3": CongaterV3Config(),
     "congaterV4": CongaterV4Config(),
-
-
+    "congaterV5": CongaterV5Config(),
+    "congaterV6": CongaterV6Config(),
+    "congaterV7": CongaterV7Config(),
+    "congaterV8": CongaterV8Config(),
 }
 
 DEFAULT_ADAPTER_CONFIG = "pfeiffer"
@@ -899,6 +986,28 @@ class ModelAdaptersConfig(Collection):
             config = None
         return config
 
+    def get_congosition_v1(self, fusion_name: Union[str, List[str]]) -> Optional[dict]:
+        """
+        Gets the config dictionary for a given AdapterFusion.
+
+        Args:
+            fusion_name (Union[str, List[str]]): The name of the AdapterFusion or the adapters to fuse.
+
+        Returns:
+            Optional[dict]: The AdapterFusion configuration.
+        """
+        if isinstance(fusion_name, list):
+            fusion_name = ",".join(fusion_name)
+        if fusion_name in self.fusions:
+            config_name = self.fusions[fusion_name]
+            if config_name in self.fusion_config_map:
+                config = self.fusion_config_map.get(config_name, None)
+            else:
+                config = CONGOSITIONV1_CONFIG_MAP.get(config_name, None)
+        else:
+            config = None
+        return config
+
     def add_fusion(
         self,
         fusion_name: Union[str, List[str]],
@@ -934,6 +1043,43 @@ class ModelAdaptersConfig(Collection):
             raise ValueError("Invalid AdapterFusion config: {}".format(config))
         self.fusions[fusion_name] = config_name
         logger.info(f"Adding AdapterFusion '{fusion_name}'.")
+
+    def add_congosition_v1(
+        self,
+        fusion_name: Union[str, List[str]],
+        config: Optional[Union[str, dict]] = None,
+    ):
+        """
+        Adds a new AdapterFusion.
+
+        Args:
+            fusion_name (Union[str, List[str]]): The name of the AdapterFusion or the adapters to fuse.
+            config (Optional[Union[str, dict]], optional): AdapterFusion config. Defaults to None.
+        """
+        if isinstance(fusion_name, list):
+            fusion_name = ",".join(fusion_name)
+        if fusion_name in self.fusions:
+            raise ValueError(
+                f"An AdapterFusion with the name '{fusion_name}' has already been added."
+            )
+        if config is None:
+            config = DEFAULT_CONGOSITION_CONFIG
+            # config = DEFAULT_ADAPTERFUSION_CONFIG
+        if isinstance(config, str):
+            if (
+                config not in CONGOSITIONV1_CONFIG_MAP
+                and config not in self.fusion_config_map
+            ):
+                raise ValueError(f"Invalid AdapterFusion config identifier '{config}'.")
+            config_name = config
+        # if it's a dict, compute it's hash and add a new entry to the config map
+        elif isinstance(config, Mapping):
+            config_name = get_adapter_config_hash(config)
+            self.fusion_config_map[config_name] = config
+        else:
+            raise ValueError("Invalid AdapterFusion config: {}".format(config))
+        self.fusions[fusion_name] = config_name
+        logger.info(f"Adding Congosition '{fusion_name}'.")
 
     def common_config_value(self, adapter_names: list, attribute: str):
         """
@@ -1006,8 +1152,34 @@ class AdapterFusionConfig(AdapterConfigBase):
     regularization: bool
     residual_before: bool
     temperature: bool
-    value_before_softmax: bool
-    value_initialized: str
+    value_before_softmax: bool    
+    omega: bool = False
+    w_omega: bool = False
+    w_omega_input: str = "key"
+    w_omega_sigmoid: bool = False
+    omega_init: Union[None, float] = None
+    clamp_omega: Union[None, float] = None
+    ttsigmoid_omega_offset: Union[None, float] = None
+    value_initialized: float = 1.0
+    learn_omega: bool = False
+    congaterV2: bool = False
+    exclude_target_adapter: bool = False
+    softmax: bool = True
+    tttanh: bool = False
+    tttanhV2: bool = False
+    ttsigmoid: bool = False
+    adapter_skip_tt: bool = False
+    add_dk_scaling: bool = False
+    value_initialized_normal: bool = False
+    target_adapter_tanh: bool = False
+    omega_init_12_only: bool = False
+    omega_init_BIG: bool = False
+    omega_init_MID: bool = False
+    diff_lr: bool = False
+    w_omega_softmax: bool = False
+    tttanhV3: bool = False
+    att_scores_as_omega: bool = False
+    att_scores_as_omega_MEAN: bool = False
 
     @classmethod
     def load(cls, config: Union[dict, str], **kwargs):
@@ -1036,6 +1208,39 @@ class AdapterFusionConfig(AdapterConfigBase):
 
 
 @dataclass(eq=False)
+class CongositionV1Config(AdapterConfigBase):
+    """Base class that models the architecture of an adapter fusion layer."""
+
+    fn: bool
+    query_before_ln: bool
+
+    @classmethod
+    def load(cls, config: Union[dict, str], **kwargs):
+        """
+        Loads a given adapter fusion configuration specifier into a full AdapterFusionConfig instance.
+
+        Args:
+            config (Union[dict, str]): The configuration to load. Can be either:
+
+                - a dictionary representing the full config
+                - an identifier string available in ADAPTERFUSION_CONFIG_MAP
+                - the path to a file containing a full adapter fusion configuration
+
+        Returns:
+            dict: The resolved adapter fusion configuration dictionary.
+        """
+        # currently storing AdapterFusion weights on AdapterHub is not supported.
+        config_dict = resolve_adapter_config(
+            config, local_map=CONGOSITIONV1_CONFIG_MAP, try_loading_from_hub=False
+        )
+        # convert back to dict to allow attr overrides
+        if isinstance(config_dict, CongositionV1Config):
+            config_dict = config_dict.to_dict()
+        config_dict.update(kwargs)
+        return CongositionV1Config.from_dict(config_dict)
+
+
+@dataclass(eq=False)
 class StaticAdapterFusionConfig(AdapterFusionConfig):
     """
     Static version of adapter fusion without a value matrix. See https://arxiv.org/pdf/2005.00247.pdf.
@@ -1049,7 +1254,6 @@ class StaticAdapterFusionConfig(AdapterFusionConfig):
     residual_before: bool = False
     temperature: bool = False
     value_before_softmax: bool = True
-    value_initialized: str = False
 
 
 @dataclass(eq=False)
@@ -1066,12 +1270,488 @@ class DynamicAdapterFusionConfig(AdapterFusionConfig):
     residual_before: bool = False
     temperature: bool = False
     value_before_softmax: bool = True
+
+
+@dataclass(eq=False)
+class DynamicCongaterV5FusionConfig(AdapterFusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+
+    key: bool = True
+    query: bool = True
+    value: bool = True
+    query_before_ln: bool = False
+    regularization: bool = True
+    residual_before: bool = False
+    temperature: bool = False
+    value_before_softmax: bool = True
+    tttanh: bool = True
+    adapter_skip_tt: bool = True
+    
+@dataclass(eq=False)
+class DynamicCongaterV0FusionConfig(AdapterFusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+
+    key: bool = True
+    query: bool = True
+    value: bool = True
+    query_before_ln: bool = False
+    regularization: bool = True
+    residual_before: bool = False
+    temperature: bool = False
+    value_before_softmax: bool = True
+    ttsigmoid: bool = True
+    adapter_skip_tt: bool = True
+    
+@dataclass(eq=False)
+class DynamicCongaterV0FusionConfigOmega(DynamicCongaterV0FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+    omega: bool = True
+    
+@dataclass(eq=False)
+class DynamicCongaterV5FusionConfigOmega(DynamicCongaterV5FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+    omega: bool = True
+    tttanh: bool = False
+    tttanhV2: bool = True
+    
+@dataclass(eq=False)
+class DynamicCongaterV5FusionConfigAttAsOmega(DynamicCongaterV5FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+    omega: bool = True
+    tttanh: bool = False
+    att_scores_as_omega: bool = True
+    tttanhV2: bool = True
+    
+@dataclass(eq=False)
+class DynamicCongaterV5FusionConfigAttAsOmegaMEAN(DynamicCongaterV5FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+    omega: bool = True
+    tttanh: bool = False
+    att_scores_as_omega: bool = True
+    tttanhV2: bool = True
+    att_scores_as_omega_MEAN: bool = True
+    
+@dataclass(eq=False)
+class DynamicCongaterV5FusionConfigWOmega(DynamicCongaterV5FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+    omega: bool = False
+    w_omega: bool = True
+    tttanh: bool = False
+    tttanhV2: bool = True
+    
+@dataclass(eq=False)
+class DynamicCongaterV5FusionConfigWOmegaVN(DynamicCongaterV5FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+    omega: bool = False
+    w_omega: bool = True
+    tttanh: bool = False
+    tttanhV2: bool = True 
+    w_omega_input: str = "v_N"
+    
+@dataclass(eq=False)
+class DynamicCongaterV5FusionConfigWOmegaSigmoid(DynamicCongaterV5FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+    omega: bool = False
+    w_omega: bool = True
+    tttanh: bool = False
+    tttanhV2: bool = True 
+    w_omega_sigmoid: bool = True
+    
+@dataclass(eq=False)
+class DynamicCongaterV5FusionConfigOmegaMinus1(DynamicCongaterV5FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+    omega: bool = True
+    tttanh: bool = False
+    tttanhV2: bool = True
+    omega_init: float = 0
+    
+@dataclass(eq=False)
+class DynamicCongaterV5FusionConfigOmegaMinus1V3(DynamicCongaterV5FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+    omega: bool = True
+    tttanh: bool = False
+    tttanhV2: bool = True
+    omega_init: float = 0
+    tttanhV3: bool = True
+    
+@dataclass(eq=False)
+class DynamicCongaterV5FusionConfigOmegaMinus1Softmax(DynamicCongaterV5FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+    omega: bool = True
+    tttanh: bool = False
+    tttanhV2: bool = True
+    omega_init: float = 0
+    w_omega_softmax: bool = True
+    
+@dataclass(eq=False)
+class DynamicCongaterV5FusionConfigOmegaMinus1_12only(DynamicCongaterV5FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+    omega: bool = True
+    tttanh: bool = False
+    tttanhV2: bool = True
+    omega_init: float = 0
+    omega_init_12_only: bool = True
+    
+@dataclass(eq=False)
+class DynamicCongaterV5FusionConfigOmegaMinus1_BIG(DynamicCongaterV5FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+    omega: bool = True
+    tttanh: bool = False
+    tttanhV2: bool = True
+    omega_init: float = 0
+    omega_init_BIG: bool = True
+    
+@dataclass(eq=False)
+class DynamicCongaterV5FusionConfigOmegaMinus1_MID(DynamicCongaterV5FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+    omega: bool = True
+    tttanh: bool = False
+    tttanhV2: bool = True
+    omega_init: float = 0
+    omega_init_MID: bool = True
+    
+@dataclass(eq=False)
+class DynamicCongaterV5FusionConfigOmegaDiffLR(DynamicCongaterV5FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+    omega: bool = True
+    tttanh: bool = False
+    tttanhV2: bool = True
+    omega_init: float = 0
+    diff_lr: bool = True
+
+@dataclass(eq=False)
+class DynamicCongaterV0FusionConfigOmegaNormal5(DynamicCongaterV0FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+    omega: bool = True
+    omega_init: float = 5
+    
+@dataclass(eq=False)
+class DynamicCongaterV0FusionConfigOmegaNormal0Plus2(DynamicCongaterV0FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+    omega: bool = True
+    omega_init: float = 0
+    ttsigmoid_omega_offset: float = 2
+    
+@dataclass(eq=False)
+class DynamicCongaterV0FusionConfigOmegaClamp1(AdapterFusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+
+    key: bool = True
+    query: bool = True
+    value: bool = True
+    query_before_ln: bool = False
+    regularization: bool = True
+    residual_before: bool = False
+    temperature: bool = False
+    value_before_softmax: bool = True
+    adapter_skip_tt: bool = True
+    omega: bool = True
+    omega_init: float = 1
+    clamp_omega: bool = True
+    
+@dataclass(eq=False)
+class DynamicCongaterV0FusionConfigDoubleTT(DynamicCongaterV0FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+
+    adapter_skip_tt: bool = False
+    
+
+@dataclass(eq=False)
+class DynamicCongaterV5FusionConfigValueNormal(DynamicCongaterV5FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+    value_initialized_normal: bool = True
+
+
+@dataclass(eq=False)
+class DynamicCongaterV5FusionConfigScaleDk(DynamicCongaterV5FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+
+    add_dk_scaling: bool = True
+
+
+@dataclass(eq=False)
+class DynamicCongaterV5FusionConfigND(DynamicCongaterV5FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+
+    exclude_target_adapter: bool = True
+
+
+@dataclass(eq=False)
+class DynamicCongaterV5FusionConfigNDSigmoid(DynamicCongaterV5FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+
+    exclude_target_adapter: bool = True
+    softmax: bool = False
+    
+@dataclass(eq=False)
+class DynamicCongaterV5FusionConfigNDSigmoidTargetTanh(DynamicCongaterV5FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+    exclude_target_adapter: bool = True
+    softmax: bool = False
+    target_adapter_tanh: bool = True
+    
+@dataclass(eq=False)
+class DynamicCongaterV5FusionConfigDoubleTTNDSigmoidTargetTanh(DynamicCongaterV5FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+    exclude_target_adapter: bool = True
+    softmax: bool = False
+    adapter_skip_tt: bool = True
+    
+@dataclass(eq=False)
+class DynamicCongaterV5FusionConfigNDSigmoidTargetTanhValueInitAvg(DynamicCongaterV5FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+    exclude_target_adapter: bool = True
+    softmax: bool = False
+    target_adapter_tanh: bool = True
+    value_initialized: float = 1 / 11
+
+@dataclass(eq=False)
+class DynamicCongaterV5FusionConfigNDSigmoidValueInitAvg(DynamicCongaterV5FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+
+    exclude_target_adapter: bool = True
+    softmax: bool = False
+    value_initialized: float = 1 / 11
+
+
+@dataclass(eq=False)
+class DynamicCongaterV5FusionConfigValueAfter(DynamicCongaterV5FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+
+    value_before_softmax: bool = False
+
+
+@dataclass(eq=False)
+class DynamicCongaterV5FusionConfigDoubleTT(DynamicCongaterV5FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+
+    adapter_skip_tt: bool = False
+
+
+@dataclass(eq=False)
+class DynamicCongaterV5FusionConfigDoubleTTValueAfter(DynamicCongaterV5FusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+
+    adapter_skip_tt: bool = False
+    value_before_softmax: bool = False
+
+
+@dataclass(eq=False)
+class DynamicAdapterFusionConfigND(AdapterFusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+
+    key: bool = True
+    query: bool = True
+    value: bool = True
+    query_before_ln: bool = False
+    regularization: bool = True
+    residual_before: bool = False
+    temperature: bool = False
+    value_before_softmax: bool = True
+    value_initialized: float = 1.0
+    exclude_target_adapter: bool = True
+
+
+@dataclass(eq=False)
+class DynamicAdapterFusionConfigNDSigmoid(AdapterFusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+
+    key: bool = True
+    query: bool = True
+    value: bool = True
+    query_before_ln: bool = False
+    regularization: bool = True
+    residual_before: bool = False
+    temperature: bool = False
+    value_before_softmax: bool = True
+    value_initialized: float = 1.0
+    exclude_target_adapter: bool = True
+    softmax: bool = False
+
+
+@dataclass(eq=False)
+class DynamicAdapterFusionConfigNDSigmoidValueInitAvg(AdapterFusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+
+    key: bool = True
+    query: bool = True
+    value: bool = True
+    query_before_ln: bool = False
+    regularization: bool = True
+    residual_before: bool = False
+    temperature: bool = False
+    value_before_softmax: bool = True
+    value_initialized: float = 1 / 11
+    exclude_target_adapter: bool = True
+    softmax: bool = False
+
+
+@dataclass(eq=False)
+class DynamicAdapterFusionConfigCV2(AdapterFusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+
+    key: bool = True
+    query: bool = True
+    value: bool = True
+    query_before_ln: bool = False
+    regularization: bool = True
+    residual_before: bool = False
+    temperature: bool = False
+    value_before_softmax: bool = True
     value_initialized: str = True
+    congaterV2: bool = True
+
+
+@dataclass(eq=False)
+class DynamicAdapterFusionConfigOmega(AdapterFusionConfig):
+    """
+    Dynamic version of adapter fusion with a value matrix and regularization. See https://arxiv.org/pdf/2005.00247.pdf.
+    """
+
+    key: bool = True
+    query: bool = True
+    value: bool = True
+    query_before_ln: bool = False
+    regularization: bool = True
+    residual_before: bool = False
+    temperature: bool = False
+    value_before_softmax: bool = True
+    value_initialized: str = True
+    learn_omega: bool = True
+
+
+@dataclass(eq=False)
+class StaticCongositionV1Config(CongositionV1Config):
+    fn: bool = False
+    query_before_ln: bool = False
 
 
 ADAPTERFUSION_CONFIG_MAP = {
+    "dynamic_omega": DynamicAdapterFusionConfigOmega(),
+    "dynamic_cv2": DynamicAdapterFusionConfigCV2(),
+    #
     "static": StaticAdapterFusionConfig(),
     "dynamic": DynamicAdapterFusionConfig(),
+    "dynamic_nd": DynamicAdapterFusionConfigND(),
+    #
+    "dynamic_nd_sigmoid": DynamicAdapterFusionConfigNDSigmoid(),
+    "dynamic_nd_sigmoid_value_init_avg": DynamicAdapterFusionConfigNDSigmoidValueInitAvg(),
+    #
+    "dynamic_congaterV5": DynamicCongaterV5FusionConfig(),
+    "dynamic_congaterV5_value_after": DynamicCongaterV5FusionConfigValueAfter(),
+    "dynamic_congaterV0": DynamicCongaterV0FusionConfig(),
+    #
+    "dynamic_congaterV5_double_tt": DynamicCongaterV5FusionConfigDoubleTT(),
+    "dynamic_congaterV5_double_tt_value_after": DynamicCongaterV5FusionConfigDoubleTTValueAfter(),
+    "dynamic_congaterV0_double_tt": DynamicCongaterV0FusionConfigDoubleTT(),
+    #
+    "dynamic_congaterV5_nd": DynamicCongaterV5FusionConfigND(),
+    "dynamic_congaterV5_nd_sigmoid": DynamicCongaterV5FusionConfigNDSigmoid(),
+    "dynamic_congaterV5_nd_sigmoid_value_init_avg": DynamicCongaterV5FusionConfigNDSigmoidValueInitAvg(),
+    "dynamic_congaterV5_nd_sigmoid_target_tanh": DynamicCongaterV5FusionConfigNDSigmoidTargetTanh(),
+    "dynamic_congaterV5_double_tt_nd_sigmoid_target_tanh": DynamicCongaterV5FusionConfigDoubleTTNDSigmoidTargetTanh(),
+    "dynamic_congaterV5_nd_sigmoid_value_init_avg_target_tanh": DynamicCongaterV5FusionConfigNDSigmoidTargetTanhValueInitAvg(),
+    #
+    "dynamic_congaterV5_scale_dk": DynamicCongaterV5FusionConfigScaleDk(),
+    "dynamic_congaterV5_value_normal": DynamicCongaterV5FusionConfigValueNormal(),
+    #
+    "dynamic_congaterV0_omega": DynamicCongaterV0FusionConfigOmega(),
+    "dynamic_congaterV0_omega_normal5": DynamicCongaterV0FusionConfigOmegaNormal5(),
+    "dynamic_congaterV0_omega_clamp1": DynamicCongaterV0FusionConfigOmegaClamp1(),
+    "dynamic_congaterV0_omega_normal0_plus2": DynamicCongaterV0FusionConfigOmegaNormal0Plus2(),
+    "dynamic_congaterV5_omega": DynamicCongaterV5FusionConfigOmega(),
+    "dynamic_congaterV5_omega_normal0_minus1": DynamicCongaterV5FusionConfigOmegaMinus1(),
+    "dynamic_congaterV5_omega_normal0_minus1_softmax": DynamicCongaterV5FusionConfigOmegaMinus1Softmax(),
+    "dynamic_congaterV5_omega_normal0_minus1_12only": DynamicCongaterV5FusionConfigOmegaMinus1_12only(),
+    "dynamic_congaterV5_omega_normal0_minus1_BIG": DynamicCongaterV5FusionConfigOmegaMinus1_BIG(),
+    "dynamic_congaterV5_omega_normal0_minus1_MID": DynamicCongaterV5FusionConfigOmegaMinus1_MID(),
+    "dynamic_congaterV5_omega_normal0_minus1_difflr": DynamicCongaterV5FusionConfigOmegaDiffLR(),
+    "dynamic_congaterV5_omega_normal0_minus1_V3": DynamicCongaterV5FusionConfigOmegaMinus1V3(),
+    "dynamic_congaterV5_omega_normal0_minus1_att-as-omega": DynamicCongaterV5FusionConfigAttAsOmega(),
+    "dynamic_congaterV5_omega_normal0_minus1_att-as-omega-MEAN": DynamicCongaterV5FusionConfigAttAsOmegaMEAN(),
+
+    #
+    "dynamic_congaterV5_Womega": DynamicCongaterV5FusionConfigWOmega(),
+    "dynamic_congaterV5_WomegaVN": DynamicCongaterV5FusionConfigWOmegaVN(),
+    "dynamic_congaterV5_Womega_sigmoid": DynamicCongaterV5FusionConfigWOmegaSigmoid(),
+
+}
+
+CONGOSITIONV1_CONFIG_MAP = {
+    "static": StaticCongositionV1Config(),
+    # "dynamic":
+    # TODO
 }
 
 DEFAULT_ADAPTERFUSION_CONFIG = "dynamic"
+DEFAULT_CONGOSITION_CONFIG = "static"

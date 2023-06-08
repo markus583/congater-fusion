@@ -5,11 +5,18 @@ import numpy as np
 import torch
 from torch import nn
 
-from .composition import (AdapterCompositionBlock, BatchSplit, Fuse, Parallel,
-                          Split, Stack, adjust_tensors_for_parallel)
+from .composition import (
+    AdapterCompositionBlock,
+    BatchSplit,
+    Fuse,
+    Parallel,
+    Split,
+    Stack,
+    adjust_tensors_for_parallel,
+)
 from .configuration import AdapterConfig
 from .context import AdapterSetup, ForwardContext
-from .modeling import Adapter, BertFusion, ParallelAdapter
+from .modeling import Adapter, BertFusion, ParallelAdapter, CongositionV1
 
 
 class AdapterLayerBase(ABC):
@@ -90,6 +97,10 @@ class AdapterLayerBase(ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    def add_congosition_v1_layer(self, adapter_names: Union[List, str]):
+        raise NotImplementedError()
+
+    @abstractmethod
     def delete_fusion_layer(self, adapter_names: Union[List, str]):
         raise NotImplementedError()
 
@@ -114,6 +125,7 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
         self.config = config
 
     def _init_adapter_modules(self):
+        self.congosition_v1_layer = nn.ModuleDict(dict())
         self.adapters = nn.ModuleDict(dict())
         self.adapter_fusion_layer = nn.ModuleDict(dict())
 
@@ -173,6 +185,23 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
             fusion.train(self.training)  # make sure training mode is consistent
             self.adapter_fusion_layer[",".join(adapter_names)] = fusion
 
+    def add_congosition_v1_layer(self, adapter_names: Union[List, str]):
+        """See BertModel.add_fusion_layer"""
+        adapter_names = (
+            adapter_names
+            if isinstance(adapter_names, list)
+            else adapter_names.split(",")
+        )
+        if self.config.adapters.common_config_value(adapter_names, self.location_key):
+            fusion_config = self.config.adapters.get_congosition_v1(adapter_names)
+            fusion = CongositionV1(
+                fusion_config,
+                self.config.hidden_size,
+                len(adapter_names),
+            )
+            fusion.train(self.training)  # make sure training mode is consistent
+            self.congosition_v1_layer[",".join(adapter_names)] = fusion
+
     def delete_fusion_layer(self, adapter_names: Union[List, str]):
         adapter_names = (
             adapter_names if isinstance(adapter_names, str) else ",".join(adapter_names)
@@ -197,8 +226,17 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
         if unfreeze_adapters:
             for adapter_name in adapter_setup.flatten():
                 if adapter_name in self.adapters:
-                    for param in self.adapters[adapter_name].parameters():
-                        param.requires_grad = True
+                    for i, param in enumerate(self.adapters[adapter_name].parameters()):
+                        if i == 0:
+                            try:
+                                if not self.adapters[adapter_name].tsigmoid.variable_omega:
+                                    param.requires_grad = False
+                                else:
+                                    param.requires_grad = True
+                            except:
+                                param.requires_grad = True
+                        else:                    
+                            param.requires_grad = True
         if unfreeze_fusion:
             if isinstance(adapter_setup, Fuse):
                 if adapter_setup.name in self.adapter_fusion_layer:
@@ -206,10 +244,20 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
                         adapter_setup.name
                     ].parameters():
                         param.requires_grad = True
+                elif adapter_setup.name in self.congosition_v1_layer:
+                    for param in self.congosition_v1_layer[
+                        adapter_setup.name
+                    ].parameters():
+                        param.requires_grad = True
             for sub_setup in adapter_setup:
                 if isinstance(sub_setup, Fuse):
                     if sub_setup.name in self.adapter_fusion_layer:
                         for param in self.adapter_fusion_layer[
+                            sub_setup.name
+                        ].parameters():
+                            param.requires_grad = True
+                    elif sub_setup.name in sub_setup.name in self.congosition_v1_layer:
+                        for param in self.congosition_v1_layer[
                             sub_setup.name
                         ].parameters():
                             param.requires_grad = True
@@ -236,13 +284,24 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
                 )
             # Case 1: We have a nested fusion layer -> call fusion method
             if isinstance(adapter_stack_layer, Fuse):
-                hidden_states = self.adapter_fusion(
-                    adapter_stack_layer,
-                    hidden_states,
-                    input_tensor,
-                    layer_norm,
-                    lvl=lvl + 1,
-                )
+                if len(self.adapter_fusion_layer) == 1:
+                    hidden_states = self.adapter_fusion(
+                        adapter_stack_layer,
+                        hidden_states,
+                        input_tensor,
+                        layer_norm,
+                        lvl=lvl + 1,
+                    )
+                elif len(self.congosition_v1_layer) == 1:
+                    hidden_states = self.congosition_v1(
+                        adapter_stack_layer,
+                        hidden_states,
+                        input_tensor,
+                        layer_norm,
+                        lvl=lvl + 1,
+                    )
+                else:
+                    raise ValueError
             # Case 2: We have a nested split layer -> call split method
             elif isinstance(adapter_stack_layer, Split):
                 hidden_states = self.adapter_split(
@@ -304,6 +363,7 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
 
         # config of _last_ fused adapter is significant
         fusion_config = self.config.adapters.get_fusion(adapter_setup.name)
+        learn_omega = fusion_config.learn_omega
         last_adapter = self.adapters[adapter_setup.last()]
         hidden_states, query, residual = last_adapter.pre_forward(
             hidden_states, input_tensor, layer_norm, fusion_config=fusion_config
@@ -326,7 +386,113 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
                     hidden_states,
                     residual_input=residual,
                     output_gating=context.output_adapter_gating_scores,
+                    skip_tt=fusion_config.adapter_skip_tt,
                 )
+                up = layer_output[2]
+                self._store_gating_score(adapter_block, layer_output[-1])
+                up_list.append(up)
+            # Case 3: nesting other composition blocks is invalid
+            elif isinstance(adapter_block, AdapterCompositionBlock):
+                raise ValueError(
+                    "Invalid adapter setup. Cannot nest {} in {}".format(
+                        adapter_block.__class__.__name__,
+                        adapter_setup.__class__.__name__,
+                    )
+                )
+            # Case X: No adapter which is part of this module -> ignore
+            
+            # last element of up_list is the output of the last adapter
+            # last adapter is the original task adapter
+            # e.g., training Fusion on mrpc: mrpc task adapter output = up;
+            # task list: [rte, copa, mrpc]
+        task_adapter_output = up
+        if fusion_config.exclude_target_adapter:
+            up_list = up_list[:-1]
+            if fusion_config.target_adapter_tanh:
+                task_adapter_output = torch.tanh(task_adapter_output)
+
+        if len(up_list) > 0:
+            up_list = torch.stack(up_list)
+            up_list = up_list.permute(1, 2, 0, 3)
+
+            fusion_output = self.adapter_fusion_layer[adapter_setup.name](
+                query,
+                up_list,
+                up_list,
+                residual,
+                output_attentions=context.output_adapter_fusion_attentions,
+            )
+            
+            if fusion_config.exclude_target_adapter:
+                # if we exclude the target adapter, we need to add the task adapter output
+                # to the fusion output
+                fusion_output += task_adapter_output
+            if context.output_adapter_fusion_attentions:
+                hidden_states = fusion_output[0]
+                self._store_fusion_attentions(adapter_setup.name, fusion_output[-1])
+            else:
+                hidden_states = fusion_output
+
+        return hidden_states
+
+    def congosition_v1(
+        self, adapter_setup: Fuse, hidden_states, input_tensor, layer_norm, lvl=0
+    ):
+        """
+        Performs adapter fusion with the given adapters for the given input.
+        """
+        context = ForwardContext.get_context()
+
+        # config of _last_ fused adapter is significant
+        fusion_config = self.config.adapters.get_congosition_v1(adapter_setup.name)
+        last_adapter = self.adapters[adapter_setup.last()]
+        hidden_states, query, residual = last_adapter.pre_forward(
+            hidden_states, input_tensor, layer_norm, fusion_config=fusion_config
+        )
+        # TODO: omega init
+        # omegas = self.congosition_v1_layer[adapter_setup.name](
+        #     hidden_states
+        # )
+        # if hidden_states
+        # if self.training:
+        #     omegas.retain_grad()
+        # print(
+        #     torch.mean(
+        #         self.congosition_v1_layer[
+        #             adapter_setup.name
+        #         ].dense.weight
+        #     )
+        # )
+        # print(torch.mean(omegas, dim=0))
+        # add extra dims to omega: 32, 12 --> 32, 12, 128, 768
+        # omegas = (
+        #     omegas.unsqueeze(2).unsqueeze(3)  # .unsqueeze(0)
+        #     # .expand(-1, -1, hidden_states.size(1), hidden_states.size(2))
+        # )
+        # if self.training:
+        #     omegas.retain_grad()
+
+        up_list = []
+
+        for i, adapter_block in enumerate(adapter_setup):
+            # Case 1: We have a nested stack -> call stack method
+            if isinstance(adapter_block, Stack):
+                _, up, _ = self.adapter_stack(
+                    adapter_block, hidden_states, input_tensor, layer_norm, lvl=lvl + 1
+                )
+                if up is not None:  # could be none if stack is empty
+                    up_list.append(up)
+            # Case 2: We have a single adapter which is part of this module -> forward pass
+            elif adapter_block in self.adapters:
+                adapter_layer = self.adapters[adapter_block]
+                layer_output = adapter_layer(
+                    hidden_states,
+                    residual_input=residual,
+                    # omega=omegas[:, i],
+                    output_gating=context.output_adapter_gating_scores,
+                    # train=self.training
+                )
+                # print(adapter_layer.omega)
                 up = layer_output[2]
                 self._store_gating_score(adapter_block, layer_output[-1])
                 up_list.append(up)
@@ -344,18 +510,10 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
             up_list = torch.stack(up_list)
             up_list = up_list.permute(1, 2, 0, 3)
 
-            fusion_output = self.adapter_fusion_layer[adapter_setup.name](
-                query,
-                up_list,
-                up_list,
-                residual,
-                output_attentions=context.output_adapter_fusion_attentions,
-            )
-            if context.output_adapter_fusion_attentions:
-                hidden_states = fusion_output[0]
-                self._store_fusion_attentions(adapter_setup.name, fusion_output[-1])
-            else:
-                hidden_states = fusion_output
+            # average over the adapters
+            up_list = torch.mean(up_list, dim=2)
+
+            hidden_states = up_list
 
         return hidden_states
 
