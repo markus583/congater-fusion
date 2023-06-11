@@ -986,7 +986,7 @@ class ModelAdaptersConfig(Collection):
             config = None
         return config
 
-    def get_congosition_v1(self, fusion_name: Union[str, List[str]]) -> Optional[dict]:
+    def get_congosition_v1(self, fusion_name: Union[str, List[str]], grid_values=None) -> Optional[dict]:
         """
         Gets the config dictionary for a given AdapterFusion.
 
@@ -1006,6 +1006,10 @@ class ModelAdaptersConfig(Collection):
                 config = CONGOSITIONV1_CONFIG_MAP.get(config_name, None)
         else:
             config = None
+        if grid_values is not None:
+        # map grid values to config
+            for key, value in grid_values.items():
+                setattr(config, key, value)
         return config
 
     def add_fusion(
@@ -1048,6 +1052,7 @@ class ModelAdaptersConfig(Collection):
         self,
         fusion_name: Union[str, List[str]],
         config: Optional[Union[str, dict]] = None,
+        grid_values: dict = None,
     ):
         """
         Adds a new AdapterFusion.
@@ -1213,6 +1218,18 @@ class CongositionV1Config(AdapterConfigBase):
 
     fn: bool
     query_before_ln: bool
+    qqp: Union[None, float] = None
+    mnli: Union[None, float] = None
+    qnli: Union[None, float] = None
+    cb: Union[None, float] = None
+    copa: Union[None, float] = None
+    rte: Union[None, float] = None
+    mrpc: Union[None, float] = None
+    wic: Union[None, float] = None
+    wsc: Union[None, float] = None
+    sst2: Union[None, float] = None
+    stsb: Union[None, float] = None
+    boolq: Union[None, float] = None
 
     @classmethod
     def load(cls, config: Union[dict, str], **kwargs):
@@ -1694,6 +1711,23 @@ class DynamicAdapterFusionConfigOmega(AdapterFusionConfig):
 class StaticCongositionV1Config(CongositionV1Config):
     fn: bool = False
     query_before_ln: bool = False
+    
+@dataclass(eq=False)
+class OmegaGrid(CongositionV1Config):
+    fn: bool = False
+    query_before_ln: bool = False
+    qqp: Union[None, float] = None
+    mnli: Union[None, float] = None
+    qnli: Union[None, float] = None
+    cb: Union[None, float] = None
+    copa: Union[None, float] = None
+    rte: Union[None, float] = None
+    mrpc: Union[None, float] = None
+    wic: Union[None, float] = None
+    wsc: Union[None, float] = None
+    sst2: Union[None, float] = None
+    stsb: Union[None, float] = None
+    boolq: Union[None, float] = None
 
 
 ADAPTERFUSION_CONFIG_MAP = {
@@ -1750,6 +1784,7 @@ ADAPTERFUSION_CONFIG_MAP = {
 CONGOSITIONV1_CONFIG_MAP = {
     "static": StaticCongositionV1Config(),
     # "dynamic":
+    "omega_grid": OmegaGrid(),
     # TODO
 }
 

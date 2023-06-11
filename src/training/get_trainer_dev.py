@@ -24,7 +24,7 @@ from model.utils import TaskType, get_model
 from tasks.glue.dataset import GlueDataset
 from tasks.superglue.dataset import SuperGlueDataset
 from tasks.utils import GLUE_DATASETS, SUPERGLUE_DATASETS
-# from utils import map_omega_grid
+from training.utils import map_omega_grid
 
 logger = logging.getLogger(__name__)
 
@@ -161,13 +161,27 @@ def get_trainer(args):
             )
 
     elif adapter_args.train_adapter:
-        # if data_args.omega_grid and congater_args.congosition_type == "omega_grid":
-        #     omega_grid = map_omega_grid(
-            # config=data_args.omega_grid, 
-            # seed=data_args.seed,
-            # task_name=data_args.task_name,
-            # )
-            # model.add_congosition_v1(omega_grid, congater_args.congosition_type == "omega_grid")
+        if data_args.omega_grid and congater_args.congosition_type == "omega_grid":
+            # TODO: handle SELF
+            omega_grid = map_omega_grid(
+                config=data_args.omega_grid, 
+                seed=training_args.seed,
+                adapter_type=adapter_args.adapter_config,
+            )
+            for adapter_dir, _ in omega_grid.items():
+                logger.info(adapter_dir)
+                model.load_adapter(
+                    f"{os.path.expanduser('~')}/congater-fusion/src/" + adapter_dir,
+                    with_head=False,
+                )
+            # get tasks from omega_grid
+            source_tasks = [l.split("/")[2] for l in list(omega_grid.keys())]
+            # create dict: task -> omega
+            omega_grid = {l.split("/")[2]:i for l, i in list(omega_grid.items())}
+            model.add_congosition_v1(source_tasks, congater_args.congosition_type, grid_values=omega_grid)
+            model.train_adapter_fusion(
+                [source_tasks], unfreeze_adapters=False
+            )
         if data_args.eval_adapter:
             config = AdapterConfig.load(
                 training_args.output_dir + "/adapter_config.json"
@@ -226,7 +240,8 @@ def get_trainer(args):
                 )
             # Setup adapters
             # TODO: setup variable omega for training also (not only eval mode, i.e. data_args.eval_adapter = True)
-            setup_adapter_training(model, adapter_args, data_args.task_name)
+            if not data_args.omega_grid:
+                setup_adapter_training(model, adapter_args, data_args.task_name)
     else:
         if adapter_args.load_adapter:
             raise ValueError(
@@ -261,11 +276,11 @@ def get_trainer(args):
         early_stopping_callback = None
 
     # wandb callback
-    from transformers.integrations import WandbCallback
+    # from transformers.integrations import WandbCallback
 
-    os.environ["WANDB_WATCH"] = "all"
-    os.environ["WANDB_LOG_MODEL "] = "true"
-    wandb_callback = WandbCallback()
+    # os.environ["WANDB_WATCH"] = "all"
+    # os.environ["WANDB_LOG_MODEL "] = "true"
+    # wandb_callback = WandbCallback()
 
     logger.info(summary(model, depth=2))
 
@@ -277,7 +292,7 @@ def get_trainer(args):
         compute_metrics=dataset.compute_metrics,
         tokenizer=tokenizer,
         data_collator=dataset.data_collator,
-        callbacks=[early_stopping_callback, wandb_callback],
+        callbacks=[early_stopping_callback],
     )
 
     return trainer, model, dataset, adapter_setup

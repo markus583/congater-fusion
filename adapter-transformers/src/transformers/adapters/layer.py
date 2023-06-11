@@ -16,7 +16,7 @@ from .composition import (
 )
 from .configuration import AdapterConfig
 from .context import AdapterSetup, ForwardContext
-from .modeling import Adapter, BertFusion, ParallelAdapter, CongositionV1
+from .modeling import Adapter, BertFusion, ParallelAdapter, CongositionV1, NoOpModule
 
 
 class AdapterLayerBase(ABC):
@@ -185,7 +185,7 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
             fusion.train(self.training)  # make sure training mode is consistent
             self.adapter_fusion_layer[",".join(adapter_names)] = fusion
 
-    def add_congosition_v1_layer(self, adapter_names: Union[List, str]):
+    def add_congosition_v1_layer(self, adapter_names: Union[List, str], grid_values=None):
         """See BertModel.add_fusion_layer"""
         adapter_names = (
             adapter_names
@@ -193,12 +193,13 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
             else adapter_names.split(",")
         )
         if self.config.adapters.common_config_value(adapter_names, self.location_key):
-            fusion_config = self.config.adapters.get_congosition_v1(adapter_names)
-            fusion = CongositionV1(
-                fusion_config,
-                self.config.hidden_size,
-                len(adapter_names),
-            )
+            fusion_config = self.config.adapters.get_congosition_v1(adapter_names, grid_values=grid_values)
+            # fusion = CongositionV1(
+            #     fusion_config,
+            #     self.config.hidden_size,
+            #     len(adapter_names),
+            # )
+            fusion = NoOpModule()
             fusion.train(self.training)  # make sure training mode is consistent
             self.congosition_v1_layer[",".join(adapter_names)] = fusion
 
@@ -473,6 +474,7 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
         #     omegas.retain_grad()
 
         up_list = []
+        up_dict = {}
 
         for i, adapter_block in enumerate(adapter_setup):
             # Case 1: We have a nested stack -> call stack method
@@ -495,7 +497,10 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
                 # print(adapter_layer.omega)
                 up = layer_output[2]
                 self._store_gating_score(adapter_block, layer_output[-1])
-                up_list.append(up)
+                # up_list.append(up)
+                # dict of adapter_name and output
+                up_dict[adapter_block] = up
+                
             # Case 3: nesting other composition blocks is invalid
             elif isinstance(adapter_block, AdapterCompositionBlock):
                 raise ValueError(
@@ -506,14 +511,23 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
                 )
             # Case X: No adapter which is part of this module -> ignore
 
-        if len(up_list) > 0:
-            up_list = torch.stack(up_list)
-            up_list = up_list.permute(1, 2, 0, 3)
+        if len(up_dict) > 0:
+            # up_list = torch.stack(up_list)
+            # up_list = up_list.permute(1, 2, 0, 3)
 
             # average over the adapters
-            up_list = torch.mean(up_list, dim=2)
+            # up_list = torch.mean(up_list, dim=2)
+            
+            # output is: fusion_config.task_1 * up_dict[task_1] + fusion_config.task_2 * up_dict[task_2] + ...
+            hidden_states = torch.zeros_like(up_dict[adapter_setup[0]])
+            for adapter_name, up in up_dict.items():
+               hidden_states += fusion_config[adapter_name] * up
+               # print(adapter_name, fusion_config[adapter_name])
+            # add back residual
+            hidden_states += residual
+            
 
-            hidden_states = up_list
+            # idden_states = up_list
 
         return hidden_states
 

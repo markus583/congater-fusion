@@ -1,4 +1,4 @@
-RUN_NAME=ST-A-FUSION-GSG-FP16-3_adp
+RUN_NAME=ST-A-FUSION-GSG-FP16-2_adp
 MODEL_NAME=bert-base-uncased
 GPU_ID=0
 SEEDS=()
@@ -21,7 +21,7 @@ if [ ${#SEEDS[@]} -eq 0 ]; then
 fi
 
 
-for TASK in cb copa wsc rte mrpc wic stsb boolq sst2 qnli qqp mnli; do
+for TASK in wic stsb boolq sst2 qnli qqp mnli; do
   for SEED in "${SEEDS[@]}"; do
     if [ $TASK = "stsb" ]; then
         EVAL_METRIC="eval_pearson"
@@ -57,7 +57,7 @@ for TASK in cb copa wsc rte mrpc wic stsb boolq sst2 qnli qqp mnli; do
         --do_eval \
         --train_fusion \
         --fusion_type dynamic \
-        --fusion_load_dir cf_config_GSG-3_only.json \
+        --fusion_load_dir cf_config_GSG-2_only.json \
         --per_device_train_batch_size 32 \
         --per_device_eval_batch_size 32 \
         --dataloader_num_workers 0 \

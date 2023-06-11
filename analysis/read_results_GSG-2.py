@@ -68,6 +68,7 @@ OUT_FILES = [
     "GSG/results/C-V5-FUSION-TT-W_param-att-as-omega-MEAN.csv",
     "GSG/results/C-V5-FUSION-TT-W_param-att-as-omega-MEAN-2.csv",
     "GSG/results/ST-A-FUSION-3_adp.csv",
+    "GSG/results/ST-A-FUSION-2_adp.csv",
 ]
 DIR_NAMES = [
     "full",
@@ -127,6 +128,7 @@ DIR_NAMES = [
     "C-V5-FUSION-GSG-FP16-TT-W_param-att-as-omega-MEAN",
     "C-V5-FUSION-GSG-FP16-TT-W_param-att-as-omega-MEAN-2",
     "ST-A-FUSION-GSG-FP16-3_adp",
+    "ST-A-FUSION-GSG-FP16-2_adp",
 ]
 
 extract_statistics(OUT_FILES, DIR_NAMES)
@@ -172,6 +174,7 @@ compare_dict = {
             "ST-A-FUSION",
             "ST-A-FUSION-3_adp",
             "ST-A",
+            "ST-A-FUSION-2_adp"
         ],
         "diff_base": "ST-A-FUSION",
     },

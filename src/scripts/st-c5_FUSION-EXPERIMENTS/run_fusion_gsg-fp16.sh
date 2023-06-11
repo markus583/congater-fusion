@@ -1,4 +1,4 @@
-RUN_NAME=C-V5-FUSION-GSG-FP16-TT-W_param-att-as-omega-MEAN-2
+RUN_NAME=C-V5-FUSION-GSG-FP16-TT-W_param
 MODEL_NAME=bert-base-uncased
 GPU_ID=0
 SEEDS=()
@@ -56,7 +56,7 @@ for TASK in cb copa wsc rte mrpc wic stsb boolq sst2 qnli qqp mnli; do
         --do_train \
         --do_eval \
         --train_fusion \
-        --fusion_type dynamic_congaterV5_omega_normal0_minus1_att-as-omega-MEAN \
+        --fusion_type dynamic_congaterV5_omega_normal0_minus1 \
         --fusion_load_dir cf_config_GSG.json \
         --per_device_train_batch_size 32 \
         --per_device_eval_batch_size 32 \

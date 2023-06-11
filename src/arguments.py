@@ -149,6 +149,10 @@ class DataTrainingArguments:
         default=None,
         metadata={"help": "The target task for probing."},
     )
+    omega_grid: Optional[str] = field(
+        default=None,
+        metadata={"help": "The grid of omega values to use for probing."},
+    )
 
     def __post_init__(self):
         if self.task_name is not None:

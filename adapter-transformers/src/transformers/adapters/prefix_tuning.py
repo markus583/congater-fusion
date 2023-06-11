@@ -313,7 +313,7 @@ class PrefixTuningShim(AdapterLayerBase, nn.Module):
     def add_fusion_layer(self, adapter_names: Union[List, str]):
         pass  # not applicable to prefix tuning
     
-    def add_congosition_v1_layer(self, adapter_names: Union[List, str]):
+    def add_congosition_v1_layer(self, adapter_names: Union[List, str], grid_values=None):
         pass # not applicable to prefix tuning
 
     def delete_fusion_layer(self, adapter_names: Union[List, str]):

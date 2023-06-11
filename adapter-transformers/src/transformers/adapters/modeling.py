@@ -778,6 +778,15 @@ class CongositionV1(nn.Module):
         x = self.dense2(x)
         return self.softmax(x)
 
+import torch.nn as nn
+
+class NoOpModule(nn.Module):
+    def __init__(self):
+        super(NoOpModule, self).__init__()
+
+    def forward(self, x):
+        return x
+
 
 # Invertible Adapters
 

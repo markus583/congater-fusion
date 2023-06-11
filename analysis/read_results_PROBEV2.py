@@ -169,14 +169,17 @@ for base_version in versions.keys():
         df = result_dict[version].copy()
         df["metric"] = df["task"].apply(compute_main_metric)
         df["metric_MEAN"] = df.apply(lambda x: x[x["metric"] + "_MEAN"], axis=1)
+        df["metric_STD"] = df.apply(lambda x: x[x["metric"] + "_STD"], axis=1)
         df["% of Training Data"] = df["train_pct"].apply(lambda x: str(x))
         avg = df.groupby("train_pct").mean()["metric_MEAN"]
+        std = df.groupby("train_pct").mean()["metric_STD"]
         for train_pct in [100]:
             df = df.append(
                 {
                     "task": "AVG",
                     "train_pct": train_pct,
                     "metric_MEAN": avg[train_pct],
+                    "metric_STD": std[train_pct],
                     "% of Training Data": str(train_pct),
                     "omega": df["omega"][0],
                 },
@@ -250,8 +253,9 @@ for base_version in versions.keys():
         for i, task in enumerate(filtered_df["task"].unique()):
             row = i // 4
             col = i % 4
+            df = filtered_df[filtered_df["task"] == task]
             s = sns.lineplot(
-                data=filtered_df[filtered_df["task"] == task],
+                data=df,
                 x="omega",
                 y="metric_MEAN",
                 ax=ax[row, col],
@@ -264,6 +268,14 @@ for base_version in versions.keys():
                 linestyle="--",  # set line style to "--"
             )
             s.set(ylim=(0.5, 1))
+            ax[row, col].errorbar(
+                df["omega"],
+                df["metric_MEAN"],
+                yerr=df["metric_STD"],
+                fmt="none",
+                ecolor="gray",
+                capsize=3,
+            )
             # y axis ticks in 0.05 steps
             # 0.5 to 1.0 in 0.05 steps
             # for ax:

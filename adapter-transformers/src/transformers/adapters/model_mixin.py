@@ -677,6 +677,7 @@ class ModelAdaptersMixin(PushAdapterToHubMixin, ABC):
         config=None,
         overwrite_ok: bool = False,
         set_active: bool = False,
+        grid_values: dict = None
     ):
         """
         Adds AdapterFusion to the model with alll the necessary configurations and weight initializations
@@ -710,9 +711,9 @@ class ModelAdaptersMixin(PushAdapterToHubMixin, ABC):
         # In case adapter already exists and we allow overwriting, explicitly delete the existing one first
         if overwrite_ok and self.config.adapters.get_fusion(adapter_names) is not None:
             self.delete_congosition(adapter_names)
-        self.config.adapters.add_congosition_v1(adapter_names, config=config)
+        self.config.adapters.add_congosition_v1(adapter_names, config=config, grid_values=grid_values)
         self.apply_to_adapter_layers(
-            lambda i, layer: layer.add_congosition_v1_layer(adapter_names)
+            lambda i, layer: layer.add_congosition_v1_layer(adapter_names, grid_values=grid_values)
         )
         if set_active:
             if not isinstance(adapter_names, list):

@@ -66,7 +66,7 @@ def probing():
                     "copa",
                     "wsc",
                     "rte",
-                    # "mrpc",
+                    "mrpc",
                     # "wic",
                     # "stsb",
                     # "boolq",
@@ -75,6 +75,7 @@ def probing():
                     # "qqp",
                     # "mnli",
                 ]:
+                    # print(source_task, target_task)
                     if source_task == target_task:
                         dir_name = "PROBEV2/" + DIR
                         subfolder = os.path.join(
@@ -167,13 +168,13 @@ def probing():
                                 continue
                             elif len(all_metrics[best_seed]) == 0:
                                 continue
-                            if source_task == "cola":
+                            if target_task == "cola":
                                 if (
                                     all_metrics[seed]["matthews_correlation"]
                                     > all_metrics[best_seed]["matthews_correlation"]
                                 ):
                                     best_seed = seed
-                            elif source_task == "stsb":
+                            elif target_task == "stsb":
                                 if (
                                     all_metrics[seed]["pearson"]
                                     > all_metrics[best_seed]["pearson"]

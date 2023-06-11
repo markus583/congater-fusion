@@ -1,4 +1,4 @@
-RUN_NAME=st-a
+RUN_NAME=C-V5
 
 MODEL_NAME=bert-base-uncased
 GPU_ID=0
@@ -21,7 +21,7 @@ if [ ${#SEEDS[@]} -eq 0 ]; then
   SEEDS=(0 1 2 3 4 5 6 7 8 9)
 fi
 
-for TASK in cb copa wsc rte mrpc wic stsb boolq sst2 qnli qqp mnli; do
+for TASK in qqp; do
   for SEED in "${SEEDS[@]}"; do
     if [ $TASK = "stsb" ]; then
         EVAL_METRIC="eval_pearson"
@@ -85,7 +85,7 @@ for TASK in cb copa wsc rte mrpc wic stsb boolq sst2 qnli qqp mnli; do
             --learning_rate 1e-4 \
             --num_train_epochs 30 \
             --train_adapter \
-            --adapter_config pfeiffer[omega=$omega] \
+            --adapter_config congaterV5[omega=$omega] \
             --output_dir ../../runs/PROBEV2/$RUN_NAME/$OMEGA/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED \
             --logging_strategy steps \
             --logging_steps 50 \

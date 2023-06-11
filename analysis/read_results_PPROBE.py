@@ -163,9 +163,12 @@ for base_version in versions.keys():
         df = result_dict[version].copy()
         df["metric"] = df["target_task"].apply(compute_main_metric)
         df["metric_MEAN"] = df.apply(lambda x: x[x["metric"] + "_MEAN"], axis=1)
+        df["metric_STD"] = df.apply(lambda x: x[x["metric"] + "_STD"], axis=1)
         df["% of Training Data"] = df["train_pct"].apply(lambda x: str(x))
         avg_target = df.groupby(["train_pct", "target_task"]).mean()["metric_MEAN"]
         avg_source = df.groupby(["train_pct", "source_task"]).mean()["metric_MEAN"]
+        std_target = df.groupby(["train_pct", "target_task"]).mean()["metric_STD"]
+        std_source = df.groupby(["train_pct", "source_task"]).mean()["metric_STD"]
         for train_pct in [100]:
             # loop over both avg and add to df
             for task in avg_target.index.get_level_values(1).unique():
@@ -175,6 +178,7 @@ for base_version in versions.keys():
                         "source_task": "AVG",
                         "train_pct": train_pct,
                         "metric_MEAN": avg_target[train_pct][task],
+                        "metric_STD": std_target[train_pct][task],
                         "% of Training Data": str(train_pct),
                         "omega": df["omega"][0],
                     },
@@ -188,6 +192,7 @@ for base_version in versions.keys():
                         "source_task": task,
                         "train_pct": train_pct,
                         "metric_MEAN": avg_source[train_pct][task],
+                        "metric_STD": std_source[train_pct][task],
                         "% of Training Data": str(train_pct),
                         "omega": df["omega"][0],
                     },
@@ -236,7 +241,8 @@ for base_version in versions.keys():
                     & (filtered_df["source_task"] == source_task)
                 ]
                 if source_task == "stsb":
-                    continue
+                    # continue
+                    pass
                 s = sns.lineplot(
                     data=df,
                     x="omega",
@@ -249,6 +255,15 @@ for base_version in versions.keys():
                     markeredgecolor="white",
                     color="red",
                     linestyle="--",  # set line style to "--"
+                )
+                # add error bars from metric_STD feature
+                ax[row, col].errorbar(
+                    df["omega"],
+                    df["metric_MEAN"],
+                    yerr=df["metric_STD"],
+                    fmt="none",
+                    ecolor="gray",
+                    capsize=3,
                 )
                 s.set(ylim=(0.5, 1))
                 # y axis ticks in 0.05 steps
@@ -291,7 +306,7 @@ for base_version in versions.keys():
         fig.tight_layout(rect=[0.05, 0.05, 1, 0.95])
 
         plt.savefig(
-            f"GSG/PPROBE/plots/omegas/{base_version}/{train_pct}/{base_version}_ALL_{train_pct}.png",
+            f"GSG/PPROBE/plots/omegas/{base_version}/{train_pct}/{base_version}_ALL_{train_pct}_pairwise.png",
             dpi=300,
         )
         plt.close()
