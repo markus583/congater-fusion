@@ -777,8 +777,55 @@ class CongositionV1(nn.Module):
         x = self.non_linearity(x)
         x = self.dense2(x)
         return self.softmax(x)
+    
+class CongositionBase(nn.Module):
+    def __init__(
+        self,
+        config,
+        dense_size,
+        n_congaters: int,
+    ):
+        super(CongositionBase, self).__init__()
+        print(config)
+        self.config = config
+        omega = torch.normal(
+                            self.config["omega_init"],
+                            0.001,
+                            self.config["omega_shape"],
+                        )
+        if self.config["uplift_target"]:
+            omega[-1] = -self.config["omega_init"]
+        self.omega = nn.Parameter(omega, requires_grad=True)
+        # 1/12: -2.3978952728 = -ln(11)
+        if self.config["sigmoid"]:
+            self.gate = nn.Sigmoid()
+            self.has_sigmoid = True
+        elif self.config["clamp"]:
+            self.gate = nn.Hardtanh(min_val=0, max_val=1)
+        if self.config["ln"]:
+            self.ln = nn.LayerNorm(dense_size)
+        if self.config["tanh"]:
+            self.tanh = nn.Tanh()
 
-import torch.nn as nn
+    def forward(self, up_list, residual):
+        if self.config["tanh"]:
+            up_list = self.tanh(up_list)
+        if self.config["sigmoid"] or self.config["clamp"]:
+            if self.config["sigmoid_temperature"]:
+                omegas = self.gate(self.omega * self.config["sigmoid_temperature"])
+            else:
+                omegas = self.gate(self.omega)
+        else:
+            omegas = self.omega
+        weighted_x = omegas * up_list
+        weighted_x = torch.sum(weighted_x, dim=2)
+        if self.config["ln"] and self.config["ln_before_residual"]:
+            weighted_x = self.ln(weighted_x)
+        weighted_x += residual
+        if self.config["ln"] and not self.config["ln_before_residual"]:
+            weighted_x = self.ln(weighted_x)
+        return weighted_x
+        
 
 class NoOpModule(nn.Module):
     def __init__(self):

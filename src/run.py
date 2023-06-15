@@ -226,6 +226,7 @@ def main() -> None:
 if __name__ == "__main__":
     # if model_name_or_path not given, set params
     print(sys.argv)
+    sys.path.append("/home/markus-frohmann/congater-fusion/adapter-transformers/src")
     if "--model_name_or_path" not in sys.argv:
         sys.argv += [
             "--model_name_or_path",

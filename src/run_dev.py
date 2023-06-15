@@ -26,9 +26,9 @@ require_version(
     "To fix: pip install -r examples/pytorch/text-classification/requirements.txt",
 )
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
-# os.environ["WANDB_PROJECT"] = "THESIS_st-a"
-# os.environ["WANDB_WATCH"] = "all"
-# os.environ["WANDB_LOG_MODEL "] = "true"
+os.environ["WANDB_PROJECT"] = "THESIS_st-a"
+os.environ["WANDB_WATCH"] = "all"
+os.environ["WANDB_LOG_MODEL "] = "true"
 logger = logging.getLogger(__name__)
 
 
@@ -93,10 +93,10 @@ def detect_last_checkpoint(training_arguments: transformers.TrainingArguments) -
         checkpoint = get_last_checkpoint(training_arguments.output_dir)
         if checkpoint is None and len(os.listdir(training_arguments.output_dir)) > 0:
             raise ValueError(
-            f"Output directory ({training_arguments.output_dir}) already exists and is not empty. "
+                f"Output directory ({training_arguments.output_dir}) already exists and is not empty. "
                 "Use --overwrite_output_dir to overcome."
             )
-            
+
         elif (
             checkpoint is not None and training_arguments.resume_from_checkpoint is None
         ):
@@ -129,26 +129,36 @@ def setup_logging(training_args: transformers.TrainingArguments) -> None:
 
 def main() -> None:
     args = get_args()
-    model_args, data_args, training_args, adapter_args, fusion_args, congater_args = args
+    (
+        model_args,
+        data_args,
+        training_args,
+        adapter_args,
+        fusion_args,
+        congater_args,
+    ) = args
 
-    # if adapter_args.train_adapter:
-    #     if adapter_args.adapter_config == "pfeiffer":
-    #         WANDBPROJECT = "THESIS_st-a"
-    #     else:
-    #         WANDBPROJECT = "THESIS_ct_1-a"
-    # elif fusion_args.train_fusion:
-    #     WANDBPROJECT = "THESIS_st-a-fusion"
-    # elif not adapter_args.train_adapter and not fusion_args.train_fusion:
-    #     WANDBPROJECT = "THESIS_full"
-    # else:
-    # #     raise NotImplementedError
-    # os.environ["WANDB_WATCH"] = "all"
-    # os.environ["WANDB_LOG_MODEL "] = "true"
+    if adapter_args.train_adapter:
+        if adapter_args.adapter_config == "pfeiffer":
+            WANDBPROJECT = "THESIS_st-a"
+        else:
+            WANDBPROJECT = "THESIS_ct_1-a"
+    elif fusion_args.train_fusion:
+        if congater_args.congosition_type:
+            WANDBPROJECT = "THESIS_congosition"
+        else:
+            WANDBPROJECT = "THESIS_st-a-fusion"
+    elif not adapter_args.train_adapter and not fusion_args.train_fusion:
+        WANDBPROJECT = "THESIS_full"
+    else:
+        raise NotImplementedError
+    os.environ["WANDB_WATCH"] = "all"
+    os.environ["WANDB_LOG_MODEL "] = "true"
 
-    # os.environ["WANDB_PROJECT"] = WANDBPROJECT
-    # os.environ[
-    #     "WANDB_NAME"
-    # ] = f"{data_args.task_name}-{model_args.model_name_or_path}-{data_args.max_train_pct}-{training_args.seed}"
+    os.environ["WANDB_PROJECT"] = WANDBPROJECT
+    os.environ[
+        "WANDB_NAME"
+    ] = f"{data_args.task_name}-{model_args.model_name_or_path}-{data_args.max_train_pct}-{training_args.seed}"
 
     setup_logging(training_args)
 
@@ -164,7 +174,7 @@ def main() -> None:
             )
     print("dataset_name", data_args.dataset_name)
     print("task_name", data_args.task_name)
-        
+
     if not data_args.eval_adapter:
         last_checkpoint = detect_last_checkpoint(training_arguments=training_args)
     else:
@@ -190,8 +200,52 @@ def main() -> None:
 
         if congater_args.congosition_type is not None:
             model.save_congosition(training_args.output_dir, ",".join(adapter_setup[0]))
+            # plot and save omega values for each layer
+            # y axis: layer number
+            # x axis: omega values for each task
+
+            all_omegas = []
+            import torch
+
+            for i, layer in enumerate(range(12)):
+                omegas = (
+                    torch.sigmoid(
+                        torch.mean(
+                            list(
+                                model.bert.encoder.layer[
+                                    i
+                                ].output.congosition_v1_layer.named_parameters()
+                            )[0][1],
+                            dim=1,
+                        )
+                    )
+                    .detach()
+                    .cpu()
+                    .numpy()
+                )
+
+                all_omegas.append(omegas)
+
+            import numpy as np
+            import seaborn as sns
+            import matplotlib.pyplot as plt
+
+            all_omegas = np.array(all_omegas)
+            # plot
+            fig, ax = plt.subplots()
+            sns.heatmap(all_omegas.T, ax=ax, vmin=0, vmax=1, cmap="bone")
+            ax.set_yticklabels(adapter_setup[0], rotation=0)
+
+            fig.tight_layout()
+            if not os.path.exists(training_args.output_dir + "/omegas"):
+                os.makedirs(training_args.output_dir + "/omegas")
+            plt.savefig(training_args.output_dir + "/omegas/omegas.png")
+            plt.close()
+            
         else:
-            model.save_adapter_fusion(training_args.output_dir, ",".join(adapter_setup[0]))
+            model.save_adapter_fusion(
+                training_args.output_dir, ",".join(adapter_setup[0])
+            )
     elif adapter_args.train_adapter:
         logger.info("Saving adapter.")
         if data_args.source_task:
@@ -226,6 +280,7 @@ def main() -> None:
 if __name__ == "__main__":
     # if model_name_or_path not given, set params
     print(sys.argv)
+    sys.path.append("/home/markus-frohmann/congater-fusion/adapter-transformers/src")
     if "--model_name_or_path" not in sys.argv:
         sys.argv += [
             "--model_name_or_path",
@@ -245,22 +300,22 @@ if __name__ == "__main__":
             "--per_device_eval_batch_size",
             "32",
             "--learning_rate",
-            "5e-5",
+            "5e-2",
             "--num_train_epochs",
-            "2",
-            "--train_adapter",
-            "True",
-            # "--train_fusion",
-            # "--fusion_type",
-            # "dynamic_congaterV5_omega_normal0_minus1_att-as-omega",
-            # "--fusion_load_dir",
-            # "scripts/st-c5_fusion/cf_config_GSG.json",
+            "30",
+            # "--train_adapter",
+            # "True",
+            "--train_fusion",
+            "--fusion_load_dir",
+            "scripts/st-c5_fusion/cf_config_GSG.json",
             "--output_dir",
             "runs/TEST",
             # "--eval_adapter",
             # "True",
             "--logging_strategy",
-            "epoch",
+            "steps",
+            "--logging_steps",
+            "1",
             "--evaluation_strategy",
             "epoch",
             "--save_strategy",
@@ -280,11 +335,11 @@ if __name__ == "__main__":
             "--max_train_pct",
             "100",
             "--seed",
-            "0",
+            "2",
             "--overwrite_output_dir",
             "--no_cuda",
-            "--max_steps",
-            "1000",
+            # "--max_steps",
+            # "10",
             "--adapter_config",
             "pfeiffer",
             "--omega",
@@ -292,14 +347,14 @@ if __name__ == "__main__":
             "--debug_congater",
             "True",
             "--congosition_type",
-            "omega_grid",
+            "param_direct_clamp_avg-init-LN",
             "--fusion_type",
-            "omega_grid",
+            "param_direct_clamp_avg-init-LN",
             # "--learn_omega",
             # "False",
             "--train_probing_head",
             "True",
-            "--omega_grid",
-            "{'mnli': 0.0, 'qqp': 0.0}"
+            # "--omega_grid",
+            # "{'mnli': 0.0, 'qqp': 0.0}"
         ]
     main()

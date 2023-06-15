@@ -21,7 +21,7 @@ if [ ${#SEEDS[@]} -eq 0 ]; then
   SEEDS=(0 1 2 3 4 5 6 7 8 9)
 fi
 
-for TASK in qqp; do
+for TASK in mnli; do
   for SEED in "${SEEDS[@]}"; do
     if [ $TASK = "stsb" ]; then
         EVAL_METRIC="eval_pearson"

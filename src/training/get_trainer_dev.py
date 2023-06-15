@@ -154,6 +154,16 @@ def get_trainer(args):
             model.train_adapter_fusion(
                 adapter_setup, unfreeze_adapters=fusion_args.fusion_unfreeze_adapters
             )
+            # if dataset.multiple_choice:
+            #     model.add_multiple_choice_head(data_args.task_name, num_choices=2)
+            # else:
+            #     model.add_classification_head(
+            #         data_args.task_name,
+            #         num_labels=dataset.num_labels,
+            #         id2label={i: v for i, v in enumerate(dataset.label_list)}
+            #         if not dataset.is_regression
+            #         else None,
+            #     )
         else:
             model.add_adapter_fusion(adapter_setup[0], fusion_args.fusion_type)
             model.train_adapter_fusion(
@@ -162,7 +172,6 @@ def get_trainer(args):
 
     elif adapter_args.train_adapter:
         if data_args.omega_grid and congater_args.congosition_type == "omega_grid":
-            # TODO: handle SELF
             omega_grid = map_omega_grid(
                 config=data_args.omega_grid, 
                 seed=training_args.seed,
@@ -276,7 +285,7 @@ def get_trainer(args):
         early_stopping_callback = None
 
     # wandb callback
-    # from transformers.integrations import WandbCallback
+    from transformers.integrations import WandbCallback
 
     # os.environ["WANDB_WATCH"] = "all"
     # os.environ["WANDB_LOG_MODEL "] = "true"

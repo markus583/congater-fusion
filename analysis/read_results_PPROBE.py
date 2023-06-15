@@ -12,7 +12,7 @@ import seaborn as sns
 warnings.filterwarnings("ignore")
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
-probing()
+# probing()
 
 
 def sort_tasks(task):

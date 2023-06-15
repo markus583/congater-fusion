@@ -124,6 +124,8 @@ class AdapterTrainer(Trainer):
                         if "difflr" in config_str:
                             match_str = r"adapter_fusion_layer\..*\.omega"
                             omega_params = [name for name in decay_parameters if re.search(match_str, name)]
+                            match_str_c = r"congosition_v1_layer\..*\.omega"
+                            omega_params += [name for name in decay_parameters if re.search(match_str_c, name)]
             
             optimizer_grouped_parameters = [
                 {
@@ -148,7 +150,7 @@ class AdapterTrainer(Trainer):
                         for n, p in self.model.named_parameters()
                         if n in omega_params
                     ],
-                    "lr": 1e-4,
+                    "lr": self.args.learning_rate * 50,
                     "weight_decay": self.args.weight_decay,
                 }
             ]
@@ -173,7 +175,7 @@ class AdapterTrainer(Trainer):
                 self.optimizer = optimizer_cls(
                     optimizer_grouped_parameters, **optimizer_kwargs
                 )
-                # print(self.optimizer)
+                print(self.optimizer)
 
         if is_sagemaker_mp_enabled():
             self.optimizer = smp.DistributedOptimizer(self.optimizer)

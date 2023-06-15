@@ -10,147 +10,56 @@ from extract_statistics_GSG import extract_statistics
 
 warnings.filterwarnings("ignore")
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
+
+BASE_DIR = "GSG/results-c/"
 OUT_FILES = [
-    "GSG/results/FULL.csv",
-    "GSG/results/ST-A.csv",
-    "GSG/results/C-V2.csv",
-    "GSG/results/ST-A-FUSION.csv",
-    "GSG/results/C-V2-FUSION.csv",
-    "GSG/results/C-V0.csv",
-    "GSG/results/C-V0-no_ln.csv",
-    "GSG/results/C-V5.csv",
-    "GSG/results/C-V5-ln_before.csv",
-    "GSG/results/C-V5-ln_after.csv",
-    "GSG/results/C-V5-ln_before-after.csv",
-    "GSG/results/C-V5-ln_before-residual_after_ln.csv",
-    "GSG/results/C-V5-FUSION.csv",
-    "GSG/results/C-V5-FUSION-1.csv",
-    "GSG/results/C-V5-FUSION-2.csv",
-    "GSG/results/C-V5-FUSION-3.csv",
-    "GSG/results/C-V6.csv",
-    "GSG/results/C-V7.csv",
-    "GSG/results/C-V8.csv",
-    "GSG/results/C-V5-FUSION-ND.csv",
-    "GSG/results/C-V5-FUSION-ND-SIGMOID.csv",
-    "GSG/results/C-V5-FUSION-ND-SIGMOID-VALUE-INIT-AVG.csv",
-    "GSG/results/C-V5-FUSION-STATIC.csv",
-    "GSG/results/C-V5-FUSION-TT.csv",
-    "GSG/results/C-V5-FUSION-TT-value_after.csv",
-    "GSG/results/C-V5-FUSION-TT-DOUBLETT.csv",
-    "GSG/results/C-V5-FUSION-TT-DOUBLETT-value_after.csv",
-    "GSG/results/C-V5-FUSION-TT-ND.csv",
-    "GSG/results/C-V5-FUSION-TT-ND-SIGMOID.csv",
-    "GSG/results/C-V5-FUSION-TT-ND-SIGMOID_value_init_avg.csv",
-    "GSG/results/C-V5-FUSION-TT-scale_dk.csv",
-    "GSG/results/C-V5-FUSION-TT-value_normal.csv",
-    "GSG/results/C-V5-FUSION-TT-value_normal-2.csv",
-    "GSG/results/C-V5-FUSION-TT-ND-SIGMOID-target_tanh.csv",
-    "GSG/results/C-V5-FUSION-TT-DOUBLETT-ND-SIGMOID-target_tanh.csv",
-    "GSG/results/C-V5-FUSION-TT-ND-SIGMOID-target_tanh-value_init_avg.csv",
-    "GSG/results/C-V5-FUSION-TT-ND-SIGMOID-target_tanh-LR1e-5.csv",
-    "GSG/results/C-V5-FUSION-TT-ND-SIGMOID-target_tanh-LR1e-6.csv",
-    "GSG/results/C-V0-FUSION.csv",
-    "GSG/results/C-V0-FUSION-TT.csv",
-    "GSG/results/C-V0-FUSION-TT-DOUBLETT.csv",
-    "GSG/results/C-V0-FUSION-TT-W_param_12-768.csv",
-    "GSG/results/C-V5-FUSION-TT-W_param_12-768.csv",
-    "GSG/results/C-V5-FUSION-TT-W_param-1_12-768.csv",
-    "GSG/results/C-V5-FUSION-TT-Womega.csv",
-    "GSG/results/C-V5-FUSION-TT-Womega_VN.csv",
-    "GSG/results/C-V5-FUSION-TT-Womega-sigmoid.csv",
-    "GSG/results/C-V5-FUSION-TT-W_param_12.csv",
-    "GSG/results/C-V5-FUSION-TT-W_param_12-128-768.csv",
-    "GSG/results/C-V5-FUSION-TT-W_param_12-128.csv",
-    "GSG/results/C-V5-FUSION-TT-W_param-difflr_1e-4.csv",
-    "GSG/results/C-V5-FUSION-TT-W_param-softmax.csv",
-    "GSG/results/C-V5-FUSION-TT-W_param-V3.csv",
-    "GSG/results/C-V5-FUSION-TT-W_param-att-as-omega.csv",
-    "GSG/results/C-V5-FUSION-TT-W_param-att-as-omega-MEAN.csv",
-    "GSG/results/C-V5-FUSION-TT-W_param-att-as-omega-MEAN-2.csv",
-    "GSG/results/ST-A-FUSION-3_adp.csv",
-    "GSG/results/ST-A-FUSION-2_adp.csv",
-    "GSG/results/st-a-congosition_naive-sigmoid_init-2_lr5e-2.csv",
-    "GSG/results/st-a-congosition_naive-sigmoid_init-2_lr1e-2.csv",
-    "GSG/results/st-a-congosition_naive-sigmoid_init-2_lr5e-3.csv",
-    "GSG/results/st-a-congosition_naive-sigmoid_init-2_lr1e-2-cosine.csv",
-    "GSG/results/st-a-congosition_naive-sigmoid_init-2_5e-3-cosine.csv",
-    "GSG/results/st-a-congosition_naive-sigmoid_init-2_5e-3-uplift.csv",
-    "GSG/results/st-a-congosition_naive-sigmoid_init-2_1e-2-uplift.csv",
-    "GSG/results/st-a-congosition_naive-sigmoid_init-2_1e-3-uplift.csv",
-    "GSG/results/st-a-congosition_naive-sigmoid_init-2_1e-4.csv",
-    "GSG/results/st-a-congosition_naive-sigmoid_init-2_5e-3.csv",
-    "GSG/results/st-a-congosition_naive-sigmoid_init-2_1e-3.csv",
-    "GSG/results/st-a-congosition_naive-sigmoid_init-2_1e-4.csv",
-    "GSG/results/st-a-congosition_naive-sigmoid_init-2_1e-2.csv",
-    "GSG/results/st-a-congosition_naive-sigmoid_init-avg_lr1e-3.csv",
-    "GSG/results/st-a-congosition_naive-sigmoid_init-avg_lr1e-2.csv",
-    "GSG/results/st-a-congosition_naive-sigmoid_init-avg_lr1e-4.csv",
-    "GSG/results/st-a-congosition_naive_init-avg_lr1e-2.csv",
-    "GSG/results/st-a-congosition_naive_init-avg_lr1e-3.csv",
-    "GSG/results/st-a-congosition_naive-clamp_init-avg_lr1e-3.csv",
-    "GSG/results/st-a-congosition_naive-clamp_init-avg_lr1e-2.csv",
-    "GSG/results/st-a-congosition_naive-sigmoid5_init-avg_lr1e-3.csv",
-    "GSG/results/st-a-congosition_naive-sigmoid5_init-avg_lr1e-2.csv",
+    "FULL.csv",
+    "ST-A.csv",
+    "ST-A-FUSION.csv",
+    "st-a-congosition_naive-sigmoid_init-2_lr5e-2.csv",
+    "st-a-congosition_naive-sigmoid_init-2_lr1e-2.csv",
+    "st-a-congosition_naive-sigmoid_init-2_lr5e-3.csv",
+    "st-a-congosition_naive-sigmoid_init-2_lr1e-2-cosine.csv",
+    "st-a-congosition_naive-sigmoid_init-2_5e-3-cosine.csv",
+    "st-a-congosition_naive-sigmoid_init-2_5e-3-uplift.csv",
+    "st-a-congosition_naive-sigmoid_init-2_1e-2-uplift.csv",
+    "st-a-congosition_naive-sigmoid_init-2_1e-3-uplift.csv",
+    "st-a-congosition_naive-sigmoid_init-2_1e-4.csv",
+    "st-a-congosition_naive-sigmoid_init-2_5e-3.csv",
+    "st-a-congosition_naive-sigmoid_init-2_1e-3.csv",
+    "st-a-congosition_naive-sigmoid_init-2_1e-4.csv",
+    "st-a-congosition_naive-sigmoid_init-2_1e-2.csv",
+    "st-a-congosition_naive-sigmoid_init-avg_lr1e-3.csv",
+    "st-a-congosition_naive-sigmoid_init-avg_lr1e-2.csv",
+    "st-a-congosition_naive-sigmoid_init-avg_lr1e-4.csv",
+    "st-a-congosition_naive_init-avg_lr1e-2.csv",
+    "st-a-congosition_naive_init-avg_lr1e-3.csv",
+    "st-a-congosition_naive-clamp_init-avg_lr1e-3.csv",
+    "st-a-congosition_naive-clamp_init-avg_lr1e-2.csv",
+    "st-a-congosition_naive-sigmoid5_init-avg_lr1e-3.csv",
+    "st-a-congosition_naive-sigmoid5_init-avg_lr1e-2.csv",
+    "st-a-congosition_naive-clamp-05_lr1e-2.csv",
+    "st-a-congosition_naive-clamp-05_lr5e-3.csv",
+    "st-a-congosition_naive-sigmoid-05_lr1e-2.csv",
+    "st-a-congosition_naive-sigmoid-05_lr5e-3.csv",
+    "st-a-congosition_naive-clamp-1-avg-init_lr1e-4-difflr.csv",
+    "st-a-congosition_naive-clamp-1-avg-init_lr5e-4-difflr.csv",
+    "st-a-congosition_naive-clamp-1-avg-init_lr1e-2.csv",
+    "st-a-congosition_naive-clamp-1-avg-init_lr5e-3.csv",
+    "st-a-congosition_naive-param_direct_clamp_avg-init_LN-after-lr1e-2.csv",
+    "st-a-congosition_naive-param_direct_clamp_avg-init_LN-before-lr1e-2.csv",
+    "st-a-congosition_naive-param_direct_sigmoid_avg-init-lr1e-2-sgd.csv",
+    "st-a-congosition_naive-param_direct_clamp_avg-init-difflr-lr5e-3.csv",
+    "st-a-congosition_naive-param_direct_clamp_avg-init-difflr-lr1e-4.csv",
+    "st-a-congosition_naive-param_direct_clamp_avg-init-difflr-lr5e-4.csv",
+    "st-a-congosition_naive-param_direct_clamp_avg-init-difflr-lr1e-3.csv",
 ]
+
+OUT_FILES = [BASE_DIR + f for f in OUT_FILES]
 DIR_NAMES = [
     "full",
     "st-a",
-    "C-V2",
     "st-a-fusion-GSG-FP16",
-    "C-V2-fusion-GSG-FP16-CUSTOM",
-    "C-V0",
-    "C-V0-no_ln",
-    "C-V5",
-    "C-V5-ln_before",
-    "C-V5-ln_after",
-    "C-V5-ln_before-after",
-    "C-V5-ln_before-residual_after_ln",
-    "C-V5-fusion-GSG-FP16",
-    "C-V5-FUSION-GSG-FP16-1",
-    "C-V5-FUSION-GSG-FP16-2",
-    "C-V5-FUSION-GSG-FP16-3",
-    "C-V6",
-    "C-V7",
-    "C-V8",
-    "C-V5-fusion-GSG-FP16-ND",
-    "C-V5-fusion-GSG-FP16-ND-SIGMOID",
-    "C-V5-fusion-GSG-FP16-ND-SIGMOID-VALUE-INIT-AVG",
-    "C-V5-fusion-GSG-FP16-STATIC",
-    "C-V5-FUSION-GSG-FP16-TT",
-    "C-V5-FUSION-GSG-FP16-TT-value_after",
-    "C-V5-FUSION-GSG-FP16-TT-DOUBLETT",
-    "C-V5-FUSION-GSG-FP16-TT-DOUBLETT-value_after",
-    "C-V5-FUSION-GSG-FP16-TT-ND",
-    "C-V5-FUSION-GSG-FP16-TT-ND-SIGMOID",
-    "C-V5-FUSION-GSG-FP16-TT-ND-SIGMOID_value_init_avg",
-    "C-V5-FUSION-GSG-FP16-TT-scale_dk",
-    "C-V5-FUSION-GSG-FP16-TT-value_normal",
-    "C-V5-FUSION-GSG-FP16-TT-value_normal-2",
-    "C-V5-FUSION-GSG-FP16-TT-ND-SIGMOID-target_tanh",
-    "C-V5-FUSION-GSG-FP16-TT-DOUBLETT-ND-SIGMOID-target_tanh",
-    "C-V5-FUSION-GSG-FP16-TT-ND-SIGMOID-target_tanh-value_init_avg",
-    "C-V5-FUSION-GSG-FP16-TT-ND-SIGMOID-target_tanh-LR1e-5",
-    "C-V5-FUSION-GSG-FP16-TT-ND-SIGMOID-target_tanh-LR1e-6",
-    "C-V0-FUSION-GSG-FP16",
-    "C-V0-FUSION-GSG-FP16-TT",
-    "C-V0-FUSION-GSG-FP16-TT-DOUBLETT",
-    "C-V0-FUSION-GSG-FP16-TT-W_param",
-    "C-V5-FUSION-GSG-FP16-TT-W_param",
-    "C-V5-FUSION-GSG-FP16-TT-W_param-1",
-    "C-V0-FUSION-GSG-FP16-TT-Womega",
-    "C-V0-FUSION-GSG-FP16-TT-Womega_VN",
-    "C-V0-FUSION-GSG-FP16-TT-Womega-sigmoid",
-    "C-V5-FUSION-GSG-FP16-TT-W_param_12only",
-    "C-V5-FUSION-GSG-FP16-TT-W_param_BIG",
-    "C-V5-FUSION-GSG-FP16-TT-W_param_MID",
-    "C-V5-FUSION-GSG-FP16-TT-W_param-difflr_1e-4",
-    "C-V5-FUSION-GSG-FP16-TT-W_param-softmax",
-    "C-V5-FUSION-GSG-FP16-TT-W_param-V3",
-    "C-V5-FUSION-GSG-FP16-TT-W_param-att-as-omega",
-    "C-V5-FUSION-GSG-FP16-TT-W_param-att-as-omega-MEAN",
-    "C-V5-FUSION-GSG-FP16-TT-W_param-att-as-omega-MEAN-2",
-    "ST-A-FUSION-GSG-FP16-3_adp",
-    "ST-A-FUSION-GSG-FP16-2_adp",
     "st-a-congosition_naive-sigmoid_init-2_lr5e-2",
     "st-a-congosition_naive-sigmoid_init-2_lr1e-2",
     "st-a-congosition_naive-sigmoid_init-2_lr5e-3",
@@ -173,6 +82,21 @@ DIR_NAMES = [
     "st-a-congosition_naive-clamp_init-avg_lr1e-2",
     "st-a-congosition_naive-sigmoid5_init-avg_lr1e-3",
     "st-a-congosition_naive-sigmoid5_init-avg_lr1e-2",
+    "st-a-congosition_naive-clamp-05_lr1e-2",
+    "st-a-congosition_naive-clamp-05_lr5e-3",
+    "st-a-congosition_naive-sigmoid-05_lr1e-2",
+    "st-a-congosition_naive-sigmoid-05_lr5e-3",
+    "st-a-congosition_naive-clamp-1-avg-init_lr1e-4-difflr",
+    "st-a-congosition_naive-clamp-1-avg-init_lr5e-4-difflr",
+    "st-a-congosition_naive-clamp-1-avg-init_lr1e-2",
+    "st-a-congosition_naive-clamp-1-avg-init_lr5e-3",
+    "st-a-congosition_naive-param_direct_clamp_avg-init_LN-after-lr1e-2",
+    "st-a-congosition_naive-param_direct_clamp_avg-init_LN-before-lr1e-2",
+    "st-a-congosition_naive-param_direct_sigmoid_avg-init-lr1e-2-sgd",
+    "st-a-congosition_naive-param_direct_clamp_avg-init-difflr-lr5e-3",
+    "st-a-congosition_naive-param_direct_clamp_avg-init-difflr-lr1e-4",
+    "st-a-congosition_naive-param_direct_clamp_avg-init-difflr-lr5e-4",
+    "st-a-congosition_naive-param_direct_clamp_avg-init-difflr-lr1e-3",
 ]
 
 extract_statistics(OUT_FILES, DIR_NAMES)
@@ -224,7 +148,7 @@ compare_dict = {
             "st-a-congosition_naive-sigmoid_init-2_5e-3",
             "st-a-congosition_naive-sigmoid_init-2_1e-3",
             "st-a-congosition_naive-sigmoid_init-2_1e-2",
-            "st-a-congosition_naive-sigmoid_init-2_1e-4",  
+            "st-a-congosition_naive-sigmoid_init-2_1e-4",
             "st-a-congosition_naive-sigmoid_init-avg_lr1e-3",
             "st-a-congosition_naive-sigmoid_init-avg_lr1e-2",
             "st-a-congosition_naive-sigmoid_init-avg_lr1e-4",
@@ -234,85 +158,59 @@ compare_dict = {
             "st-a-congosition_naive-clamp_init-avg_lr1e-2",
             "st-a-congosition_naive-sigmoid5_init-avg_lr1e-3",
             "st-a-congosition_naive-sigmoid5_init-avg_lr1e-2",
+            "st-a-congosition_naive-clamp-05_lr1e-2",
+            "st-a-congosition_naive-clamp-05_lr5e-3",
+            "st-a-congosition_naive-sigmoid-05_lr1e-2",
+            "st-a-congosition_naive-sigmoid-05_lr5e-3",
         ],
         "diff_base": "ST-A-FUSION",
     },
-    "ALL-PEFT": {
-        "exclude": ["FULL", "FUSION"],
-        "include": [],
-        "include_list_exactly": [],
-        "diff_base": "ST-A",
-    },
-    "ALL-FUSION": {
-        "exclude": ["V2"],
-        "include": ["FUSION"],
-        "include_list_exactly": [],
-        "diff_base": "ST-A-FUSION",
-    },
-    "3_only": {
+    "CONGOSITION-NAIVE-3": {
         "exclude": [],
         "include": [],
         "include_list_exactly": [
-            "C-V5-FUSION-TT-W_param_12-768",
-            "C-V5-FUSION",
             "ST-A-FUSION",
-            "ST-A-FUSION-3_adp",
             "ST-A",
-            "ST-A-FUSION-2_adp",
-        ],
-        "diff_base": "ST-A-FUSION",
-    },
-    "V0": {
-        "exclude": [],
-        "include": ["C-V0"],
-        "include_list_exactly": [
-            "C-V0",
-            "C-V0-FUSION",
-            "C-V0-FUSION-TT",
-            "C-V0-FUSION-TT-W_param",
-            "C-V5-FUSION",
-            "C-V5",
-            "ST-A",
-            "ST-A-FUSION",
-        ],
-        "diff_base": "ST-A-FUSION",
-    },
-    "W_param": {
-        "exclude": [],
-        "include": [],
-        "include_list_exactly": [
-            # "C-V0-FUSION-TT-W_param",
-            "C-V5-FUSION-TT-W_param_12-768",
-            "C-V5-FUSION-TT-Womega",
-            # "C-V5-FUSION-TT-Womega-sigmoid",
-            "ST-A-FUSION",
-            "C-V5-FUSION",
-            # "C-V5-FUSION-1",
-            "C-V5-FUSION-TT",
-            "C-V5-FUSION-TT-W_param_12",
-            "C-V5-FUSION-TT-W_param_12-128-768",
-            "C-V5-FUSION-TT-W_param_12-128",
-            # "C-V5-FUSION-TT-W_param-1_12-768",
-            "C-V5-FUSION-TT-W_param-difflr_1e-4",
-            "C-V5-FUSION-TT-W_param-V3",
-            "C-V5-FUSION-TT-W_param-att-as-omega",
-            "C-V5-FUSION-TT-W_param-att-as-omega-MEAN",
-            "C-V5-FUSION-TT-W_param-att-as-omega-MEAN-2",
+            "st-a-congosition_naive-sigmoid_init-avg_lr1e-3",
+            "st-a-congosition_naive-sigmoid_init-avg_lr1e-2",
+            "st-a-congosition_naive-sigmoid_init-avg_lr1e-4",
+            "st-a-congosition_naive_init-avg_lr1e-2",
+            "st-a-congosition_naive_init-avg_lr1e-3",
+            "st-a-congosition_naive-clamp_init-avg_lr1e-3",
+            "st-a-congosition_naive-clamp_init-avg_lr1e-2",
+            # "st-a-congosition_naive-clamp-05_lr1e-2",
+            # "st-a-congosition_naive-clamp-05_lr5e-3",
+            # "st-a-congosition_naive-sigmoid-05_lr1e-2",
+            # "st-a-congosition_naive-sigmoid-05_lr5e-3",
+            "st-a-congosition_naive-clamp-1-avg-init_lr1e-4-difflr",
+            "st-a-congosition_naive-clamp-1-avg-init_lr5e-4-difflr",
+            "st-a-congosition_naive-clamp-1-avg-init_lr1e-2",
+            "st-a-congosition_naive-clamp-1-avg-init_lr5e-3",
+            "st-a-congosition_naive-param_direct_clamp_avg-init_LN-after-lr1e-2",
+            "st-a-congosition_naive-param_direct_clamp_avg-init_LN-before-lr1e-2",
+            "st-a-congosition_naive-param_direct_sigmoid_avg-init-lr1e-2-sgd",
+            "st-a-congosition_naive-param_direct_clamp_avg-init-difflr-lr5e-3",
+            "st-a-congosition_naive-param_direct_clamp_avg-init-difflr-lr1e-4",
+            "st-a-congosition_naive-param_direct_clamp_avg-init-difflr-lr5e-4",
+            "st-a-congosition_naive-param_direct_clamp_avg-init-difflr-lr1e-3",
         ],
         "diff_base": "ST-A-FUSION",
     },
 }
 
-shutil.rmtree("GSG/results/differences", ignore_errors=False)
-os.makedirs("GSG/results/differences/csv", exist_ok=True)
-os.makedirs("GSG/results/differences/plots/all", exist_ok=True)
-os.makedirs("GSG/results/differences/plots/100", exist_ok=True)
+shutil.rmtree("GSG/results-c/differences", ignore_errors=False)
+os.makedirs("GSG/results-c/differences/csv", exist_ok=True)
+os.makedirs("GSG/results-c/differences/plots/all", exist_ok=True)
+os.makedirs("GSG/results-c/differences/plots/100", exist_ok=True)
+os.makedirs("GSG/results-c/plots/all", exist_ok=True)
+os.makedirs("GSG/results-c/plots/100", exist_ok=True)
+os.makedirs("GSG/results-c/csv", exist_ok=True)
 
 # This code is used to store the results of the various models in a dictionary
 result_dict = {}
-for file in os.listdir("GSG/results"):
+for file in os.listdir("GSG/results-c"):
     if file.endswith(".csv") and not any(exclude in file for exclude in EXCLUDE_LIST):
-        result_dict[file.split(".")[0]] = pd.read_csv(os.path.join("GSG/results", file))
+        result_dict[file.split(".")[0]] = pd.read_csv(os.path.join("GSG/results-c", file))
 
 
 task_order = [
@@ -416,7 +314,7 @@ for name, df in result_dict.items():
     df["metric"] = df["task"].apply(compute_main_metric)
     df["metric_MEAN"] = df.apply(lambda x: x[x["metric"] + "_MEAN"], axis=1).fillna(0)
     df["metric_STD"] = df.apply(lambda x: x[x["metric"] + "_STD"], axis=1).fillna(0)
-    df.to_csv(f"GSG/results/csv/{name.split(' (')[0]}_proc.csv", index=False)
+    df.to_csv(f"GSG/results-c/csv/{name.split(' (')[0]}_proc.csv", index=False)
     df["% of Training Data"] = df["train_pct"].apply(lambda x: str(x))
     df["x_axis"] = df["task"] + df["n_runs"].apply(lambda x: " (" + str(x) + ")")
 
@@ -484,7 +382,7 @@ for name, df in result_dict.items():
         categoryorder="array",
         categoryarray=task_order,
     ).write_image(
-        f"GSG/results/plots/all/{name.split(' (')[0]}.png"
+        f"GSG/results-c/plots/all/{name.split(' (')[0]}.png"
     )
 
     # now the same but with plotly, but only for train_pct 100
@@ -521,7 +419,7 @@ for name, df in result_dict.items():
     ).update_traces(
         width=0.5
     ).write_image(
-        f"GSG/results/plots/100/{name.split(' (')[0]}.png", scale=3
+        f"GSG/results-c/plots/100/{name.split(' (')[0]}.png", scale=3
     )
 
 
@@ -606,7 +504,7 @@ px.bar(
     categoryorder="array",
     categoryarray=task_order,
 ).write_image(
-    "GSG/results/plots/ALL_100.png",
+    "GSG/results-c/plots/ALL_100.png",
     # sharper
     scale=3,
 )
@@ -642,7 +540,7 @@ px.bar(
     categoryorder="array",
     categoryarray=task_order,
 ).write_html(
-    "GSG/results/plots/ALL_100.html",
+    "GSG/results-c/plots/ALL_100.html",
     # sharper
     include_plotlyjs="cdn",
 )
@@ -736,7 +634,7 @@ def plot_100(
         categoryorder="array",
         categoryarray=task_order,
     ).write_image(
-        f"GSG/results/plots/{name}_100.png",
+        f"GSG/results-c/plots/{name}_100.png",
         # sharper
         scale=3,
     )
@@ -771,7 +669,7 @@ def plot_100(
         categoryorder="array",
         categoryarray=task_order,
     ).write_html(
-        f"GSG/results/plots/{name}_100.html",
+        f"GSG/results-c/plots/{name}_100.html",
         # sharper
         include_plotlyjs="cdn",
     )
@@ -805,7 +703,7 @@ def plot_100(
         categoryorder="array",
         categoryarray=task_order,
     ).write_image(
-        f"GSG/results/plots/{name}_100_diff.png",
+        f"GSG/results-c/plots/{name}_100_diff.png",
         # sharper
         scale=3,
     )
@@ -839,7 +737,7 @@ def plot_100(
         categoryorder="array",
         categoryarray=task_order,
     ).write_html(
-        f"GSG/results/plots/{name}_100_diff.html",
+        f"GSG/results-c/plots/{name}_100_diff.html",
         # sharper
         include_plotlyjs="cdn",
     )
@@ -896,7 +794,7 @@ for setup in combinations(result_dict.keys(), 2):
         categoryorder="array",
         categoryarray=task_order,
     ).write_image(
-        f"GSG/results/differences/plots/100/{setup[0]}_vs_{setup[1]}_100.png",
+        f"GSG/results-c/differences/plots/100/{setup[0]}_vs_{setup[1]}_100.png",
         # sharper
         scale=3,
     )
@@ -921,7 +819,7 @@ for name, df in differences.items():
             ignore_index=True,
         )
 
-    df.to_csv(f"GSG/results/differences/csv/{name}.csv", index=False)
+    df.to_csv(f"GSG/results-c/differences/csv/{name}.csv", index=False)
 
     px.bar(
         df,
@@ -947,6 +845,6 @@ for name, df in differences.items():
         categoryorder="array",
         categoryarray=task_order,
     ).write_image(
-        f"GSG/results/differences/plots/all/{name}.png", scale=3
+        f"GSG/results-c/differences/plots/all/{name}.png", scale=3
     )
 print("DONE!")

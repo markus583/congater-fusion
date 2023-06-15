@@ -1216,8 +1216,8 @@ class AdapterFusionConfig(AdapterConfigBase):
 class CongositionV1Config(AdapterConfigBase):
     """Base class that models the architecture of an adapter fusion layer."""
 
-    fn: bool
-    query_before_ln: bool
+    fn: bool = False
+    query_before_ln: bool = False
     qqp: Union[None, float] = None
     mnli: Union[None, float] = None
     qnli: Union[None, float] = None
@@ -1230,6 +1230,15 @@ class CongositionV1Config(AdapterConfigBase):
     sst2: Union[None, float] = None
     stsb: Union[None, float] = None
     boolq: Union[None, float] = None
+    learn_omega: bool = False
+    omega_shape: Union[None, tuple] = None
+    omega_init: Union[None, float] = None
+    sigmoid: bool = False
+    sigmoid_temperature: float = 1.0
+    clamp: bool = False
+    uplift_target: bool = False
+    ln: bool = False
+    ln_before_residual: bool = True
 
     @classmethod
     def load(cls, config: Union[dict, str], **kwargs):
@@ -1709,9 +1718,101 @@ class DynamicAdapterFusionConfigOmega(AdapterFusionConfig):
 
 @dataclass(eq=False)
 class StaticCongositionV1Config(CongositionV1Config):
-    fn: bool = False
-    query_before_ln: bool = False
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 1)
+    omega_init: float = 0.5
     
+@dataclass(eq=False)
+class StaticCongositionV1ConfigAvgInit(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 1)
+    omega_init: float = 1 / 12
+    
+@dataclass(eq=False)
+class StaticCongositionV1ConfigSigmoid(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 1)
+    omega_init: float = -2.0
+    sigmoid: bool = True
+    
+@dataclass(eq=False)
+class StaticCongositionV1ConfigSigmoidAvgInit(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 1)
+    omega_init: float = -2.3978952728
+    sigmoid: bool = True
+    
+@dataclass(eq=False)
+class StaticCongositionV1ConfigSigmoidMinusAvgInit(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 1)
+    omega_init: float = 2.3978952728
+    sigmoid: bool = True
+    
+@dataclass(eq=False)
+class StaticCongositionV1ConfigClampAvgInit(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 1)
+    omega_init: float = 1/12
+    clamp: bool = True
+    
+@dataclass(eq=False)
+class StaticCongositionV1ConfigClampAvgInitLNBefore(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 1)
+    omega_init: float = 1/12
+    clamp: bool = True
+    ln: bool = True
+    ln_before_residual: bool = True
+    
+@dataclass(eq=False)
+class StaticCongositionV1ConfigClampAvgInitLNAfter(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 1)
+    omega_init: float = 1/12
+    clamp: bool = True
+    ln: bool = True
+    ln_before_residual: bool = False
+
+
+    
+@dataclass(eq=False)
+class StaticCongositionV1ConfigClamp05Init(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 1)
+    omega_init: float = 0.5
+    clamp: bool = True
+    
+@dataclass(eq=False)    
+class StaticCongositionV1ConfigClampMinusAvgInit(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 1)
+    omega_init: float = 11/12
+    clamp: bool = True
+    
+@dataclass(eq=False)
+class StaticCongositionV1ConfigSigmoid05Init(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 1)
+    omega_init: float = 0.5
+    sigmoid: bool = True 
+    
+@dataclass(eq=False)
+class StaticCongositionV1ConfigSigmoid5AvgInit(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 1)
+    omega_init: float = -2.3978952728 / 5
+    sigmoid: bool = True
+    sigmoid_temperature: float = 5.0
+    
+@dataclass(eq=False)
+class StaticCongositionV1ConfigSigmoidUplift(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 1)
+    omega_init: float = -2.0
+    sigmoid: bool = True
+    uplift_target: bool = True
+        
 @dataclass(eq=False)
 class OmegaGrid(CongositionV1Config):
     fn: bool = False
@@ -1782,11 +1883,26 @@ ADAPTERFUSION_CONFIG_MAP = {
 }
 
 CONGOSITIONV1_CONFIG_MAP = {
-    "static": StaticCongositionV1Config(),
+    "param_direct": StaticCongositionV1Config(),
     # "dynamic":
     "omega_grid": OmegaGrid(),
-    # TODO
+    "param_direct_sigmoid": StaticCongositionV1ConfigSigmoid(), 
+    "param_direct_sigmoid_uplift": StaticCongositionV1ConfigSigmoidUplift(),
+    "param_direct_sigmoid_avg-init": StaticCongositionV1ConfigSigmoidAvgInit(),
+    "param_direct_clamp_avg-init": StaticCongositionV1ConfigClampAvgInit(),
+    "param_direct_clamp_avg-init_LN-before": StaticCongositionV1ConfigClampAvgInitLNBefore(),
+    "param_direct_clamp_avg-init_LN-after": StaticCongositionV1ConfigClampAvgInitLNAfter(),
+    "param_direct_avg-init": StaticCongositionV1ConfigAvgInit(),
+    "param_direct_sigmoid5_avg-init": StaticCongositionV1ConfigSigmoid5AvgInit(),
+    "param_direct_clamp_05-init": StaticCongositionV1ConfigClamp05Init(),
+    "param_direct_sigmoid_05-init": StaticCongositionV1ConfigSigmoid05Init(),
+    "param_direct_sigmoid_minus-avg-init": StaticCongositionV1ConfigSigmoidMinusAvgInit(),
+    "param_direct_clamp_minus-avg-init": StaticCongositionV1ConfigClampMinusAvgInit(),
 }
+# for each entry in the map, add another key with key-difflr and the same config class
+map_copy = CONGOSITIONV1_CONFIG_MAP.copy()
+for k, v in map_copy.items():
+    CONGOSITIONV1_CONFIG_MAP[k + "-difflr"] = v
 
 DEFAULT_ADAPTERFUSION_CONFIG = "dynamic"
 DEFAULT_CONGOSITION_CONFIG = "static"

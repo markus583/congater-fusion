@@ -20,7 +20,7 @@ TARGET_TASKS = [
     "copa",
     "wsc",
     "rte",
-    # "mrpc",
+    "mrpc",
     # "wic",
     # "stsb",
     # "boolq",

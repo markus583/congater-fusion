@@ -20,8 +20,8 @@ def probing():
     MODEL_NAME = "bert-base-uncased"
 
     DIR_NAMES = [
-        "C-V5",
-        #C-V0",
+        # "C-V5",
+        # C-V0",
         "st-a",
     ]
 
@@ -67,7 +67,7 @@ def probing():
                     "wsc",
                     "rte",
                     "mrpc",
-                    # "wic",
+                    "wic",
                     # "stsb",
                     # "boolq",
                     # "sst2",

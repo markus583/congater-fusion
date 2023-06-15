@@ -22,7 +22,7 @@ if len(SEEDS) == 0:
     SEEDS = list(range(10))
 
 SOURCE_TASKS = ["SELF", "mnli"]
-TARGET_TASKS = ["cb", "copa", "wsc", "rte", "mrpc"]
+TARGET_TASKS = ["mrpc"]
 
 # get all possible combinations for source tasks and omega values (0.0, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0)
 # QQP: 0.0, MNLI: 0.0; QQP: 0.0, MNLI: 0.1, etc.
@@ -31,12 +31,14 @@ source_task_combinations = generate_value_combinations(SOURCE_TASKS, omegas)
 print(source_task_combinations)
 
 for target_task in TARGET_TASKS:
-    for combo in source_task_combinations:
-        current_combo = combo.copy()
-        # replace key 'SELF' with target task
-        current_combo[target_task] = current_combo.pop("SELF")  
-        print(f"changing SELF to {target_task}")
-        for SEED in SEEDS:
+    for SEED in SEEDS:
+        print(f"SEED: {SEED}")
+        for combo in source_task_combinations:
+            current_combo = combo.copy()
+            # replace key 'SELF' with target task
+            current_combo[target_task] = current_combo.pop("SELF")  
+            print(f"changing SELF to {target_task}")
+        
             if target_task == "stsb":
                 EVAL_METRIC = "eval_pearson"
             else:
@@ -52,7 +54,6 @@ for target_task in TARGET_TASKS:
                 or target_task == "qqp"
                 or target_task == "qnli"
                 or target_task == "sst2"
-                or target_task == "wic"
             ):
                 print(f"Skipping {target_task} with seed {SEED}")
                 continue
@@ -63,6 +64,7 @@ for target_task in TARGET_TASKS:
                 or target_task == "mrpc"
                 or target_task == "rte"
                 or target_task == "wsc"
+                or target_task == "wic"
             ):
                 print(f"Skipping {target_task} with seed {SEED}")
                 continue

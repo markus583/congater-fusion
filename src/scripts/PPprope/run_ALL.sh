@@ -1,4 +1,4 @@
-RUN_NAME=C-V5
+RUN_NAME=st-a
 
 MODEL_NAME=bert-base-uncased
 GPU_ID=0
@@ -21,8 +21,8 @@ if [ ${#SEEDS[@]} -eq 0 ]; then
   SEEDS=(0 1 2 3 4 5 6 7 8 9)
 fi
 
-SOURCE_TASKS=("cb" "copa" "wsc" "rte" "mrpc" "wic" "stsb" "boolq" "sst2" "qnli" "qqp" "mnli")
-TARGET_TASKS=("wic" "stsb" "boolq" "sst2" "qnli" "qqp" "mnli")
+SOURCE_TASKS=("rte" "mrpc")
+TARGET_TASKS=("wic")
 
 for target_task in "${TARGET_TASKS[@]}"; do 
   for source_task in "${SOURCE_TASKS[@]}"; do
@@ -45,12 +45,12 @@ for target_task in "${TARGET_TASKS[@]}"; do
           continue
       fi
 
-      if [ $SEED -gt 0 ] && [ $target_task = "mnli" -o $target_task = "qqp" -o $target_task = "qnli" -o $target_task = "sst2" -o $target_task = "wic" ]; then
+      if [ $SEED -gt 0 ] && [ $target_task = "mnli" -o $target_task = "qqp" -o $target_task = "qnli" -o $target_task = "sst2" ]; then
           echo "Skipping $target_task + $source_task with seed $SEED"
           continue
       fi
 
-      if [ $SEED -gt 4 ] && [ $target_task = "cb" -o $target_task = "copa" -o $target_task = "mrpc" -o $target_task = "rte" -o $target_task = "wsc" ]; then
+      if [ $SEED -gt 4 ] && [ $target_task = "cb" -o $target_task = "copa" -o $target_task = "mrpc" -o $target_task = "rte" -o $target_task = "wsc" -o $target_task = "wic" ]; then
           echo "Skipping $target_task + $source_task with seed $SEED"
           continue
       fi
@@ -101,7 +101,7 @@ for target_task in "${TARGET_TASKS[@]}"; do
               --learning_rate 1e-4 \
               --num_train_epochs 30 \
               --train_adapter \
-              --adapter_config congaterV5[omega=$omega] \
+              --adapter_config pfeiffer[omega=$omega] \
               --output_dir ../../runs/PPROBE/$RUN_NAME/$OMEGA/$source_task/$target_task/$MODEL_NAME/$TRAIN_PCT/$SEED \
               --logging_strategy steps \
               --logging_steps 50 \

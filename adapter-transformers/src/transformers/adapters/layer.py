@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Mapping, Union
+from collections import OrderedDict
+
 
 import numpy as np
 import torch
@@ -16,7 +18,7 @@ from .composition import (
 )
 from .configuration import AdapterConfig
 from .context import AdapterSetup, ForwardContext
-from .modeling import Adapter, BertFusion, ParallelAdapter, CongositionV1, NoOpModule
+from .modeling import Adapter, BertFusion, ParallelAdapter, CongositionV1, CongositionBase, NoOpModule
 
 
 class AdapterLayerBase(ABC):
@@ -194,12 +196,14 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
         )
         if self.config.adapters.common_config_value(adapter_names, self.location_key):
             fusion_config = self.config.adapters.get_congosition_v1(adapter_names, grid_values=grid_values)
-            # fusion = CongositionV1(
-            #     fusion_config,
-            #     self.config.hidden_size,
-            #     len(adapter_names),
-            # )
-            fusion = NoOpModule()
+            if fusion_config.learn_omega:
+                fusion = CongositionBase(
+                    fusion_config,
+                    self.config.hidden_size,
+                    len(adapter_names),
+                )
+            else:
+                fusion = NoOpModule()
             fusion.train(self.training)  # make sure training mode is consistent
             self.congosition_v1_layer[",".join(adapter_names)] = fusion
 
@@ -474,7 +478,7 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
         #     omegas.retain_grad()
 
         up_list = []
-        up_dict = {}
+        up_dict = OrderedDict()
 
         for i, adapter_block in enumerate(adapter_setup):
             # Case 1: We have a nested stack -> call stack method
@@ -519,13 +523,21 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
             # up_list = torch.mean(up_list, dim=2)
             
             # output is: fusion_config.task_1 * up_dict[task_1] + fusion_config.task_2 * up_dict[task_2] + ...
-            hidden_states = torch.zeros_like(up_dict[adapter_setup[0]])
-            for adapter_name, up in up_dict.items():
-               hidden_states += fusion_config[adapter_name] * up
-               # print(adapter_name, fusion_config[adapter_name])
-            # add back residual
-            hidden_states += residual
-            
+            if not fusion_config.learn_omega:
+                hidden_states = torch.zeros_like(up_dict[adapter_setup[0]])
+                for adapter_name, up in up_dict.items():
+                    hidden_states += fusion_config[adapter_name] * up
+                # print(adapter_name, fusion_config[adapter_name])
+                # add back residual
+                hidden_states += residual
+            else:
+                up_list = torch.stack(list(up_dict.values()))
+                up_list = up_list.permute(1, 2, 0, 3)
+                
+                hidden_states = self.congosition_v1_layer[adapter_setup.name](
+                    up_list,
+                    residual
+                )        
 
             # idden_states = up_list
 
