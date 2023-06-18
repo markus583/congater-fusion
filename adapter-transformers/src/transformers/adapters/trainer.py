@@ -126,7 +126,9 @@ class AdapterTrainer(Trainer):
                             omega_params = [name for name in decay_parameters if re.search(match_str, name)]
                             match_str_c = r"congosition_v1_layer\..*\.omega"
                             omega_params += [name for name in decay_parameters if re.search(match_str_c, name)]
+                            print(omega_params, config_str)
             
+
             optimizer_grouped_parameters = [
                 {
                     "params": [
@@ -150,7 +152,7 @@ class AdapterTrainer(Trainer):
                         for n, p in self.model.named_parameters()
                         if n in omega_params
                     ],
-                    "lr": self.args.learning_rate * 50,
+                    "lr": self.args.learning_rate * 5,
                     "weight_decay": self.args.weight_decay,
                 }
             ]

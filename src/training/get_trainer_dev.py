@@ -154,16 +154,17 @@ def get_trainer(args):
             model.train_adapter_fusion(
                 adapter_setup, unfreeze_adapters=fusion_args.fusion_unfreeze_adapters
             )
-            # if dataset.multiple_choice:
-            #     model.add_multiple_choice_head(data_args.task_name, num_choices=2)
-            # else:
-            #     model.add_classification_head(
-            #         data_args.task_name,
-            #         num_labels=dataset.num_labels,
-            #         id2label={i: v for i, v in enumerate(dataset.label_list)}
-            #         if not dataset.is_regression
-            #         else None,
-            #     )
+            # if data_args.task_name == "wsc":
+                # if dataset.multiple_choice:
+                #     model.add_multiple_choice_head(data_args.task_name, num_choices=2)
+                # else:
+                #     model.add_classification_head(
+                #         data_args.task_name,
+                #         num_labels=dataset.num_labels,
+                #         id2label={i: v for i, v in enumerate(dataset.label_list)}
+                #         if not dataset.is_regression
+                #         else None,
+                #     )
         else:
             model.add_adapter_fusion(adapter_setup[0], fusion_args.fusion_type)
             model.train_adapter_fusion(
@@ -278,11 +279,11 @@ def get_trainer(args):
             "Early stopping is enabled with patience %d",
             model_args.early_stopping_patience,
         )
-        early_stopping_callback = EarlyStoppingCallback(
+        early_stopping_callback = [EarlyStoppingCallback(
             early_stopping_patience=model_args.early_stopping_patience
-        )
+        )]
     else:
-        early_stopping_callback = None
+        early_stopping_callback = []
 
     # wandb callback
     from transformers.integrations import WandbCallback
@@ -301,7 +302,7 @@ def get_trainer(args):
         compute_metrics=dataset.compute_metrics,
         tokenizer=tokenizer,
         data_collator=dataset.data_collator,
-        callbacks=[early_stopping_callback],
+        callbacks=early_stopping_callback,
     )
 
     return trainer, model, dataset, adapter_setup

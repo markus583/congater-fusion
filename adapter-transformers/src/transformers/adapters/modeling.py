@@ -546,7 +546,6 @@ class BertFusion(nn.Module):
             self.gating_function = TTTanhV2(
                 omega_offset=self.config["ttsigmoid_omega_offset"]
             )
-        
 
         if self.config["value"]:
             self.value = nn.Linear(self.dense_size, self.dense_size, bias=False)
@@ -649,7 +648,7 @@ class BertFusion(nn.Module):
                         omega_probs = nn.Softmax(dim=-1)(omega_scores / self.T)
             else:
                 # attention_scores = attention_scores ** 2
-                attention_probs = nn.Softmax(dim=-1)(attention_scores / self.T) 
+                attention_probs = nn.Softmax(dim=-1)(attention_scores / self.T)
         else:
             # non-destructive version (no target task adapter here9 --> sigmoid
             attention_probs = torch.sigmoid(attention_scores / self.T)
@@ -688,7 +687,9 @@ class BertFusion(nn.Module):
                 if self.config["att_scores_as_omega_MEAN"]:
                     # print("mean")
                     # print(attention_probs.shape, value_layer.shape)
-                    context_layer = (attention_probs.unsqueeze(-1) * value_layer).mean(dim=-2)
+                    context_layer = (attention_probs.unsqueeze(-1) * value_layer).mean(
+                        dim=-2
+                    )
                 else:
                     context_layer = torch.squeeze(
                         torch.matmul(attention_probs.unsqueeze(2), value_layer),
@@ -777,7 +778,8 @@ class CongositionV1(nn.Module):
         x = self.non_linearity(x)
         x = self.dense2(x)
         return self.softmax(x)
-    
+
+
 class CongositionBase(nn.Module):
     def __init__(
         self,
@@ -789,13 +791,24 @@ class CongositionBase(nn.Module):
         print(config)
         self.config = config
         omega = torch.normal(
-                            self.config["omega_init"],
-                            0.001,
-                            self.config["omega_shape"],
-                        )
+            self.config["omega_init"],
+            0.001,
+            self.config["omega_shape"],
+        )
         if self.config["uplift_target"]:
             omega[-1] = -self.config["omega_init"]
         self.omega = nn.Parameter(omega, requires_grad=True)
+        if self.config["learn_beta"]:
+            self.beta = nn.Parameter(
+                torch.normal(
+                    self.config["beta_init"],
+                    0.001,
+                    self.config["beta_shape"],
+                ),
+                requires_grad=True,
+            )
+        else:
+            self.beta = None
         # 1/12: -2.3978952728 = -ln(11)
         if self.config["sigmoid"]:
             self.gate = nn.Sigmoid()
@@ -806,6 +819,17 @@ class CongositionBase(nn.Module):
             self.ln = nn.LayerNorm(dense_size)
         if self.config["tanh"]:
             self.tanh = nn.Tanh()
+        if self.config["dropout_ratio"] > 0:
+            self.dropout = nn.Dropout(self.config["dropout_ratio"])
+        if self.config["rescaling_factor"]:
+            self.rescaling_factor = nn.Parameter(
+                torch.normal(
+                    1,
+                    0.001,
+                    self.config["rescaling_factor"],
+                ),
+                requires_grad=True,
+            )
 
     def forward(self, up_list, residual):
         if self.config["tanh"]:
@@ -817,15 +841,34 @@ class CongositionBase(nn.Module):
                 omegas = self.gate(self.omega)
         else:
             omegas = self.omega
-        weighted_x = omegas * up_list
+        betas = self.beta
+
+        if self.config["dropout_ratio"] > 0:
+            omegas = self.dropout(omegas)
+            if self.config["learn_beta"]:
+                betas = self.dropout(betas)
+                
+
+        if self.config["learn_beta"]:
+            if self.config["beta_first"]:
+                weighted_x = omegas * (up_list + betas)
+            else:
+                weighted_x = omegas * up_list + betas
+        else:
+            weighted_x = omegas * up_list
+            
+        if self.config["rescaling_factor"]:
+            weighted_x = self.rescaling_factor * weighted_x
         weighted_x = torch.sum(weighted_x, dim=2)
         if self.config["ln"] and self.config["ln_before_residual"]:
             weighted_x = self.ln(weighted_x)
-        weighted_x += residual
-        if self.config["ln"] and not self.config["ln_before_residual"]:
-            weighted_x = self.ln(weighted_x)
+
+        if self.config["residual"]:
+            weighted_x += residual
+            if self.config["ln"] and not self.config["ln_before_residual"]:
+                weighted_x = self.ln(weighted_x)
         return weighted_x
-        
+
 
 class NoOpModule(nn.Module):
     def __init__(self):

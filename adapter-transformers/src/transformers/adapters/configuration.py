@@ -1233,12 +1233,20 @@ class CongositionV1Config(AdapterConfigBase):
     learn_omega: bool = False
     omega_shape: Union[None, tuple] = None
     omega_init: Union[None, float] = None
+    learn_beta: bool = False
+    beta_shape: Union[None, tuple] = None
+    beta_init: Union[None, float] = None
+    beta_first: bool = False
     sigmoid: bool = False
     sigmoid_temperature: float = 1.0
     clamp: bool = False
     uplift_target: bool = False
     ln: bool = False
     ln_before_residual: bool = True
+    tanh: bool = False
+    residual: bool = True
+    dropout_ratio: float = 0.0
+    rescaling_factor: Union[None, tuple] = None
 
     @classmethod
     def load(cls, config: Union[dict, str], **kwargs):
@@ -1742,6 +1750,140 @@ class StaticCongositionV1ConfigSigmoidAvgInit(CongositionV1Config):
     omega_init: float = -2.3978952728
     sigmoid: bool = True
     
+# -----------------
+# ElWise
+# -----------------
+
+@dataclass(eq=False)
+class ElWiseCongositionV1ConfigSigmoidAvgInit(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 768)
+    omega_init: float = -2.3978952728
+    sigmoid: bool = True
+    
+@dataclass(eq=False)
+class ElWiseCongositionV1ConfigClampAvgInit(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 768)
+    omega_init: float = 1/12
+    clamp: bool = True
+    
+@dataclass(eq=False)
+class ElWiseCongositionV1ConfigClamp2AvgInitRescale1(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 768)
+    omega_init: float = 2/12
+    clamp: bool = True
+    rescaling_factor: tuple = (1, 1)
+    
+@dataclass(eq=False)
+class ElWiseCongositionV1ConfigClamp2AvgInitRescale12(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 768)
+    omega_init: float = 2/12
+    clamp: bool = True
+    rescaling_factor: tuple = (12, 1)
+    
+@dataclass(eq=False)
+class ElWiseCongositionV1ConfigClamp2AvgInit(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 768)
+    omega_init: float = 2/12
+    clamp: bool = True
+    
+@dataclass(eq=False)
+class ElWiseCongositionV1ConfigClamp3AvgInit(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 768)
+    omega_init: float = 3/12
+    clamp: bool = True
+    
+@dataclass(eq=False)
+class ElWiseCongositionV1ConfigClamp2AvgInitDropout01(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 768)
+    omega_init: float = 2/12
+    clamp: bool = True
+    dropout_ratio: float = 0.1
+    
+@dataclass(eq=False)
+class ElWiseCongositionV1ConfigClamp2AvgInitDropout025(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 768)
+    omega_init: float = 2/12
+    clamp: bool = True
+    dropout_ratio: float = 0.25
+    
+@dataclass(eq=False)
+class ElWiseCongositionV1ConfigClamp2AvgInitDropout05(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 768)
+    omega_init: float = 2/12
+    clamp: bool = True
+    dropout_ratio: float = 0.5
+    
+@dataclass(eq=False)
+class ElWiseCongositionV1Config2AvgInitDropout025(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 768)
+    omega_init: float = 2/12
+    clamp: bool = False
+    dropout_ratio: float = 0.25
+
+@dataclass(eq=False)
+class ElWiseCongositionV1ConfigClampAvgInitTanh(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 768)
+    omega_init: float = 1/12
+    clamp: bool = True
+    tanh: bool = True
+    
+@dataclass(eq=False)
+class ElWiseCongositionV1ConfigClamp2AvgInitBetaFirstElwiseInit0(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 768)
+    omega_init: float = 2/12
+    clamp: bool = True
+    learn_beta: bool = True
+    beta_shape: tuple = (12, 768)
+    beta_init: float = 0.0
+    beta_first: bool = True
+    
+@dataclass(eq=False)
+class ElWiseCongositionV1ConfigClamp2AvgInitBetaFirstSingleInit0(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 768)
+    omega_init: float = 2/12
+    clamp: bool = True
+    learn_beta: bool = True
+    beta_shape: tuple = (12, 1)
+    beta_init: float = 0.0
+    beta_first: bool = True
+    
+@dataclass(eq=False)
+class ElWiseCongositionV1ConfigClamp2AvgInitBetaFirstElwiseInit0Dropout025(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 768)
+    omega_init: float = 2/12
+    clamp: bool = True
+    learn_beta: bool = True
+    beta_shape: tuple = (12, 768)
+    beta_init: float = 0.0
+    beta_first: bool = True
+    dropout_ratio: float = 0.25
+    
+@dataclass(eq=False)
+class ElWiseCongositionV1ConfigClamp2AvgInitBetaAfterElwiseInit0(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 768)
+    omega_init: float = 2/12
+    clamp: bool = True
+    learn_beta: bool = True
+    beta_shape: tuple = (12, 768)
+    beta_init: float = 0.0
+    beta_first: bool = False
+    
+    
 @dataclass(eq=False)
 class StaticCongositionV1ConfigSigmoidMinusAvgInit(CongositionV1Config):
     learn_omega: bool = True
@@ -1773,8 +1915,6 @@ class StaticCongositionV1ConfigClampAvgInitLNAfter(CongositionV1Config):
     clamp: bool = True
     ln: bool = True
     ln_before_residual: bool = False
-
-
     
 @dataclass(eq=False)
 class StaticCongositionV1ConfigClamp05Init(CongositionV1Config):
@@ -1789,6 +1929,38 @@ class StaticCongositionV1ConfigClampMinusAvgInit(CongositionV1Config):
     omega_shape: tuple = (12, 1)
     omega_init: float = 11/12
     clamp: bool = True
+    
+@dataclass(eq=False)    
+class StaticCongositionV1ConfigClampAvgInitTanh(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 1)
+    omega_init: float = 1/12
+    clamp: bool = True
+    tanh: bool = True
+
+@dataclass(eq=False)    
+class StaticCongositionV1ConfigSigmoidAvgInitTanh(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 1)
+    omega_init: float = -2.3978952728
+    sigmoid: bool = True
+    tanh: bool = True
+    
+@dataclass(eq=False)    
+class StaticCongositionV1ConfigClampAvgInitNoRes(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 1)
+    omega_init: float = 1/12
+    clamp: bool = True
+    residual: bool = False
+
+@dataclass(eq=False)    
+class StaticCongositionV1ConfigSigmoidAvgInitNoRes(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 1)
+    omega_init: float = -2.3978952728
+    sigmoid: bool = True
+    residual: bool = False
     
 @dataclass(eq=False)
 class StaticCongositionV1ConfigSigmoid05Init(CongositionV1Config):
@@ -1898,6 +2070,29 @@ CONGOSITIONV1_CONFIG_MAP = {
     "param_direct_sigmoid_05-init": StaticCongositionV1ConfigSigmoid05Init(),
     "param_direct_sigmoid_minus-avg-init": StaticCongositionV1ConfigSigmoidMinusAvgInit(),
     "param_direct_clamp_minus-avg-init": StaticCongositionV1ConfigClampMinusAvgInit(),
+    "param_direct_clamp_avg-init-tanh": StaticCongositionV1ConfigClampAvgInitTanh(),
+    "param_direct_sigmoid_avg-init-tanh": StaticCongositionV1ConfigSigmoidAvgInitTanh(),
+    "param_direct_clamp_avg-init-no_res": StaticCongositionV1ConfigClampAvgInitNoRes(),
+    "param_direct_sigmoid_avg-init-no_res": StaticCongositionV1ConfigSigmoidAvgInitNoRes(),
+    # ELWISE
+    "param_elwise_sigmoid_avg-init": ElWiseCongositionV1ConfigSigmoidAvgInit(),
+    "param_elwise_clamp_avg-init": ElWiseCongositionV1ConfigClampAvgInit(),
+    "param_elwise_clamp_avg-init-tanh": ElWiseCongositionV1ConfigClampAvgInitTanh(),
+    "param_elwise_clamp_2avg-init": ElWiseCongositionV1ConfigClamp2AvgInit(),
+    "param_elwise_clamp_3avg-init": ElWiseCongositionV1ConfigClamp3AvgInit(),
+    "param_elwise_clamp_2avg-init-dropout01": ElWiseCongositionV1ConfigClamp2AvgInitDropout01(),
+    "param_elwise_clamp_2avg-init-dropout025": ElWiseCongositionV1ConfigClamp2AvgInitDropout025(),
+    "param_elwise_clamp_2avg-init-dropout05": ElWiseCongositionV1ConfigClamp2AvgInitDropout05(),
+    "param_elwise_clamp_2avg-init-rescale1": ElWiseCongositionV1ConfigClamp2AvgInitRescale1(),
+    "param_elwise_clamp_2avg-init-rescale12": ElWiseCongositionV1ConfigClamp2AvgInitRescale12(),
+    "param_elwise_2avg-init-dropout025": ElWiseCongositionV1Config2AvgInitDropout025(),
+    # ELWISE + BETA
+    "param_elwise_clamp_2avg-init-BETA_elwise-first-0": ElWiseCongositionV1ConfigClamp2AvgInitBetaFirstElwiseInit0(),
+    "param_elwise_clamp_2avg-init-BETA_elwise-after-0": ElWiseCongositionV1ConfigClamp2AvgInitBetaAfterElwiseInit0(),
+    "param_elwise_clamp_2avg-init-BETA_elwise-first-0-dropout025": ElWiseCongositionV1ConfigClamp2AvgInitBetaFirstElwiseInit0Dropout025(),
+    "param_elwise_clamp_2avg-init-BETA_single-first-0": ElWiseCongositionV1ConfigClamp2AvgInitBetaFirstSingleInit0(),
+    
+
 }
 # for each entry in the map, add another key with key-difflr and the same config class
 map_copy = CONGOSITIONV1_CONFIG_MAP.copy()

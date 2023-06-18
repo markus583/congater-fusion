@@ -1,5 +1,5 @@
 LR=1e-2
-CONFIG=param_elwise_clamp_2avg-init-BETA_single-first-0
+CONFIG=param_elwise_clamp_2avg-init-dropout05
 RUN_NAME=st-a-congosition_naive-$CONFIG-lr$LR
 
 MODEL_NAME=bert-base-uncased

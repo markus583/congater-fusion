@@ -53,6 +53,38 @@ OUT_FILES = [
     "st-a-congosition_naive-param_direct_clamp_avg-init-difflr-lr1e-4.csv",
     "st-a-congosition_naive-param_direct_clamp_avg-init-difflr-lr5e-4.csv",
     "st-a-congosition_naive-param_direct_clamp_avg-init-difflr-lr1e-3.csv",
+    "st-a-congosition_naive-param_direct_clamp_avg-init-no_res-lr1e-2.csv",
+    "st-a-congosition_naive-param_direct_clamp_avg-init-no_res-lr1e-3.csv",
+    "st-a-congosition_naive-param_direct_clamp_avg-init-tanh-lr1e-2.csv",
+    "st-a-congosition_naive-param_direct_clamp_avg-init-tanh-lr1e-3.csv",
+    "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-2.csv",
+    "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-3.csv",
+    "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-4.csv",
+    "st-a-congosition_naive-param_elwise_clamp_avg-init-lr5e-3.csv",
+    "st-a-congosition_naive-param_elwise_sigmoid_avg-init-lr1e-2.csv",
+    "st-a-congosition_naive-param_elwise_sigmoid_avg-init-lr1e-3.csv",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-lr1e-2.csv",
+    "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-2-es_metric.csv",
+    "st-a-congosition_naive-param_elwise_clamp_avg-init-difflr-lr5e-3.csv",
+    "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-2-cosine.csv",
+    "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-2-nwl.csv",
+    "st-a-congosition_naive-param_elwise_clamp_avg-init-tanh-lr1e-2.csv",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-lr1e-2.csv",
+    "st-a-congosition_naive-param_elwise_clamp_3avg-init-lr1e-2.csv",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout01-lr1e-2.csv",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout025-lr1e-2.csv",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout05-lr1e-2.csv",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-rescale1-lr1e-2.csv",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-rescale12-lr1e-2.csv",
+    "st-a-congosition_naive-param_elwise_2avg-init-dropout025-lr1e-2.csv",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout025-lr1e-2-warmup.csv",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout025-lr1e-2-cosine.csv",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-lr1e-2-L2_001.csv",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-lr1e-2-L2_01.csv",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-lr1e-2.csv",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-dropout025-lr1e-2.csv",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-lr1e-3.csv",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_single-first-0-lr1e-2.csv",
 ]
 
 OUT_FILES = [BASE_DIR + f for f in OUT_FILES]
@@ -97,6 +129,38 @@ DIR_NAMES = [
     "st-a-congosition_naive-param_direct_clamp_avg-init-difflr-lr1e-4",
     "st-a-congosition_naive-param_direct_clamp_avg-init-difflr-lr5e-4",
     "st-a-congosition_naive-param_direct_clamp_avg-init-difflr-lr1e-3",
+    "st-a-congosition_naive-param_direct_clamp_avg-init-no_res-lr1e-2",
+    "st-a-congosition_naive-param_direct_clamp_avg-init-no_res-lr1e-3",
+    "st-a-congosition_naive-param_direct_clamp_avg-init-tanh-lr1e-2",
+    "st-a-congosition_naive-param_direct_clamp_avg-init-tanh-lr1e-3",
+    "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-2",
+    "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-3",
+    "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-4",
+    "st-a-congosition_naive-param_elwise_clamp_avg-init-lr5e-3",
+    "st-a-congosition_naive-param_elwise_sigmoid_avg-init-lr1e-2",
+    "st-a-congosition_naive-param_elwise_sigmoid_avg-init-lr1e-3",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-lr1e-2",
+    "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-2-es_metric",
+    "st-a-congosition_naive-param_elwise_clamp_avg-init-difflr-lr5e-3",
+    "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-2-cosine",
+    "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-2-nwl",
+    "st-a-congosition_naive-param_elwise_clamp_avg-init-tanh-lr1e-2",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-lr1e-2",
+    "st-a-congosition_naive-param_elwise_clamp_3avg-init-lr1e-2",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout01-lr1e-2",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout025-lr1e-2",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout05-lr1e-2",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-rescale1-lr1e-2",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-rescale12-lr1e-2",
+    "st-a-congosition_naive-param_elwise_2avg-init-dropout025-lr1e-2",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout025-lr1e-2-warmup",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout025-lr1e-2-cosine",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-lr1e-2-L2_001",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-lr1e-2-L2_01",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-lr1e-2",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-dropout025-lr1e-2",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-lr1e-3",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_single-first-0-lr1e-2",
 ]
 
 extract_statistics(OUT_FILES, DIR_NAMES)
@@ -186,13 +250,93 @@ compare_dict = {
             "st-a-congosition_naive-clamp-1-avg-init_lr5e-4-difflr",
             "st-a-congosition_naive-clamp-1-avg-init_lr1e-2",
             "st-a-congosition_naive-clamp-1-avg-init_lr5e-3",
-            "st-a-congosition_naive-param_direct_clamp_avg-init_LN-after-lr1e-2",
-            "st-a-congosition_naive-param_direct_clamp_avg-init_LN-before-lr1e-2",
-            "st-a-congosition_naive-param_direct_sigmoid_avg-init-lr1e-2-sgd",
+            # "st-a-congosition_naive-param_direct_clamp_avg-init_LN-after-lr1e-2",
+            # "st-a-congosition_naive-param_direct_clamp_avg-init_LN-before-lr1e-2",
+            # "st-a-congosition_naive-param_direct_sigmoid_avg-init-lr1e-2-sgd",
             "st-a-congosition_naive-param_direct_clamp_avg-init-difflr-lr5e-3",
             "st-a-congosition_naive-param_direct_clamp_avg-init-difflr-lr1e-4",
             "st-a-congosition_naive-param_direct_clamp_avg-init-difflr-lr5e-4",
             "st-a-congosition_naive-param_direct_clamp_avg-init-difflr-lr1e-3",
+            # "st-a-congosition_naive-param_direct_clamp_avg-init-no_res-lr1e-2",
+            # "st-a-congosition_naive-param_direct_clamp_avg-init-no_res-lr1e-3",
+            "st-a-congosition_naive-param_direct_clamp_avg-init-tanh-lr1e-2",
+            "st-a-congosition_naive-param_direct_clamp_avg-init-tanh-lr1e-3",
+            "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-3",
+            "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-4",
+            "st-a-congosition_naive-param_elwise_clamp_avg-init-lr5e-3",
+            "st-a-congosition_naive-param_elwise_sigmoid_avg-init-lr1e-2",
+            "st-a-congosition_naive-param_elwise_sigmoid_avg-init-lr1e-3",
+        ],
+        "diff_base": "ST-A-FUSION",
+    },
+    
+    "CONGOSITION-ELWISE-1": {
+        "exclude": [],
+        "include": [],
+        "include_list_exactly": [
+            "ST-A-FUSION",
+            "ST-A",
+            "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-3",
+            "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-4",
+            "st-a-congosition_naive-param_elwise_clamp_avg-init-lr5e-3",
+            # "st-a-congosition_naive-param_elwise_sigmoid_avg-init-lr1e-2",
+            # "st-a-congosition_naive-param_elwise_sigmoid_avg-init-lr1e-3",
+            # "st-a-congosition_naive-param_elwise_clamp_2avg-init-lr1e-2",
+            # "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-2-es_metric",
+            # "st-a-congosition_naive-param_elwise_clamp_avg-init-difflr-lr5e-3",
+            # "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-2-cosine",
+            # "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-2-nwl",
+            # "st-a-congosition_naive-param_elwise_clamp_avg-init-tanh-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_3avg-init-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout01-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout025-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout05-lr1e-2",
+            # "st-a-congosition_naive-param_elwise_clamp_2avg-init-rescale1-lr1e-2",
+            # "st-a-congosition_naive-param_elwise_clamp_2avg-init-rescale12-lr1e-2",
+            "st-a-congosition_naive-param_elwise_2avg-init-dropout025-lr1e-2",
+            # "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout025-lr1e-2-warmup",
+            # "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout025-lr1e-2-cosine",
+            # "st-a-congosition_naive-param_elwise_clamp_2avg-init-lr1e-2-L2_001",
+            # "st-a-congosition_naive-param_elwise_clamp_2avg-init-lr1e-2-L2_01",
+        ],
+        "diff_base": "ST-A-FUSION",
+    },
+    "CONGOSITION-ELWISE-2": {
+        "exclude": [],
+        "include": [],
+        "include_list_exactly": [
+            "ST-A-FUSION",
+            "ST-A",
+            # "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-2",
+            # "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-3",
+            # "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-4",
+            # "st-a-congosition_naive-param_elwise_clamp_avg-init-lr5e-3",
+            # "st-a-congosition_naive-param_elwise_sigmoid_avg-init-lr1e-2",
+            # "st-a-congosition_naive-param_elwise_sigmoid_avg-init-lr1e-3",
+            # "st-a-congosition_naive-param_elwise_clamp_2avg-init-lr1e-2",
+            # "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-2-es_metric",
+            # "st-a-congosition_naive-param_elwise_clamp_avg-init-difflr-lr5e-3",
+            # "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-2-cosine",
+            # "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-2-nwl",
+            # "st-a-congosition_naive-param_elwise_clamp_avg-init-tanh-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-lr1e-2",
+            # "st-a-congosition_naive-param_elwise_clamp_3avg-init-lr1e-2",
+            # "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout01-lr1e-2",
+            # "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout025-lr1e-2",
+            # "st-a-congosition_naive-param_elwise_clamp_2avg-init-rescale1-lr1e-2",
+            # "st-a-congosition_naive-param_elwise_clamp_2avg-init-rescale12-lr1e-2",
+            # "st-a-congosition_naive-param_elwise_2avg-init-dropout025-lr1e-2",
+            # "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout025-lr1e-2-warmup",
+            # "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout025-lr1e-2-cosine",
+            # "st-a-congosition_naive-param_elwise_clamp_2avg-init-lr1e-2-L2_001",
+            # "st-a-congosition_naive-param_elwise_clamp_2avg-init-lr1e-2-L2_01",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-dropout025-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-lr1e-3",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_single-first-0-lr1e-2",
         ],
         "diff_base": "ST-A-FUSION",
     },
@@ -210,7 +354,9 @@ os.makedirs("GSG/results-c/csv", exist_ok=True)
 result_dict = {}
 for file in os.listdir("GSG/results-c"):
     if file.endswith(".csv") and not any(exclude in file for exclude in EXCLUDE_LIST):
-        result_dict[file.split(".")[0]] = pd.read_csv(os.path.join("GSG/results-c", file))
+        result_dict[file.split(".")[0]] = pd.read_csv(
+            os.path.join("GSG/results-c", file)
+        )
 
 
 task_order = [
@@ -601,59 +747,43 @@ def plot_100(
         )
     # filter for base model
     df_diff = df_diff[df_diff["Model"] != diff_base]
+    
+    category_order = sorted(df["Model"].unique().tolist())
+    # remove ST-A-Fusion and put it back at position 1
+    category_order.remove(diff_base)
+    category_order.insert(1, diff_base)
+    
+    fig = px.bar(
+        df,
+        x="task",
+        y="metric_MEAN",
+        color="Model",
+        # first element is light grey,  next dark grey, next are Plasma_r
+        color_discrete_sequence=["#d9d9d9", "#4d4d4d"] + px.colors.sequential.Plasma_r,
+        barmode="group",
+        title=f"Comparison of {name} models (100% of Training Data)",
+        labels={"task": "Task", "metric_MEAN": "Metric Values"},
+        width=1000,
+        height=600,
+        template="plotly_white",
+        error_y=df["metric_STD"],
+        category_orders={"Model": category_order},
+    )
 
-    # then, make plot
-    px.bar(
-        df,
-        x="task",
-        y="metric_MEAN",
-        color="Model",
-        # 5 options: yellow, orange, red, purple, blue
-        color_discrete_sequence=px.colors.sequential.Plasma_r,
-        barmode="group",
-        title=f"Comparison of {name} models (100% of Training Data)",
-        labels={"task": "Task", "metric_MEAN": "Metric Values"},
-        width=1000,
-        height=600,
-        template="plotly_white",
-        error_y=df["metric_STD"],
-    ).update_layout(
-        xaxis_title="Task",
-        yaxis_title="Metric Values",
-        xaxis_tickangle=45,
-        # yaxis range: smallest value of metric_MEAN - 0.05 rounded to closest multiple of 0.05, 1
-        yaxis_range=[
-            0.5,
-            1,
-        ],
-        yaxis_tick0=0,
-        yaxis_dtick=0.05,
-    ).update_traces(
-        error_y_thickness=0.25,
-    ).update_xaxes(
-        categoryorder="array",
-        categoryarray=task_order,
-    ).write_image(
-        f"GSG/results-c/plots/{name}_100.png",
-        # sharper
-        scale=3,
-    )
-    # then, make plot
-    px.bar(
-        df,
-        x="task",
-        y="metric_MEAN",
-        color="Model",
-        # 5 options: yellow, orange, red, purple, blue
-        color_discrete_sequence=px.colors.sequential.Plasma_r,
-        barmode="group",
-        title=f"Comparison of {name} models (100% of Training Data)",
-        labels={"task": "Task", "metric_MEAN": "Metric Values"},
-        width=1000,
-        height=600,
-        template="plotly_white",
-        error_y=df["metric_STD"],
-    ).update_layout(
+    category_boundaries = [0.5 + i for i in range(len(df["task"].unique()))]  # Calculate the category boundaries
+
+    for boundary in category_boundaries:
+        fig.add_shape(
+            type="line",
+            x0=boundary,
+            y0=min(df["metric_MEAN"]),
+            x1=boundary,
+            y1=max(df["metric_MEAN"]),
+            line=dict(color="black", width=0.5),
+            layer="below",
+        )
+
+    fig.update_layout(
         xaxis_title="Task",
         yaxis_title="Metric Values",
         xaxis_tickangle=45,
@@ -668,80 +798,58 @@ def plot_100(
     ).update_xaxes(
         categoryorder="array",
         categoryarray=task_order,
-    ).write_html(
-        f"GSG/results-c/plots/{name}_100.html",
-        # sharper
-        include_plotlyjs="cdn",
     )
+
+    fig.write_html(f"GSG/results-c/plots/{name}_100.html", include_plotlyjs="cdn")
+    fig.write_image(f"GSG/results-c/plots/{name}_100.png", width=1000, height=600)
 
     # DIFFERENCE PLOT
-    px.bar(
+    fig = px.bar(
         df_diff,
         x="task",
         y="metric_MEAN",
         color="Model",
-        # 5 options: yellow, orange, red, purple, blue
-        color_discrete_sequence=px.colors.sequential.Plasma_r[1:],
+        color_discrete_sequence=px.colors.sequential.Plasma_r,
         barmode="group",
         title=f"Absolute difference of models vs. {diff_base} (higher means better)",
         labels={"task": "Task", "metric_MEAN": "Metric Values"},
         width=1000,
         height=600,
         template="plotly_white",
-        # error_y=result_dict_st_diff["metric_STD"],
         category_orders={"Model": sorted(df_diff["Model"].unique().tolist())},
-    ).update_layout(
-        xaxis_title="Task",
-        yaxis_title="Metric Values",
-        xaxis_tickangle=45,
-        # yaxis_range=[0, 1],
-        # yaxis_tick0=0,
-        # yaxis_dtick=0.05,
-    ).update_traces(
-        error_y_thickness=0.7,
-    ).update_xaxes(
-        categoryorder="array",
-        categoryarray=task_order,
-    ).write_image(
-        f"GSG/results-c/plots/{name}_100_diff.png",
-        # sharper
-        scale=3,
     )
 
-    # html
-    px.bar(
-        df_diff,
-        x="task",
-        y="metric_MEAN",
-        color="Model",
-        # 5 options: yellow, orange, red, purple, blue
-        color_discrete_sequence=px.colors.sequential.Plasma_r[1:],
-        barmode="group",
-        title=f"Absolute difference of models vs. {diff_base} (higher means better)",
-        labels={"task": "Task", "metric_MEAN": "Metric Values"},
-        width=1000,
-        height=600,
-        template="plotly_white",
-        # error_y=result_dict_st_diff["metric_STD"],
-        category_orders={"Model": sorted(df_diff["Model"].unique().tolist())},
-    ).update_layout(
+    category_boundaries = [0.5 + i for i in range(len(df_diff["task"].unique()))]  # Calculate the category boundaries
+
+    for boundary in category_boundaries:
+        fig.add_shape(
+            type="line",
+            x0=boundary,
+            y0=min(df_diff["metric_MEAN"]),
+            x1=boundary,
+            y1=max(df_diff["metric_MEAN"]),
+            line=dict(color="black", width=0.5),
+            layer="below",
+        )
+
+    fig.update_layout(
         xaxis_title="Task",
         yaxis_title="Metric Values",
         xaxis_tickangle=45,
-        # yaxis_range=[0, 1],
-        # yaxis_tick0=0,
-        # yaxis_dtick=0.05,
     ).update_traces(
         error_y_thickness=0.7,
     ).update_xaxes(
         categoryorder="array",
         categoryarray=task_order,
-    ).write_html(
-        f"GSG/results-c/plots/{name}_100_diff.html",
-        # sharper
-        include_plotlyjs="cdn",
     )
+
+    # Save as HTML
+    fig.write_html(f"GSG/results-c/plots/{name}_100_diff.html", include_plotlyjs="cdn")
+
+    # Save as PNG
+    fig.write_image(f"GSG/results-c/plots/{name}_100_diff.png", width=1000, height=600)
     print(f"Plotted {name}")
+
 
 
 # go through all results

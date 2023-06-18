@@ -38,7 +38,7 @@ def get_model(
 ):
     model_args, data_args, training_args, adapter_args, fusion_args, congater_args = args
 
-    if adapter_args.train_adapter: # or fusion_args.train_fusion:
+    if adapter_args.train_adapter:  # or data_args.task_name == "wsc":
         # We use the AutoAdapterModel class here for better adapter support.
         model = AutoAdapterModel.from_pretrained(
             model_args.model_name_or_path,

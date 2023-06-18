@@ -1,0 +1,29 @@
+{
+	"folders": [
+		{
+			"name": "congater-fusion",
+			"path": ".."
+		}
+	],
+	"settings": {
+		"github.copilot-labs.showBrushesLenses": true,
+		"github.copilot-labs.showTestGenerationLenses": true,
+		"python.testing.pytestArgs": [
+			"."
+		],
+		"python.testing.unittestEnabled": false,
+		"python.testing.pytestEnabled": true,
+		"git.ignoreLimitWarning": true,
+		"python.formatting.provider": "black",
+		"livePreview.defaultPreviewPath": "/analysis/GSG/results/plots/ALL-PEFT_100_diff.html",
+		"files.autoSave": "onFocusChange",
+		"python.autoComplete.extraPaths": [],
+		"python.analysis.extraPaths": [],
+		"terminal.integrated.env.linux": {
+
+		},
+		"terminal.integrated.env.windows": {
+			
+		}
+	}
+}
