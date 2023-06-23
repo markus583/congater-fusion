@@ -1,6 +1,20 @@
 LR=1e-2
-CONFIG=param_elwise_clamp_2avg-init-BETA_single-first-0
+CONFIG=param_direct_clamp_2avg-init-BETA_single-first-0
 RUN_NAME=st-a-congosition_naive-$CONFIG-lr$LR
+ 
+# param_direct_clamp_2avg-init-BETA_elwise-first-0-dropout03
+# param_direct_clamp_2avg-init-BETA_single-first-0-dropout03
+# difflr_beta
+
+# "layer_direct_2avg-init"
+# "layer_direct_2avg-init-dropout03"
+# "layer_direct_clamp_2avg-init"
+# "layer_direct_clamp_2avg-init-dropout03"
+
+# layer_elwise_2avg-init
+# layer_elwise_2avg-init-dropout03
+# layer_elwise_clamp_2avg-init
+# layer_elwise_clamp_2avg-init-dropout03
 
 MODEL_NAME=bert-base-uncased
 GPU_ID=0
@@ -24,7 +38,7 @@ if [ ${#SEEDS[@]} -eq 0 ]; then
 fi
 
 
-for TASK in cb copa wsc rte mrpc wic boolq stsb sst2 qnli qqp mnli; do
+for TASK in cb copa rte mrpc wsc boolq wic stsb sst2 qnli qqp mnli; do
   for SEED in "${SEEDS[@]}"; do
     # these tasks only run with seeds 0 to 4
     if [ $SEED -gt 2 ] && [ $TASK = "sst2" -o $TASK = "qnli" -o $TASK = "qqp" -o $TASK = "mnli" ]; then

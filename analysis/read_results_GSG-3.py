@@ -16,6 +16,11 @@ OUT_FILES = [
     "FULL.csv",
     "ST-A.csv",
     "ST-A-FUSION.csv",
+    "ST-A-FUSION-30.csv",
+    "ST-A-FUSION-30-LR1e-5.csv",
+    "ST-A-FUSION-30-LR5e-4.csv",
+    "ST-A-FUSION-30-static-LR5e-4.csv",
+    "ST-A-FUSION-30-static-LR5e-5.csv",
     "st-a-congosition_naive-sigmoid_init-2_lr5e-2.csv",
     "st-a-congosition_naive-sigmoid_init-2_lr1e-2.csv",
     "st-a-congosition_naive-sigmoid_init-2_lr5e-3.csv",
@@ -74,9 +79,12 @@ OUT_FILES = [
     "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout01-lr1e-2.csv",
     "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout025-lr1e-2.csv",
     "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout05-lr1e-2.csv",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout04-lr1e-2.csv",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout03-lr1e-2.csv",
     "st-a-congosition_naive-param_elwise_clamp_2avg-init-rescale1-lr1e-2.csv",
     "st-a-congosition_naive-param_elwise_clamp_2avg-init-rescale12-lr1e-2.csv",
     "st-a-congosition_naive-param_elwise_2avg-init-dropout025-lr1e-2.csv",
+    "st-a-congosition_naive-param_elwise_2avg-init-dropout03-lr1e-2.csv",
     "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout025-lr1e-2-warmup.csv",
     "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout025-lr1e-2-cosine.csv",
     "st-a-congosition_naive-param_elwise_clamp_2avg-init-lr1e-2-L2_001.csv",
@@ -85,6 +93,24 @@ OUT_FILES = [
     "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-dropout025-lr1e-2.csv",
     "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-lr1e-3.csv",
     "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_single-first-0-lr1e-2.csv",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_single-first-0-dropout025-lr1e-2.csv",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-difflr_beta-lr1e-2.csv",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_single-first-0-difflr_beta-lr1e-2.csv",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_single-first-0-dropout025-difflr_beta-lr1e-2.csv",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-dropout025-difflr_beta-lr1e-2.csv",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-dropout05-lr1e-2.csv",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-dropout05-difflr_beta-lr1e-2.csv",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_single-first-0-dropout05-difflr_beta-lr1e-2.csv",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_single-first-0-dropout05-lr1e-2.csv",
+    "st-a-congosition_naive-param_direct_clamp_2avg-init-lr1e-2.csv",
+    "st-a-congosition_naive-param_direct_clamp_2avg-init-dropout025-lr1e-2.csv",
+    "st-a-congosition_naive-param_direct_clamp_2avg-init-dropout03-lr1e-2.csv",
+    "st-a-congosition_naive-param_direct_2avg-init-lr1e-2.csv",
+    "st-a-congosition_naive-param_direct_2avg-init-dropout03-lr1e-2.csv",
+    "st-a-congosition_naive-param_direct_2avg-init-dropout03-lr5e-3.csv",
+    "st-a-congosition_naive-param_direct_2avg-init-dropout03-difflr_omega-lr1e-4.csv",
+    "st-a-congosition_naive-param_direct_2avg-init-dropout03-difflr_omega-lr1e-3.csv",
+    "st-a-congosition_naive-param_direct_clamp_2avg-init-BETA_elwise-first-0-lr1e-2.csv",
 ]
 
 OUT_FILES = [BASE_DIR + f for f in OUT_FILES]
@@ -92,6 +118,11 @@ DIR_NAMES = [
     "full",
     "st-a",
     "st-a-fusion-GSG-FP16",
+    "st-a-fusion-GSG-FP16-30",
+    "st-a-fusion-GSG-FP16-30-LR1e-5",
+    "st-a-fusion-GSG-FP16-30-LR5e-4",
+    "st-a-fusion-GSG-FP16-30-static",
+    "st-a-fusion-GSG-FP16-30-static-LR5e-5",
     "st-a-congosition_naive-sigmoid_init-2_lr5e-2",
     "st-a-congosition_naive-sigmoid_init-2_lr1e-2",
     "st-a-congosition_naive-sigmoid_init-2_lr5e-3",
@@ -150,9 +181,12 @@ DIR_NAMES = [
     "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout01-lr1e-2",
     "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout025-lr1e-2",
     "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout05-lr1e-2",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout04-lr1e-2",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout03-lr1e-2",
     "st-a-congosition_naive-param_elwise_clamp_2avg-init-rescale1-lr1e-2",
     "st-a-congosition_naive-param_elwise_clamp_2avg-init-rescale12-lr1e-2",
     "st-a-congosition_naive-param_elwise_2avg-init-dropout025-lr1e-2",
+    "st-a-congosition_naive-param_elwise_2avg-init-dropout03-lr1e-2",
     "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout025-lr1e-2-warmup",
     "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout025-lr1e-2-cosine",
     "st-a-congosition_naive-param_elwise_clamp_2avg-init-lr1e-2-L2_001",
@@ -161,8 +195,27 @@ DIR_NAMES = [
     "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-dropout025-lr1e-2",
     "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-lr1e-3",
     "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_single-first-0-lr1e-2",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_single-first-0-dropout025-lr1e-2",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-difflr_beta-lr1e-2",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_single-first-0-difflr_beta-lr1e-2",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_single-first-0-dropout025-difflr_beta-lr1e-2",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-dropout025-difflr_beta-lr1e-2",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-dropout05-lr1e-2",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-dropout05-difflr_beta-lr1e-2",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_single-first-0-dropout05-difflr_beta-lr1e-2",
+    "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_single-first-0-dropout05-lr1e-2",
+    "st-a-congosition_naive-param_direct_clamp_2avg-init-lr1e-2",
+    "st-a-congosition_naive-param_direct_clamp_2avg-init-dropout025-lr1e-2",
+    "st-a-congosition_naive-param_direct_clamp_2avg-init-dropout03-lr1e-2",
+    "st-a-congosition_naive-param_direct_2avg-init-lr1e-2",
+    "st-a-congosition_naive-param_direct_2avg-init-dropout03-lr1e-2",
+    "st-a-congosition_naive-param_direct_2avg-init-dropout03-lr5e-3",
+    "st-a-congosition_naive-param_direct_2avg-init-dropout03-difflr_omega-lr1e-4",
+    "st-a-congosition_naive-param_direct_2avg-init-dropout03-difflr_omega-lr1e-3",
+    "st-a-congosition_naive-param_direct_clamp_2avg-init-BETA_elwise-first-0-lr1e-2",
 ]
 
+print(len(OUT_FILES), len(DIR_NAMES))
 extract_statistics(OUT_FILES, DIR_NAMES)
 
 EXCLUDE_LIST = [
@@ -179,7 +232,7 @@ EXCLUDE_LIST = [
     "value_init_avg",
     "value_after",
     "value_normal",
-    "LR",
+    # "LR",
     "dk",
     "C-V0-FUSION-GSG-FP16-TT-DOUBLETT",
 ]
@@ -259,14 +312,22 @@ compare_dict = {
             "st-a-congosition_naive-param_direct_clamp_avg-init-difflr-lr1e-3",
             # "st-a-congosition_naive-param_direct_clamp_avg-init-no_res-lr1e-2",
             # "st-a-congosition_naive-param_direct_clamp_avg-init-no_res-lr1e-3",
-            "st-a-congosition_naive-param_direct_clamp_avg-init-tanh-lr1e-2",
-            "st-a-congosition_naive-param_direct_clamp_avg-init-tanh-lr1e-3",
-            "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-2",
-            "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-3",
-            "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-4",
-            "st-a-congosition_naive-param_elwise_clamp_avg-init-lr5e-3",
-            "st-a-congosition_naive-param_elwise_sigmoid_avg-init-lr1e-2",
-            "st-a-congosition_naive-param_elwise_sigmoid_avg-init-lr1e-3",
+            # "st-a-congosition_naive-param_direct_clamp_avg-init-tanh-lr1e-2",
+            # "st-a-congosition_naive-param_direct_clamp_avg-init-tanh-lr1e-3",
+            # "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-2",
+            # "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-3",
+            # "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-4",
+            # "st-a-congosition_naive-param_elwise_clamp_avg-init-lr5e-3",
+            # "st-a-congosition_naive-param_elwise_sigmoid_avg-init-lr1e-2",
+            # "st-a-congosition_naive-param_elwise_sigmoid_avg-init-lr1e-3",
+            "st-a-congosition_naive-param_direct_clamp_2avg-init-lr1e-2",
+            "st-a-congosition_naive-param_direct_clamp_2avg-init-dropout025-lr1e-2",
+            "st-a-congosition_naive-param_direct_clamp_2avg-init-dropout03-lr1e-2",
+            "st-a-congosition_naive-param_direct_2avg-init-lr1e-2",
+            "st-a-congosition_naive-param_direct_2avg-init-dropout03-lr1e-2",
+            "st-a-congosition_naive-param_direct_2avg-init-dropout03-lr5e-3",
+            # "st-a-congosition_naive-param_direct_2avg-init-dropout03-difflr_omega-lr1e-4",
+            # "st-a-congosition_naive-param_direct_2avg-init-dropout03-difflr_omega-lr1e-3",
         ],
         "diff_base": "ST-A-FUSION",
     },
@@ -276,6 +337,7 @@ compare_dict = {
         "include": [],
         "include_list_exactly": [
             "ST-A-FUSION",
+            "ST-A-FUSION-30",
             "ST-A",
             "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-2",
             "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-3",
@@ -294,9 +356,12 @@ compare_dict = {
             "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout01-lr1e-2",
             "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout025-lr1e-2",
             "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout05-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout04-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout03-lr1e-2",
             # "st-a-congosition_naive-param_elwise_clamp_2avg-init-rescale1-lr1e-2",
             # "st-a-congosition_naive-param_elwise_clamp_2avg-init-rescale12-lr1e-2",
             "st-a-congosition_naive-param_elwise_2avg-init-dropout025-lr1e-2",
+            "st-a-congosition_naive-param_elwise_2avg-init-dropout03-lr1e-2",
             # "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout025-lr1e-2-warmup",
             # "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout025-lr1e-2-cosine",
             # "st-a-congosition_naive-param_elwise_clamp_2avg-init-lr1e-2-L2_001",
@@ -309,6 +374,7 @@ compare_dict = {
         "include": [],
         "include_list_exactly": [
             "ST-A-FUSION",
+            "ST-A-FUSION-30",
             "ST-A",
             # "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-2",
             # "st-a-congosition_naive-param_elwise_clamp_avg-init-lr1e-3",
@@ -325,7 +391,7 @@ compare_dict = {
             "st-a-congosition_naive-param_elwise_clamp_2avg-init-lr1e-2",
             # "st-a-congosition_naive-param_elwise_clamp_3avg-init-lr1e-2",
             # "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout01-lr1e-2",
-            # "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout025-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout025-lr1e-2",
             # "st-a-congosition_naive-param_elwise_clamp_2avg-init-rescale1-lr1e-2",
             # "st-a-congosition_naive-param_elwise_clamp_2avg-init-rescale12-lr1e-2",
             # "st-a-congosition_naive-param_elwise_2avg-init-dropout025-lr1e-2",
@@ -335,8 +401,78 @@ compare_dict = {
             # "st-a-congosition_naive-param_elwise_clamp_2avg-init-lr1e-2-L2_01",
             "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-lr1e-2",
             "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-dropout025-lr1e-2",
-            "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-lr1e-3",
+            # "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-lr1e-3",
             "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_single-first-0-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_single-first-0-dropout025-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-difflr_beta-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_single-first-0-difflr_beta-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_single-first-0-dropout025-difflr_beta-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-dropout025-difflr_beta-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-dropout05-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_single-first-0-dropout05-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-dropout05-difflr_beta-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_single-first-0-dropout05-difflr_beta-lr1e-2",
+        ],
+        "diff_base": "ST-A-FUSION",
+    },
+    "CONGOSITION-ELWISE-BETA-SIMPLE": {
+        "exclude": [],
+        "include": [],
+        "include_list_exactly": [
+            "ST-A-FUSION",
+            "ST-A-FUSION-30",
+            "ST-A",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-lr1e-2",
+            "st-a-congosition_naive-param_direct_clamp_2avg-init-lr1e-2",
+            "st-a-congosition_naive-param_direct_clamp_2avg-init-dropout03-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout03-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_single-first-0-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_elwise-first-0-difflr_beta-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-BETA_single-first-0-difflr_beta-lr1e-2",
+        ],
+        "diff_base": "ST-A-FUSION",
+    },
+    "CONGOSITION-SINGLE-BETA-SIMPLE": {
+        "exclude": [],
+        "include": [],
+        "include_list_exactly": [
+            "ST-A-FUSION",
+            "ST-A-FUSION-30",
+            "ST-A",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-lr1e-2",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout03-lr1e-2",
+            "st-a-congosition_naive-param_direct_clamp_2avg-init-lr1e-2",
+            "st-a-congosition_naive-param_direct_clamp_2avg-init-dropout03-lr1e-2",
+            "st-a-congosition_naive-param_direct_clamp_2avg-init-BETA_elwise-first-0-lr1e-2",
+        ],
+        "diff_base": "ST-A-FUSION",
+    },
+    "CONGOSITION-ELWISE-PRES": {
+        "exclude": [],
+        "include": [],
+        "include_list_exactly": [
+            "ST-A-FUSION",
+            "ST-A-FUSION-30",
+            "ST-A",
+            "st-a-congosition_naive-param_elwise_clamp_2avg-init-dropout03-lr1e-2",
+            "st-a-congosition_naive-param_elwise_2avg-init-dropout03-lr1e-2",
+            "st-a-congosition_naive-param_direct_clamp_2avg-init-dropout03-lr1e-2",
+            "st-a-congosition_naive-param_direct_2avg-init-dropout03-lr1e-2",
+        ],
+        "diff_base": "ST-A-FUSION",
+    },
+    "FUSION-ABLATION": {
+        "exclude": [],
+        "include": [],
+        "include_list_exactly": [
+            "ST-A-FUSION",
+            "ST-A",
+            "ST-A-FUSION-30",
+            "ST-A-FUSION-30-LR1e-5",
+            "ST-A-FUSION-30-LR5e-4",
+            "ST-A-FUSION-30-static-LR5e-4",
+            "ST-A-FUSION-30-static-LR5e-5",
         ],
         "diff_base": "ST-A-FUSION",
     },
@@ -713,6 +849,11 @@ def plot_100(
             df["Model"].str.contains("|".join(include_list))
             & ~df["Model"].str.contains("|".join(exclude_list))
         ]
+        
+    
+    df["Model"] = df["Model"].str.replace(
+        "st-a-congosition_naive-param_", ""
+    )
 
     unique_models = sorted(df["Model"].unique().tolist())
     last_element = unique_models[-1]  # Get the last element
@@ -792,7 +933,8 @@ def plot_100(
             1,
         ],
         yaxis_tick0=0,
-        yaxis_dtick=0.05,
+        yaxis_dtick=0.025,
+        font=dict(size=12),
     ).update_traces(
         error_y_thickness=0.25,
     ).update_xaxes(
@@ -864,95 +1006,95 @@ for name, nested in compare_dict.items():
         nested["diff_base"],
     )
 
-# now the same but pairwise
-for setup in combinations(result_dict.keys(), 2):
-    result_dict_2 = result_dict_100.copy()
-    # filter for setup[0] and setup[1]
-    result_dict_2 = result_dict_2[result_dict_2["Model"].isin([setup[0], setup[1]])]
-    # then, make plot
-    px.bar(
-        result_dict_2,
-        x="task",
-        y="metric_MEAN",
-        color="Model",
-        # 5 options: yellow, orange, red, purple, blue
-        color_discrete_sequence=["#92c5de", "#2166ac"],
-        barmode="group",
-        # include seeds
-        # title=f"Comparison of {setup[0]} vs {setup[1]} (100% of Training Data)",
-        title=f"{setup[0]} ({str(result_dict_drop[setup[0]]['n_runs'].mean())[:3]} seeds) vs. {setup[1]} ({str(result_dict_drop[setup[1]]['n_runs'].mean())[:3]} seeds) (100% of Training Data)",
-        labels={"task": "Task", "metric_MEAN": "Metric Values"},
-        width=1000,
-        height=600,
-        template="plotly_white",
-        error_y=result_dict_2["metric_STD"],
-    ).update_layout(
-        xaxis_title="Task",
-        yaxis_title="Metric Values",
-        xaxis_tickangle=45,
-        # size
-        xaxis_tickfont_size=12,
-        yaxis_range=[
-            0.5,
-            1,
-        ],
-        yaxis_tick0=0,
-        yaxis_dtick=0.05,
-    ).update_xaxes(
-        categoryorder="array",
-        categoryarray=task_order,
-    ).write_image(
-        f"GSG/results-c/differences/plots/100/{setup[0]}_vs_{setup[1]}_100.png",
-        # sharper
-        scale=3,
-    )
+# # now the same but pairwise
+# for setup in combinations(result_dict.keys(), 2):
+#     result_dict_2 = result_dict_100.copy()
+#     # filter for setup[0] and setup[1]
+#     result_dict_2 = result_dict_2[result_dict_2["Model"].isin([setup[0], setup[1]])]
+#     # then, make plot
+#     px.bar(
+#         result_dict_2,
+#         x="task",
+#         y="metric_MEAN",
+#         color="Model",
+#         # 5 options: yellow, orange, red, purple, blue
+#         color_discrete_sequence=["#92c5de", "#2166ac"],
+#         barmode="group",
+#         # include seeds
+#         # title=f"Comparison of {setup[0]} vs {setup[1]} (100% of Training Data)",
+#         title=f"{setup[0]} ({str(result_dict_drop[setup[0]]['n_runs'].mean())[:3]} seeds) vs. {setup[1]} ({str(result_dict_drop[setup[1]]['n_runs'].mean())[:3]} seeds) (100% of Training Data)",
+#         labels={"task": "Task", "metric_MEAN": "Metric Values"},
+#         width=1000,
+#         height=600,
+#         template="plotly_white",
+#         error_y=result_dict_2["metric_STD"],
+#     ).update_layout(
+#         xaxis_title="Task",
+#         yaxis_title="Metric Values",
+#         xaxis_tickangle=45,
+#         # size
+#         xaxis_tickfont_size=12,
+#         yaxis_range=[
+#             0.5,
+#             1,
+#         ],
+#         yaxis_tick0=0,
+#         yaxis_dtick=0.05,
+#     ).update_xaxes(
+#         categoryorder="array",
+#         categoryarray=task_order,
+#     ).write_image(
+#         f"GSG/results-c/differences/plots/100/{setup[0]}_vs_{setup[1]}_100.png",
+#         # sharper
+#         scale=3,
+#     )
 
 
-for name, df in differences.items():
-    df["metric"] = df["task"].apply(compute_main_metric)
-    df["metric_MEAN"] = df.apply(lambda x: x[x["metric"] + "_MEAN"], axis=1)
-    df["% of Training Data"] = df["train_pct"].apply(lambda x: str(x))
+# for name, df in differences.items():
+#     df["metric"] = df["task"].apply(compute_main_metric)
+#     df["metric_MEAN"] = df.apply(lambda x: x[x["metric"] + "_MEAN"], axis=1)
+#     df["% of Training Data"] = df["train_pct"].apply(lambda x: str(x))
 
-    # compute average over all tasks for different train percentages
-    avg = df.groupby("train_pct").mean()["metric_MEAN"]
-    # add 1 row for each train_pct
-    for train_pct in [10, 25, 50, 100]:
-        df = df.append(
-            {
-                "task": "AVG",
-                "train_pct": train_pct,
-                "metric_MEAN": avg[train_pct],
-                "% of Training Data": str(train_pct),
-            },
-            ignore_index=True,
-        )
+#     # compute average over all tasks for different train percentages
+#     avg = df.groupby("train_pct").mean()["metric_MEAN"]
+#     # add 1 row for each train_pct
+#     for train_pct in [10, 25, 50, 100]:
+#         df = df.append(
+#             {
+#                 "task": "AVG",
+#                 "train_pct": train_pct,
+#                 "metric_MEAN": avg[train_pct],
+#                 "% of Training Data": str(train_pct),
+#             },
+#             ignore_index=True,
+#         )
 
-    df.to_csv(f"GSG/results-c/differences/csv/{name}.csv", index=False)
+#     df.to_csv(f"GSG/results-c/differences/csv/{name}.csv", index=False)
 
-    px.bar(
-        df,
-        x="task",
-        y="metric_MEAN",
-        color="% of Training Data",
-        # blues colormap, 4 options - light blue, medium blue, dark blue, very dark blue
-        color_discrete_sequence=["#d1e5f0", "#92c5de", "#4393c3", "#2166ac"],
-        barmode="group",
-        title=f"{name.replace('_', ' ').replace('VS', 'vs.')} (higher means first is better) - {df['n_runs_0'][0], df['n_runs_1'][0]} seeds",
-        labels={"task": "Task", "metric_MEAN": "Metric Values"},
-        width=1000,
-        height=600,
-        template="plotly_white",
-    ).update_layout(
-        xaxis_title="Task",
-        yaxis_title="Metric Values",
-        xaxis_tickangle=45,
-        yaxis_range=[-0.1, 0.1],
-        yaxis_tick0=-0.1,
-        yaxis_dtick=0.01,
-    ).update_xaxes(
-        categoryorder="array",
-        categoryarray=task_order,
-    ).write_image(
-        f"GSG/results-c/differences/plots/all/{name}.png", scale=3
-    )
+#     px.bar(
+#         df,
+#         x="task",
+#         y="metric_MEAN",
+#         color="% of Training Data",
+#         # blues colormap, 4 options - light blue, medium blue, dark blue, very dark blue
+#         color_discrete_sequence=["#d1e5f0", "#92c5de", "#4393c3", "#2166ac"],
+#         barmode="group",
+#         title=f"{name.replace('_', ' ').replace('VS', 'vs.')} (higher means first is better) - {df['n_runs_0'][0], df['n_runs_1'][0]} seeds",
+#         labels={"task": "Task", "metric_MEAN": "Metric Values"},
+#         width=1000,
+#         height=600,
+#         template="plotly_white",
+#     ).update_layout(
+#         xaxis_title="Task",
+#         yaxis_title="Metric Values",
+#         xaxis_tickangle=45,
+#         yaxis_range=[-0.1, 0.1],
+#         yaxis_tick0=-0.1,
+#         yaxis_dtick=0.01,
+#     ).update_xaxes(
+#         categoryorder="array",
+#         categoryarray=task_order,
+#     ).write_image(
+#         f"GSG/results-c/differences/plots/all/{name}.png", scale=3
+#     )
 print("DONE!")

@@ -111,6 +111,7 @@ class AdapterTrainer(Trainer):
         if self.optimizer is None:
             decay_parameters = get_parameter_names(self.model, [nn.LayerNorm])
             omega_params = []
+            beta_params = []
             decay_parameters = [name for name in decay_parameters if "bias" not in name]
             if hasattr(self.model, "config") and hasattr(self.model.config, "adapters"):
                 match_str = r"adapter_fusion_layer\..*\.value"
@@ -121,20 +122,43 @@ class AdapterTrainer(Trainer):
                     config_list = list(self.model.config.adapters.fusions.values())
                     if len(config_list) > 0:
                         config_str = str(config_list[0])
-                        if "difflr" in config_str:
+                        if "difflr_omega" in config_str:
                             match_str = r"adapter_fusion_layer\..*\.omega"
-                            omega_params = [name for name in decay_parameters if re.search(match_str, name)]
+                            omega_params = [
+                                name
+                                for name in decay_parameters
+                                if re.search(match_str, name)
+                            ]
                             match_str_c = r"congosition_v1_layer\..*\.omega"
-                            omega_params += [name for name in decay_parameters if re.search(match_str_c, name)]
+                            omega_params += [
+                                name
+                                for name in decay_parameters
+                                if re.search(match_str_c, name)
+                            ]
                             print(omega_params, config_str)
-            
+                        elif "difflr_beta" in str(config_list[0]):
+                            match_str = r"adapter_fusion_layer\..*\.beta"
+                            beta_params = [
+                                name
+                                for name in decay_parameters
+                                if re.search(match_str, name)
+                            ]
+                            match_str_c = r"congosition_v1_layer\..*\.beta"
+                            beta_params += [
+                                name
+                                for name in decay_parameters
+                                if re.search(match_str_c, name)
+                            ]
+                            print(beta_params, config_str)
 
             optimizer_grouped_parameters = [
                 {
                     "params": [
                         p
                         for n, p in self.model.named_parameters()
-                        if n in decay_parameters and n not in omega_params
+                        if n in decay_parameters
+                        and n not in omega_params
+                        and n not in beta_params
                     ],
                     "weight_decay": self.args.weight_decay,
                 },
@@ -142,21 +166,28 @@ class AdapterTrainer(Trainer):
                     "params": [
                         p
                         for n, p in self.model.named_parameters()
-                        if n not in decay_parameters and n not in omega_params
+                        if n not in decay_parameters
+                        and n not in omega_params
+                        and n not in beta_params
                     ],
                     "weight_decay": 0.0,
                 },
                 {
                     "params": [
-                        p
-                        for n, p in self.model.named_parameters()
-                        if n in omega_params
+                        p for n, p in self.model.named_parameters() if n in omega_params
                     ],
-                    "lr": self.args.learning_rate * 5,
+                    "lr": self.args.learning_rate * 10,
                     "weight_decay": self.args.weight_decay,
-                }
+                },
+                {
+                    "params": [
+                        p for n, p in self.model.named_parameters() if n in beta_params
+                    ],
+                    "lr": self.args.learning_rate / 100,
+                    "weight_decay": self.args.weight_decay,
+                },
             ]
-            
+
             if self.args.adafactor:
                 optimizer_cls = Adafactor
                 optimizer_kwargs = {"scale_parameter": False, "relative_step": False}

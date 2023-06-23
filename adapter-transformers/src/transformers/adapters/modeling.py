@@ -847,7 +847,6 @@ class CongositionBase(nn.Module):
             omegas = self.dropout(omegas)
             if self.config["learn_beta"]:
                 betas = self.dropout(betas)
-                
 
         if self.config["learn_beta"]:
             if self.config["beta_first"]:
@@ -856,7 +855,7 @@ class CongositionBase(nn.Module):
                 weighted_x = omegas * up_list + betas
         else:
             weighted_x = omegas * up_list
-            
+
         if self.config["rescaling_factor"]:
             weighted_x = self.rescaling_factor * weighted_x
         weighted_x = torch.sum(weighted_x, dim=2)
@@ -868,6 +867,101 @@ class CongositionBase(nn.Module):
             if self.config["ln"] and not self.config["ln_before_residual"]:
                 weighted_x = self.ln(weighted_x)
         return weighted_x
+
+
+class CongositionLayer(nn.Module):
+    def __init__(
+        self,
+        config,
+        dense_size,
+        n_congaters: int,
+        name: str,
+    ):
+        super(CongositionLayer, self).__init__()
+        print(config)
+        self.config = config
+        self.name = name
+
+        if self.config["sigmoid"]:
+            self.gate = nn.Sigmoid()
+            self.has_sigmoid = True
+        elif self.config["clamp"]:
+            self.gate = nn.Hardtanh(min_val=0, max_val=1)
+        if self.config["ln"]:
+            self.ln = nn.LayerNorm(dense_size)
+        if self.config["tanh"]:
+            self.tanh = nn.Tanh()
+        if self.config["dropout_ratio"] > 0:
+            self.dropout = nn.Dropout(self.config["dropout_ratio"])
+
+    def forward(self, up_list, residual):
+        if self.config["tanh"]:
+            up_list = self.tanh(up_list)
+
+        parameters = ForwardContext.get_context().shared_parameters[self.name]
+        if self.config["learn_omega"]:
+            omegas = parameters.omega
+        if self.config["learn_beta"]:
+            betas = parameters.beta
+
+        if self.config["sigmoid"] or self.config["clamp"]:
+            if self.config["sigmoid_temperature"]:
+                omegas = self.gate(omegas * self.config["sigmoid_temperature"])
+            else:
+                omegas = self.gate(omegas)
+
+        if self.config["dropout_ratio"] > 0:
+            if self.config["learn_omega"]:
+                omegas = self.dropout(omegas)
+            if self.config["learn_beta"]:
+                betas = self.dropout(betas)
+
+        if self.config["learn_beta"]:
+            if self.config["beta_first"]:
+                weighted_x = omegas * (up_list + betas)
+            else:
+                weighted_x = omegas * up_list + betas
+        else:
+            weighted_x = omegas * up_list
+
+        weighted_x = torch.sum(weighted_x, dim=2)
+        if self.config["ln"] and self.config["ln_before_residual"]:
+            weighted_x = self.ln(weighted_x)
+
+        if self.config["residual"]:
+            weighted_x += residual
+            if self.config["ln"] and not self.config["ln_before_residual"]:
+                weighted_x = self.ln(weighted_x)
+        return weighted_x
+
+
+def init_shared_parameters_congosition(config, in_features, device):
+    """
+    Create and initialize the parameters shared by all compacter modules
+    """
+    parameters = nn.ParameterDict()
+    if config["per_layer"]:
+        if config["learn_omega"]:
+            omega = torch.normal(
+                config["omega_init"],
+                0.001,
+                config["omega_shape"],
+            )
+            omega = nn.Parameter(omega, requires_grad=True)
+        parameters["omega"] = omega
+        if config["learn_beta"]:
+            beta = nn.Parameter(
+                torch.normal(
+                    config["beta_init"],
+                    0.001,
+                    config["beta_shape"],
+                ),
+                requires_grad=True,
+            )
+            parameters["beta"] = beta
+    else:
+        raise NotImplementedError
+    return parameters
 
 
 class NoOpModule(nn.Module):

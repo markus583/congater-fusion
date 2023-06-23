@@ -1,6 +1,8 @@
 LR=1e-2
-CONFIG=param_elwise_clamp_2avg-init-dropout05
+CONFIG=param_elwise_clamp_2avg-init-dropout03
 RUN_NAME=st-a-congosition_naive-$CONFIG-lr$LR
+
+# TODO: more studies on no_clamping
 
 MODEL_NAME=bert-base-uncased
 GPU_ID=0
@@ -24,7 +26,7 @@ if [ ${#SEEDS[@]} -eq 0 ]; then
 fi
 
 
-for TASK in cb copa wsc rte mrpc wic boolq stsb sst2 qnli qqp mnli; do
+for TASK in cb copa rte mrpc wsc wic boolq stsb sst2 qnli qqp mnli; do
   for SEED in "${SEEDS[@]}"; do
     # these tasks only run with seeds 0 to 4
     if [ $SEED -gt 2 ] && [ $TASK = "sst2" -o $TASK = "qnli" -o $TASK = "qqp" -o $TASK = "mnli" ]; then

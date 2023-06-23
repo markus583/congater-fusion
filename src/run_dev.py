@@ -200,48 +200,6 @@ def main() -> None:
 
         if congater_args.congosition_type is not None:
             model.save_congosition(training_args.output_dir, ",".join(adapter_setup[0]))
-            # plot and save omega values for each layer
-            # y axis: layer number
-            # x axis: omega values for each task
-
-            all_omegas = []
-            import torch
-
-            for i, layer in enumerate(range(12)):
-                omegas = (
-                    torch.sigmoid(
-                        torch.mean(
-                            list(
-                                model.bert.encoder.layer[
-                                    i
-                                ].output.congosition_v1_layer.named_parameters()
-                            )[0][1],
-                            dim=1,
-                        )
-                    )
-                    .detach()
-                    .cpu()
-                    .numpy()
-                )
-
-                all_omegas.append(omegas)
-
-            import numpy as np
-            import seaborn as sns
-            import matplotlib.pyplot as plt
-
-            all_omegas = np.array(all_omegas)
-            # plot
-            fig, ax = plt.subplots()
-            sns.heatmap(all_omegas.T, ax=ax, vmin=0, vmax=1, cmap="bone")
-            ax.set_yticklabels(adapter_setup[0], rotation=0)
-
-            fig.tight_layout()
-            if not os.path.exists(training_args.output_dir + "/omegas"):
-                os.makedirs(training_args.output_dir + "/omegas")
-            plt.savefig(training_args.output_dir + "/omegas/omegas.png")
-            plt.close()
-            
         else:
             model.save_adapter_fusion(
                 training_args.output_dir, ",".join(adapter_setup[0])
@@ -347,9 +305,9 @@ if __name__ == "__main__":
             "--debug_congater",
             "True",
             "--congosition_type",
-            "param_elwise_clamp_2avg-init-BETA_elwise-first-0",
+            "layer_direct_2avg-init-BETA_single-first-0",
             "--fusion_type",
-            "param_elwise_clamp_2avg-init-BETA_elwise-first-0",
+            "layer_direct_2avg-init-BETA_single-first-0",
             # "--learn_omega",
             # "False",
             "--train_probing_head",

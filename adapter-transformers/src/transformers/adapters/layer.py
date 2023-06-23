@@ -18,7 +18,7 @@ from .composition import (
 )
 from .configuration import AdapterConfig
 from .context import AdapterSetup, ForwardContext
-from .modeling import Adapter, BertFusion, ParallelAdapter, CongositionV1, CongositionBase, NoOpModule
+from .modeling import Adapter, BertFusion, ParallelAdapter, CongositionV1, CongositionBase, CongositionLayer, NoOpModule
 
 
 class AdapterLayerBase(ABC):
@@ -196,11 +196,18 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
         )
         if self.config.adapters.common_config_value(adapter_names, self.location_key):
             fusion_config = self.config.adapters.get_congosition_v1(adapter_names, grid_values=grid_values)
-            if fusion_config.learn_omega:
+            if fusion_config.learn_omega and not fusion_config.per_layer:
                 fusion = CongositionBase(
                     fusion_config,
                     self.config.hidden_size,
                     len(adapter_names),
+                )
+            elif fusion_config.learn_omega and fusion_config.per_layer:
+                fusion = CongositionLayer(
+                    fusion_config,
+                    self.config.hidden_size,
+                    len(adapter_names),
+                    ",".join(adapter_names)
                 )
             else:
                 fusion = NoOpModule()

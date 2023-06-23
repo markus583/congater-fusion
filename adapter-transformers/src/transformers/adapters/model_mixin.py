@@ -9,19 +9,33 @@ from typing import Iterable, List, Optional, Tuple, Union
 import torch
 from torch import nn
 
-from .composition import (AdapterCompositionBlock, Fuse, Stack,
-                          parse_composition)
-from .configuration import (ADAPTER_CONFIG_MAP, AdapterConfig,
-                            AdapterConfigBase, AdapterFusionConfig, CongositionV1Config,
-                            get_adapter_config_hash)
+from .composition import AdapterCompositionBlock, Fuse, Stack, parse_composition
+from .configuration import (
+    ADAPTER_CONFIG_MAP,
+    AdapterConfig,
+    AdapterConfigBase,
+    AdapterFusionConfig,
+    CongositionV1Config,
+    get_adapter_config_hash,
+)
 from .context import AdapterSetup, ForwardContext
 from .hub_mixin import PushAdapterToHubMixin
 from .layer import AdapterLayer, AdapterLayerBase
-from .loading import (AdapterFusionLoader, AdapterLoader, PredictionHeadLoader,
-                      WeightsLoader, CongositionV1Loader)
+from .loading import (
+    AdapterFusionLoader,
+    AdapterLoader,
+    PredictionHeadLoader,
+    WeightsLoader,
+    CongositionV1Loader,
+)
 from .lora import LoRALayer
-from .modeling import (Adapter, GLOWCouplingBlock, NICECouplingBlock,
-                       init_shared_parameters)
+from .modeling import (
+    Adapter,
+    GLOWCouplingBlock,
+    NICECouplingBlock,
+    init_shared_parameters,
+    init_shared_parameters_congosition,
+)
 from .prefix_tuning import PrefixTuningPool, PrefixTuningShim
 from .utils import EMBEDDING_FILE, TOKENIZER_PATH, inherit_doc
 from .wrappers.configuration import SUBMODEL_NAMES, wrap_config
@@ -463,12 +477,16 @@ class ModelAdaptersMixin(PushAdapterToHubMixin, ABC):
         """Sets the model into mode for training of adapter fusion determined by a list of adapter names."""
         self.train()
         self.freeze_model(True)
+        af_string = ",".join(adapter_setup[0])
         adapter_setup = parse_composition(adapter_setup)
         self.apply_to_adapter_layers(
             lambda i, layer: layer.enable_adapters(
                 adapter_setup, unfreeze_adapters, True
             )
         )
+        if af_string in self.base_model.shared_parameters:
+            for param in self.base_model.shared_parameters[af_string].values():
+                param.requires_grad = True
         # use the adapters to be trained by default in every forward pass
         self.set_active_adapters(adapter_setup)
         # TODO implement fusion for invertible adapters
@@ -669,15 +687,14 @@ class ModelAdaptersMixin(PushAdapterToHubMixin, ABC):
             if not isinstance(adapter_names, list):
                 adapter_names = adapter_names.split(",")
             self.set_active_adapters(Fuse(*adapter_names))
-            
-                        
+
     def add_congosition_v1(
         self,
         adapter_names: Union[Fuse, list, str],
         config=None,
         overwrite_ok: bool = False,
         set_active: bool = False,
-        grid_values: dict = None
+        grid_values: dict = None,
     ):
         """
         Adds AdapterFusion to the model with alll the necessary configurations and weight initializations
@@ -711,14 +728,26 @@ class ModelAdaptersMixin(PushAdapterToHubMixin, ABC):
         # In case adapter already exists and we allow overwriting, explicitly delete the existing one first
         if overwrite_ok and self.config.adapters.get_fusion(adapter_names) is not None:
             self.delete_congosition(adapter_names)
-        self.config.adapters.add_congosition_v1(adapter_names, config=config, grid_values=grid_values)
+        self.config.adapters.add_congosition_v1(
+            adapter_names, config=config, grid_values=grid_values
+        )
         self.apply_to_adapter_layers(
-            lambda i, layer: layer.add_congosition_v1_layer(adapter_names, grid_values=grid_values)
+            lambda i, layer: layer.add_congosition_v1_layer(
+                adapter_names, grid_values=grid_values
+            )
         )
         if set_active:
             if not isinstance(adapter_names, list):
                 adapter_names = adapter_names.split(",")
             self.set_active_adapters(Fuse(*adapter_names))
+        
+        congosition_config = self.config.adapters.get_congosition_v1(adapter_names, grid_values=grid_values)
+        if congosition_config.per_layer:
+            self.base_model.shared_parameters[
+                ",".join(adapter_names)
+            ] = init_shared_parameters_congosition(
+                congosition_config, self.config.hidden_size, self.device
+            )
 
     def delete_adapter(self, adapter_name: str):
         """
@@ -776,7 +805,7 @@ class ModelAdaptersMixin(PushAdapterToHubMixin, ABC):
         # Reset active adapters if this was the active setup
         if self.active_adapters == adapter_names:
             self.active_adapters = None
-            
+
     def delete_congosition(self, adapter_names: Union[Fuse, list, str]):
         raise NotImplementedError
 
@@ -932,12 +961,14 @@ class ModelAdaptersMixin(PushAdapterToHubMixin, ABC):
             set_active=set_active,
             **kwargs,
         )
-        
+
         # set weights in loader.model.bert.encoder.layer[i].output.adapters.mrpc.omega to 0
         # since omega is parameter
         if config is not None:
             for i in range(len(loader.model.bert.encoder.layer)):
-                loader.model.bert.encoder.layer[i].output.adapters[load_name].omega.data.fill_(config.omega)
+                loader.model.bert.encoder.layer[i].output.adapters[
+                    load_name
+                ].omega.data.fill_(config.omega)
 
         # load additional custom weights
         if custom_weights_loaders:
@@ -990,7 +1021,7 @@ class ModelAdaptersMixin(PushAdapterToHubMixin, ABC):
                     set_active=set_active,
                 )
         return load_name
-    
+
     def load_congosition(
         self,
         adapter_fusion_name_or_path: str,
@@ -1097,7 +1128,7 @@ class ModelAdaptersMixin(PushAdapterToHubMixin, ABC):
                     meta_dict=meta_dict,
                     custom_weights_loaders=custom_weights_loaders,
                 )
-            
+
     def save_all_congositions(
         self,
         save_directory: str,
@@ -1160,7 +1191,7 @@ class ModelAdaptersMixin(PushAdapterToHubMixin, ABC):
         context.shared_parameters = {
             name: param
             for name, param in self.base_model.shared_parameters.items()
-            if name in active_adapters.flatten()
+            if name in active_adapters.flatten() or "," in name
         }
 
         context.prefix_states = self.base_model.prefix_tuning(*args, **kwargs)
@@ -1452,7 +1483,7 @@ class ModelWithHeadsAdaptersMixin(ModelAdaptersMixin):
             self.base_model.train_congosition(
                 adapter_setup, unfreeze_adapters=unfreeze_adapters
             )
-            
+
     def save_head(self, save_directory: str, head_name: str = None):
         loader = PredictionHeadLoader(self)
         loader.save(save_directory, name=head_name)
@@ -1591,7 +1622,7 @@ class ModelWithHeadsAdaptersMixin(ModelAdaptersMixin):
                 raise ValueError("No head with name {} found".format(head_name))
             loader = PredictionHeadLoader(self)
             loader.save(save_directory, head_name)
-            
+
     def save_congosition(
         self,
         save_directory: str,
@@ -1670,7 +1701,7 @@ class ModelWithHeadsAdaptersMixin(ModelAdaptersMixin):
         super().load_congosition(
             adapter_fusion_name_or_path, load_as, custom_weights_loaders, set_active
         )
-        
+
     def save_all_heads(self, save_directory):
         os.makedirs(save_directory, exist_ok=True)
         for head_name in self.heads:
