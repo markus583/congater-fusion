@@ -1266,7 +1266,8 @@ class ModelAdaptersMixin(PushAdapterToHubMixin, ABC):
                                         else:
                                             reg_loss += layer_reg_loss
             else:
-                reg_loss /= len(self.active_adapters[0])
+                if reg_loss is not None:
+                    reg_loss /= len(self.active_adapters[0])
                 
 
         return reg_loss
