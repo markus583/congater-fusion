@@ -740,8 +740,10 @@ class ModelAdaptersMixin(PushAdapterToHubMixin, ABC):
             if not isinstance(adapter_names, list):
                 adapter_names = adapter_names.split(",")
             self.set_active_adapters(Fuse(*adapter_names))
-        
-        congosition_config = self.config.adapters.get_congosition_v1(adapter_names, grid_values=grid_values)
+
+        congosition_config = self.config.adapters.get_congosition_v1(
+            adapter_names, grid_values=grid_values
+        )
         if congosition_config.per_layer:
             self.base_model.shared_parameters[
                 ",".join(adapter_names)
@@ -1228,6 +1230,44 @@ class ModelAdaptersMixin(PushAdapterToHubMixin, ABC):
                                 reg_loss = layer_reg_loss
                             else:
                                 reg_loss += layer_reg_loss
+
+        return reg_loss
+
+    def get_congosition_regularization_loss(self):
+        reg_loss = None
+
+        # ones of length active_adapters
+        target = torch.ones(len(self.active_adapters[0])).to(self.device)
+        if len(self.shared_parameters) > 0:
+            for name, param in self.shared_parameters.named_parameters():
+                if "omega" in name:
+                    module_name = list(self.encoder.layer[0].output.congosition_v1_layer)[0]
+                    config = self.encoder.layer[0].output.congosition_v1_layer[module_name].config
+                    if config["regularization"]:
+                        if param.requires_grad:
+                            reg_loss = config["lambda_reg"] * (target - param.sum(dim=1)).pow(2).sum()
+
+        else:
+            for i, layer in self.iter_layers():
+                for module in layer.modules():
+                    if isinstance(module, AdapterLayer):
+                        for _, layer_fusion in module.congosition_v1_layer.items():
+                            if hasattr(list(module.congosition_v1_layer.items())[0][1], "omega"):
+                                module_name = list(module.congosition_v1_layer)[0]
+                                config = module.congosition_v1_layer[module_name].config
+                                if config["regularization"]:
+                                    if layer_fusion.omega.requires_grad:
+                                        layer_reg_loss = (
+                                            config["lambda_reg"]
+                                            * (target - layer_fusion.omega.mean(dim=1)).pow(2).sum()
+                                        )
+                                        if reg_loss is None:
+                                            reg_loss = layer_reg_loss
+                                        else:
+                                            reg_loss += layer_reg_loss
+            else:
+                reg_loss /= len(self.active_adapters[0])
+                
 
         return reg_loss
 

@@ -368,8 +368,11 @@ class AdapterTrainerCallback(TrainerCallback):
         model = kwargs.pop("model")
         if self.trainer.train_adapter_fusion:
             fusion_reg_loss = model.base_model.get_fusion_regularization_loss()
+            congosition_reg_loss = model.base_model.get_congosition_regularization_loss()
             if fusion_reg_loss is not None:
                 fusion_reg_loss.backward()
+            elif congosition_reg_loss is not None:
+                congosition_reg_loss.backward()
 
 
 class Seq2SeqAdapterTrainer(AdapterTrainer, Seq2SeqTrainer):

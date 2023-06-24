@@ -1,15 +1,11 @@
 LR=1e-2
-CONFIG=param_direct_clamp_2avg-init-BETA_single-first-0
+CONFIG=param_direct_clamp_2avg-init-BETA_elwise-first-0-dropout03
 RUN_NAME=st-a-congosition_naive-$CONFIG-lr$LR
  
-# param_direct_clamp_2avg-init-BETA_elwise-first-0-dropout03
-# param_direct_clamp_2avg-init-BETA_single-first-0-dropout03
-# difflr_beta
-
-# "layer_direct_2avg-init"
-# "layer_direct_2avg-init-dropout03"
-# "layer_direct_clamp_2avg-init"
-# "layer_direct_clamp_2avg-init-dropout03"
+# layer_direct_2avg-init
+# layer_direct_2avg-init-dropout03
+# layer_direct_clamp_2avg-init
+# layer_direct_clamp_2avg-init-dropout03
 
 # layer_elwise_2avg-init
 # layer_elwise_2avg-init-dropout03

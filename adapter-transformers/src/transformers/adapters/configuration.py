@@ -1250,6 +1250,8 @@ class CongositionV1Config(AdapterConfigBase):
     dropout_ratio: float = 0.0
     rescaling_factor: Union[None, tuple] = None
     per_layer: bool = False
+    regularization: bool = False
+    lambda_reg: float = 0.0
 
     @classmethod
     def load(cls, config: Union[dict, str], **kwargs):
@@ -1963,7 +1965,16 @@ class ElWiseCongositionV1Config2AvgInitDropout03(CongositionV1Config):
     omega_init: float = 2 / 12
     clamp: bool = False
     dropout_ratio: float = 0.3
-
+    
+@dataclass(eq=False)
+class ElWiseCongositionV1Config2AvgInitDropout03Reg001(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 768)
+    omega_init: float = 2 / 12
+    clamp: bool = False
+    dropout_ratio: float = 0.3
+    regularization: bool = True
+    lambda_reg: float = 0.01
 
 @dataclass(eq=False)
 class ElWiseCongositionV1ConfigClampAvgInitTanh(CongositionV1Config):
@@ -2142,6 +2153,16 @@ class StaticCongositionV1Config2AvgInitDropout03(CongositionV1Config):
     omega_init: float = 2 / 12
     clamp: bool = False
     dropout_ratio: float = 0.3
+    
+@dataclass(eq=False)
+class StaticCongositionV1Config2AvgInitDropout03Reg001(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 1)
+    omega_init: float = 2 / 12
+    clamp: bool = False
+    dropout_ratio: float = 0.3
+    regularization: bool = True
+    lambda_reg: float = 0.01
 
 @dataclass(eq=False)
 class StaticCongositionV1ConfigClampAvgInitLNBefore(CongositionV1Config):
@@ -2259,6 +2280,16 @@ class StaticLayerwiseConfig2AvgInitDropout03(CongositionV1Config):
     omega_shape: tuple = (12, 1)
     omega_init: float = 2 / 12
     clamp: bool = False
+    
+@dataclass(eq=False)
+class StaticLayerwiseConfig2AvgInitDropout03Reg001(CongositionV1Config):
+    learn_omega: bool = True
+    per_layer: bool = True
+    omega_shape: tuple = (12, 1)
+    omega_init: float = 2 / 12
+    clamp: bool = False
+    regularization: bool = True
+    lambda_reg: float = 0.01
     
 @dataclass(eq=False)
 class StaticLayerwiseConfigClamp2AvgInit(CongositionV1Config):
@@ -2458,6 +2489,10 @@ CONGOSITIONV1_CONFIG_MAP = {
     "layer_elwise_clamp_2avg-init-dropout03": ElwiseLayerwiseConfigClamp2AvgInitDropout03(),
     # LAYER + BETA
     "layer_direct_2avg-init-BETA_single-first-0": StaticLayerwiseConfig2AvgInitBetaFirstSingleInit0(),
+    # REGULARIZATION
+    "param_direct_2avg-init-dropout03-REG001": StaticCongositionV1Config2AvgInitDropout03Reg001(),
+    "param_elwise_2avg-init-dropout03-REG001": ElWiseCongositionV1Config2AvgInitDropout03Reg001(),
+    "layer_direct_2avg-init-dropout03-REG001": StaticLayerwiseConfig2AvgInitDropout03Reg001(),
     
 }
 # for each entry in the map, add another key with key-difflr and the same config class
