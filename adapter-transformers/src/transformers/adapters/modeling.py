@@ -780,6 +780,81 @@ class CongositionV1(nn.Module):
         return self.softmax(x)
 
 
+class FullFusion(nn.Module):
+    def __init__(
+        self,
+        config,
+        dense_size,
+        n_congaters: int,
+    ):
+        super(FullFusion, self).__init__()
+        print(config)
+        self.config = config
+        self.n_congaters = n_congaters
+        self.dense_size = dense_size
+        if self.config["output_omegas"]:
+            self.W = nn.Linear(
+                dense_size * n_congaters,
+                config["omega_shape"][0] * config["omega_shape"][1],
+                bias=True,
+            )
+        else:
+            if self.config["bottleneck"]:
+                self.W = nn.ModuleList(
+                    [
+                        nn.Linear(
+                            dense_size * n_congaters,
+                            dense_size // config["reduction_factor"],
+                            bias=True,
+                        ),
+                        nn.ReLU(),
+                        nn.Linear(
+                            dense_size // config["reduction_factor"],
+                            dense_size,
+                            bias=True,
+                        ),
+                    ]
+                )               
+            else:
+                self.W = nn.Linear(dense_size * n_congaters, dense_size, bias=True)
+        self.W.apply(Adapter.init_bert_weights)
+        if self.config["dropout_ratio"] > 0:
+            self.dropout = nn.Dropout(self.config["dropout_ratio"])
+
+    def forward(self, up_list, residual):
+        # up_list: (batch_size, seq_length, n_congaters, hidden_size)
+        # residual: (batch_size, seq_length, hidden_size)
+        up_list = up_list.reshape(up_list.shape[0], up_list.shape[1], -1)
+        # up_list: (batch_size, seq_length, n_congaters * hidden_size)
+        if self.config["output_omegas"]:
+            omegas = self.W(up_list)
+            if self.config["dropout_ratio"] > 0:
+                omegas = self.dropout(omegas)
+            omegas = omegas.reshape(
+                omegas.shape[0],
+                omegas.shape[1],
+                self.config["omega_shape"][0],
+                self.config["omega_shape"][1],
+            )
+            up_list = up_list.reshape(
+                up_list.shape[0], up_list.shape[1], self.n_congaters, self.dense_size
+            )
+            up_list = up_list * omegas
+            up_list = up_list.sum(dim=2)
+
+        else:
+            if self.config["bottleneck"]:
+                for layer in self.W:
+                    up_list = layer(up_list)
+            else:
+                up_list = self.W(up_list)
+            if self.config["dropout_ratio"] > 0:
+                up_list = self.dropout(up_list)
+        # up_list: (batch_size, seq_length, hidden_size)
+        up_list += residual
+        return up_list
+
+
 class CongositionBase(nn.Module):
     def __init__(
         self,

@@ -1,7 +1,10 @@
-LR=1e-2
-CONFIG=param_elwise_2avg-init-dropout03
-RUN_NAME=st-a-congosition_naive-$CONFIG-lr$LR
+LR=1e-4
+CONFIG=full_fusion_bottleneck-r2
+RUN_NAME=st-a-$CONFIG-lr$LR
 
+# full_fusion-dropout03 + LR 5e-5
+# full_fusion_omega-single
+# full_fusion_omega-single-dropout03
 
 MODEL_NAME=bert-base-uncased
 GPU_ID=0
@@ -25,7 +28,7 @@ if [ ${#SEEDS[@]} -eq 0 ]; then
 fi
 
 
-for TASK in cb copa rte mrpc wsc boolq wic stsb sst2 qnli qqp mnli; do
+for TASK in wic stsb sst2 qnli qqp mnli; do
   for SEED in "${SEEDS[@]}"; do
     # these tasks only run with seeds 0 to 4
     if [ $SEED -gt 4 ] && [ $TASK = "sst2" -o $TASK = "qnli" -o $TASK = "qqp" -o $TASK = "mnli" ]; then

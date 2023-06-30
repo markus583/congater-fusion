@@ -305,14 +305,15 @@ if __name__ == "__main__":
             "--debug_congater",
             "True",
             "--congosition_type",
-            "param_direct_2avg-init-dropout03-REG001",
+            "full_fusion_bottleneck-r2",
             "--fusion_type",
-            "param_direct_2avg-init-dropout03-REG001",
+            "full_fusion_bottleneck-r2",
             # "--learn_omega",
             # "False",
             "--train_probing_head",
             "True",
             # "--omega_grid",
             # "{'mnli': 0.0, 'qqp': 0.0}"
+            # "--fp16",
         ]
     main()

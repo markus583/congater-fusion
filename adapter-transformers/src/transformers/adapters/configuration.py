@@ -1217,9 +1217,10 @@ class AdapterFusionConfig(AdapterConfigBase):
 @dataclass(eq=False)
 class CongositionV1Config(AdapterConfigBase):
     """Base class that models the architecture of an adapter fusion layer."""
-
+    # DUMMY
     fn: bool = False
     query_before_ln: bool = False
+    # GRID, not learned
     qqp: Union[None, float] = None
     mnli: Union[None, float] = None
     qnli: Union[None, float] = None
@@ -1232,6 +1233,7 @@ class CongositionV1Config(AdapterConfigBase):
     sst2: Union[None, float] = None
     stsb: Union[None, float] = None
     boolq: Union[None, float] = None
+    # OMEGA + BETA
     learn_omega: bool = False
     omega_shape: Union[None, tuple] = None
     omega_init: Union[None, float] = None
@@ -1252,6 +1254,12 @@ class CongositionV1Config(AdapterConfigBase):
     per_layer: bool = False
     regularization: bool = False
     lambda_reg: float = 0.0
+    # FULL FUSION
+    full_fusion: bool = False
+    output_omegas: bool = False
+    omega_shape: Union[None, tuple] = None
+    bottleneck: bool = False
+    reduction_factor: Union[None, int] = None
 
     @classmethod
     def load(cls, config: Union[dict, str], **kwargs):
@@ -1967,6 +1975,13 @@ class ElWiseCongositionV1Config2AvgInitDropout03(CongositionV1Config):
     dropout_ratio: float = 0.3
     
 @dataclass(eq=False)
+class ElWiseCongositionV1Config2AvgInit(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: tuple = (12, 768)
+    omega_init: float = 2 / 12
+    clamp: bool = False
+    
+@dataclass(eq=False)
 class ElWiseCongositionV1Config2AvgInitDropout03Reg001(CongositionV1Config):
     learn_omega: bool = True
     omega_shape: tuple = (12, 768)
@@ -2280,6 +2295,7 @@ class StaticLayerwiseConfig2AvgInitDropout03(CongositionV1Config):
     omega_shape: tuple = (12, 1)
     omega_init: float = 2 / 12
     clamp: bool = False
+    dropout_ratio: float = 0.3
     
 @dataclass(eq=False)
 class StaticLayerwiseConfig2AvgInitDropout03Reg001(CongositionV1Config):
@@ -2288,6 +2304,7 @@ class StaticLayerwiseConfig2AvgInitDropout03Reg001(CongositionV1Config):
     omega_shape: tuple = (12, 1)
     omega_init: float = 2 / 12
     clamp: bool = False
+    dropout_ratio: float = 0.3
     regularization: bool = True
     lambda_reg: float = 0.01
     
@@ -2305,6 +2322,7 @@ class StaticLayerwiseConfigClamp2AvgInitDropout03(CongositionV1Config):
     per_layer: bool = True
     omega_shape: tuple = (12, 1)
     omega_init: float = 2 / 12
+    dropout_ratio: float = 0.3
     clamp: bool = True
     
 @dataclass(eq=False)
@@ -2321,6 +2339,7 @@ class ElwiseLayerwiseConfig2AvgInitDropout03(CongositionV1Config):
     per_layer: bool = True
     omega_shape: tuple = (12, 768)
     omega_init: float = 2 / 12
+    dropout_ratio: float = 0.3
     clamp: bool = False
     
 @dataclass(eq=False)
@@ -2338,6 +2357,7 @@ class ElwiseLayerwiseConfigClamp2AvgInitDropout03(CongositionV1Config):
     omega_shape: tuple = (12, 768)
     omega_init: float = 2 / 12
     clamp: bool = True
+    dropout_ratio: float = 0.3
 
 ####################
 # Layerwise + Beta
@@ -2353,6 +2373,94 @@ class StaticLayerwiseConfig2AvgInitBetaFirstSingleInit0(CongositionV1Config):
     clamp: bool = False
     beta_first: bool = True
     beta_init: float = 0.0
+    
+@dataclass(eq=False)
+class StaticLayerwiseConfig2AvgInitBetaFirstSingleInit0Dropout03(CongositionV1Config):
+    learn_omega: bool = True
+    learn_beta: bool = True
+    per_layer: bool = True
+    omega_shape: tuple = (12, 1)
+    beta_shape: tuple = (12, 1)
+    omega_init: float = 2 / 12
+    clamp: bool = False
+    beta_first: bool = True
+    beta_init: float = 0.0
+    dropout_ratio: float = 0.3
+    
+@dataclass(eq=False)
+class ElwiseLayerwiseConfig2AvgInitBetaFirstSingleInit0(CongositionV1Config):
+    learn_omega: bool = True
+    learn_beta: bool = True
+    per_layer: bool = True
+    omega_shape: tuple = (12, 768)
+    beta_shape: tuple = (12, 1)
+    omega_init: float = 2 / 12
+    clamp: bool = False
+    beta_first: bool = True
+    beta_init: float = 0.0
+    
+@dataclass(eq=False)
+class ElwiseLayerwiseConfig2AvgInitBetaFirstSingleInit0Dropout03(CongositionV1Config):
+    learn_omega: bool = True
+    learn_beta: bool = True
+    per_layer: bool = True
+    omega_shape: tuple = (12, 768)
+    beta_shape: tuple = (12, 1)
+    omega_init: float = 2 / 12
+    clamp: bool = False
+    beta_first: bool = True
+    beta_init: float = 0.0
+    dropout_ratio: float = 0.3
+    
+@dataclass(eq=False)
+class StaticLayerwiseConfig2AvgInitBetaFirstElwiseInit0(CongositionV1Config):
+    learn_omega: bool = True
+    learn_beta: bool = True
+    per_layer: bool = True
+    omega_shape: tuple = (12, 1)
+    beta_shape: tuple = (12, 768)
+    omega_init: float = 2 / 12
+    clamp: bool = False
+    beta_first: bool = True
+    beta_init: float = 0.0
+    
+@dataclass(eq=False)
+class StaticLayerwiseConfig2AvgInitBetaFirstElwiseInit0Dropout03(CongositionV1Config):
+    learn_omega: bool = True
+    learn_beta: bool = True
+    per_layer: bool = True
+    omega_shape: tuple = (12, 1)
+    beta_shape: tuple = (12, 768)
+    omega_init: float = 2 / 12
+    clamp: bool = False
+    beta_first: bool = True
+    beta_init: float = 0.0
+    dropout_ratio: float = 0.3
+    
+@dataclass(eq=False)
+class ElwiseLayerwiseConfig2AvgInitBetaFirstElwiseInit0(CongositionV1Config):
+    learn_omega: bool = True
+    learn_beta: bool = True
+    per_layer: bool = True
+    omega_shape: tuple = (12, 768)
+    beta_shape: tuple = (12, 768)
+    omega_init: float = 2 / 12
+    clamp: bool = False
+    beta_first: bool = True
+    beta_init: float = 0.0
+    
+@dataclass(eq=False)
+class ElwiseLayerwiseConfig2AvgInitBetaFirstElwiseInit0Dropout03(CongositionV1Config):
+    learn_omega: bool = True
+    learn_beta: bool = True
+    per_layer: bool = True
+    omega_shape: tuple = (12, 768)
+    beta_shape: tuple = (12, 768)
+    omega_init: float = 2 / 12
+    clamp: bool = False
+    beta_first: bool = True
+    beta_init: float = 0.0
+    dropout_ratio: float = 0.3
 
 
 @dataclass(eq=False)
@@ -2371,7 +2479,66 @@ class OmegaGrid(CongositionV1Config):
     sst2: Union[None, float] = None
     stsb: Union[None, float] = None
     boolq: Union[None, float] = None
-
+    
+@dataclass(eq=False)
+class FullFusion(CongositionV1Config):
+    full_fusion: bool = True
+    
+@dataclass(eq=False)
+class FullFusionBottleneck2(CongositionV1Config):
+    full_fusion: bool = True
+    bottleneck: bool = True
+    reduction_factor: int = 2
+    
+@dataclass(eq=False)
+class FullFusionBottleneck4(CongositionV1Config):
+    full_fusion: bool = True
+    bottleneck: bool = True
+    reduction_factor: int = 4
+    
+@dataclass(eq=False)
+class FullFusionBottleneck8(CongositionV1Config):
+    full_fusion: bool = True
+    bottleneck: bool = True
+    reduction_factor: int = 8
+    
+@dataclass(eq=False)
+class FullFusionBottleneck16(CongositionV1Config):
+    full_fusion: bool = True
+    bottleneck: bool = True
+    reduction_factor: int = 16
+    
+@dataclass(eq=False)
+class FullFusionOmegaSingle(CongositionV1Config):
+    full_fusion: bool = True
+    output_omegas: bool = True
+    omega_shape: tuple = (12, 1)
+    
+@dataclass(eq=False)
+class FullFusionOmegaElwise(CongositionV1Config):
+    full_fusion: bool = True
+    output_omegas: bool = True
+    omega_shape: tuple = (12, 768)
+    
+@dataclass(eq=False)
+class FullFusionDropout03(CongositionV1Config):
+    full_fusion: bool = True
+    dropout_ratio: float = 0.3
+    
+@dataclass(eq=False)
+class FullFusionOmegaSingleDropout03(CongositionV1Config):
+    full_fusion: bool = True
+    output_omegas: bool = True
+    omega_shape: tuple = (12, 1)
+    dropout_ratio: float = 0.3
+    
+@dataclass(eq=False)
+class FullFusionOmegaElwiseDropout03(CongositionV1Config):
+    full_fusion: bool = True
+    output_omegas: bool = True
+    omega_shape: tuple = (12, 768)
+    dropout_ratio: float = 0.3
+    
 
 ADAPTERFUSION_CONFIG_MAP = {
     "dynamic_omega": DynamicAdapterFusionConfigOmega(),
@@ -2469,6 +2636,7 @@ CONGOSITIONV1_CONFIG_MAP = {
     "param_elwise_clamp_2avg-init-rescale12": ElWiseCongositionV1ConfigClamp2AvgInitRescale12(),
     "param_elwise_2avg-init-dropout025": ElWiseCongositionV1Config2AvgInitDropout025(),
     "param_elwise_2avg-init-dropout03": ElWiseCongositionV1Config2AvgInitDropout03(),
+    "param_elwise_2avg-init": ElWiseCongositionV1Config2AvgInit(),
     # ELWISE + BETA
     "param_elwise_clamp_2avg-init-BETA_elwise-first-0": ElWiseCongositionV1ConfigClamp2AvgInitBetaFirstElwiseInit0(),
     "param_elwise_clamp_2avg-init-BETA_elwise-after-0": ElWiseCongositionV1ConfigClamp2AvgInitBetaAfterElwiseInit0(),
@@ -2489,10 +2657,29 @@ CONGOSITIONV1_CONFIG_MAP = {
     "layer_elwise_clamp_2avg-init-dropout03": ElwiseLayerwiseConfigClamp2AvgInitDropout03(),
     # LAYER + BETA
     "layer_direct_2avg-init-BETA_single-first-0": StaticLayerwiseConfig2AvgInitBetaFirstSingleInit0(),
+    "layer_elwise_2avg-init-BETA_single-first-0": ElwiseLayerwiseConfig2AvgInitBetaFirstSingleInit0(),
+    "layer_direct_2avg-init-BETA_single-first-0-dropout03": StaticLayerwiseConfig2AvgInitBetaFirstSingleInit0Dropout03(),
+    "layer_elwise_2avg-init-BETA_single-first-0-dropout03": ElwiseLayerwiseConfig2AvgInitBetaFirstSingleInit0Dropout03(),
+    "layer_direct_2avg-init-BETA_elwise-first-0": StaticLayerwiseConfig2AvgInitBetaFirstElwiseInit0(),
+    "layer_elwise_2avg-init-BETA_elwise-first-0": ElwiseLayerwiseConfig2AvgInitBetaFirstElwiseInit0(),
+    "layer_direct_2avg-init-BETA_elwise-first-0-dropout03": StaticLayerwiseConfig2AvgInitBetaFirstElwiseInit0Dropout03(),
+    "layer_elwise_2avg-init-BETA_elwise-first-0-dropout03": ElwiseLayerwiseConfig2AvgInitBetaFirstElwiseInit0Dropout03(),
     # REGULARIZATION
     "param_direct_2avg-init-dropout03-REG001": StaticCongositionV1Config2AvgInitDropout03Reg001(),
     "param_elwise_2avg-init-dropout03-REG001": ElWiseCongositionV1Config2AvgInitDropout03Reg001(),
     "layer_direct_2avg-init-dropout03-REG001": StaticLayerwiseConfig2AvgInitDropout03Reg001(),
+    # FULL FUSION
+    "full_fusion": FullFusion(),
+    "full_fusion_omega-single": FullFusionOmegaSingle(),
+    "full_fusion_omega-elwise": FullFusionOmegaElwise(),
+    "full_fusion-dropout03": FullFusionDropout03(),
+    "full_fusion_omega-single-dropout03": FullFusionOmegaSingleDropout03(),
+    "full_fusion_omega-elwise-dropout03": FullFusionOmegaElwiseDropout03(),
+    "full_fusion_bottleneck-r2": FullFusionBottleneck2(),
+    "full_fusion_bottleneck-r4": FullFusionBottleneck4(),
+    "full_fusion_bottleneck-r8": FullFusionBottleneck8(),
+    "full_fusion_bottleneck-r16": FullFusionBottleneck16(),
+    
     
 }
 # for each entry in the map, add another key with key-difflr and the same config class
