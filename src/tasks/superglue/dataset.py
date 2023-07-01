@@ -148,6 +148,10 @@ class SuperGlueDataset:
             if data_args.task_name == "mnli":
                 self.test_dataset = raw_datasets["validation_matched"]
                 self.test_dataset_mm = raw_datasets["validation_mismatched"]
+            elif data_args.task_name == "record":
+                self.train_dataset = train_dataset
+                self.eval_dataset = raw_datasets["validation"]
+                self.test_dataset = raw_datasets["validation"]
             else:
                 self.test_dataset = raw_datasets["validation"]
 
@@ -226,8 +230,8 @@ class SuperGlueDataset:
         # MultiRC
         if self.data_args.task_name == "multirc":
             examples["question_answer"] = []
-            for question, asnwer in zip(examples["question"], examples["answer"]):
-                examples["question_answer"].append(f"{question} {asnwer}")
+            for question, answer in zip(examples["question"], examples["answer"]):
+                examples["question_answer"].append(f"{question} {answer}")
 
         # COPA
         if self.data_args.task_name == "copa":
@@ -264,8 +268,13 @@ class SuperGlueDataset:
             if self.sentence2_key is None
             else (examples[self.sentence1_key], examples[self.sentence2_key])
         )
+        if self.data_args.task_name == "multirc":
+            max_length = self.max_seq_length * 2
+        else:
+            max_length = self.max_seq_length
+        print("max_length", max_length)
         result = self.tokenizer(
-            *args, padding=self.padding, max_length=self.max_seq_length, truncation=True
+            *args, padding=self.padding, max_length=max_length, truncation=True
         )
 
         return result
@@ -274,9 +283,10 @@ class SuperGlueDataset:
         print("compute metrics now")
         preds = p.predictions[0] if isinstance(p.predictions, tuple) else p.predictions
         preds = np.argmax(preds, axis=1)
+        print(preds.sum())
 
         if self.data_args.task_name == "record":
-            return self.reocrd_compute_metrics(p)
+            return self.record_compute_metrics(p)
 
         if self.data_args.task_name == "multirc":
             from sklearn.metrics import f1_score
@@ -293,13 +303,13 @@ class SuperGlueDataset:
         else:
             return {"accuracy": (preds == p.label_ids).astype(np.float32).mean().item()}
 
-    def reocrd_compute_metrics(self, p: EvalPrediction):
+    def record_compute_metrics(self, p: EvalPrediction):
         from tasks.superglue.utils import (
             f1_score,
             exact_match_score,
             metric_max_over_ground_truths,
         )
-        print("compute metrics now, record")
+        print("compute metrics now, RECORD")
         probs = p.predictions[0] if isinstance(p.predictions, tuple) else p.predictions
         examples = self.eval_dataset
         qid2pred = defaultdict(list)
@@ -329,7 +339,7 @@ class SuperGlueDataset:
             "question_id": list(),
             "input_ids": list(),
             "attention_mask": list(),
-            "token_type_ids": list(),
+            # "token_type_ids": list(),
             "label": list(),
             "entity": list(),
             "answers": list(),
@@ -349,19 +359,18 @@ class SuperGlueDataset:
                     passage,
                     question,
                     padding=self.padding,
-                    max_length=self.max_seq_length,
-                    truncation=True,
+                    max_length=self.max_seq_length * 2,
+                    truncation="only_first",
                 )
                 label = 1 if ent in answers else 0
 
                 results["input_ids"].append(result["input_ids"])
                 results["attention_mask"].append(result["attention_mask"])
-                if "token_type_ids" in result:
-                    results["token_type_ids"].append(result["token_type_ids"])
+                # if "token_type_ids" in result:
+                #     results["token_type_ids"].append(result["token_type_ids"])
                 results["label"].append(label)
                 results["index"].append(index)
                 results["question_id"].append(index["query"])
                 results["entity"].append(ent)
                 results["answers"].append(answers)
-
         return results

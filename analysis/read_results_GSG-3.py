@@ -18,7 +18,7 @@ OUT_FILES = [
     "ST-A-FUSION.csv",
     "ST-A-FUSION-30.csv",
     "ST-A-FUSION-30-LR1e-5.csv",
-    "ST-A-FUSION-30-LR5e-4.csv",
+    "ST-A-FUSION-30-LR5e-4.csv", 
     "ST-A-FUSION-30-static-LR5e-4.csv",
     "ST-A-FUSION-30-static-LR5e-5.csv",
     "st-a-congosition_naive-sigmoid_init-2_lr5e-2.csv",

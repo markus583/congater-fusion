@@ -154,17 +154,6 @@ def get_trainer(args):
             model.train_adapter_fusion(
                 adapter_setup, unfreeze_adapters=fusion_args.fusion_unfreeze_adapters
             )
-            # if data_args.task_name == "wsc":
-                # if dataset.multiple_choice:
-                #     model.add_multiple_choice_head(data_args.task_name, num_choices=2)
-                # else:
-                #     model.add_classification_head(
-                #         data_args.task_name,
-                #         num_labels=dataset.num_labels,
-                #         id2label={i: v for i, v in enumerate(dataset.label_list)}
-                #         if not dataset.is_regression
-                #         else None,
-                #     )
         else:
             model.add_adapter_fusion(adapter_setup[0], fusion_args.fusion_type)
             model.train_adapter_fusion(
@@ -285,14 +274,7 @@ def get_trainer(args):
     else:
         early_stopping_callback = []
 
-    # wandb callback
-    from transformers.integrations import WandbCallback
-
-    # os.environ["WANDB_WATCH"] = "all"
-    # os.environ["WANDB_LOG_MODEL "] = "true"
-    # wandb_callback = WandbCallback()
-
-    logger.info(summary(model, depth=2))
+    logger.info(summary(model, depth=10))
 
     trainer = trainer_cls(
         model=model,

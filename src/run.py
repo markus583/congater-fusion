@@ -25,10 +25,10 @@ require_version(
     "datasets>=1.8.0",
     "To fix: pip install -r examples/pytorch/text-classification/requirements.txt",
 )
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
+# os.environ["TOKENIZERS_PARALLELISM"] = "false"
 os.environ["WANDB_PROJECT"] = "THESIS_st-a"
-os.environ["WANDB_WATCH"] = "all"
-os.environ["WANDB_LOG_MODEL "] = "true"
+# os.environ["WANDB_WATCH"] = "all"
+# os.environ["WANDB_LOG_MODEL "] = "true"
 logger = logging.getLogger(__name__)
 
 
