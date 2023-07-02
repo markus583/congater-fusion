@@ -330,7 +330,7 @@ class AdapterTrainer(Trainer):
             for fusion in model.config.adapters.fusions:
                 fusion_dir = os.path.join(self.state.best_model_checkpoint, fusion)
                 if os.path.exists(fusion_dir):
-                    if len(model.bert.encoder.layer[0].output.congosition_v1_layer) > 0:
+                    if len(model.base_model.encoder.layer[0].output.congosition_v1_layer) > 0:
                         model.load_congosition(fusion_dir)
                     else:
                         model.load_adapter_fusion(fusion_dir)

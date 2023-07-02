@@ -967,8 +967,8 @@ class ModelAdaptersMixin(PushAdapterToHubMixin, ABC):
         # set weights in loader.model.bert.encoder.layer[i].output.adapters.mrpc.omega to 0
         # since omega is parameter
         if config is not None:
-            for i in range(len(loader.model.bert.encoder.layer)):
-                loader.model.bert.encoder.layer[i].output.adapters[
+            for i in range(len(loader.model.base_model.encoder.layer)):
+                loader.model.base_model.encoder.layer[i].output.adapters[
                     load_name
                 ].omega.data.fill_(config.omega)
 

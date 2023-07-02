@@ -1,5 +1,0 @@
-task,train_pct,n_runs,best_seed,seeds,accuracy_MEAN,accuracy_STD,accuracy_mm_MEAN,accuracy_mm_STD,pearson_MEAN,pearson_STD,spearmanr_MEAN,spearmanr_STD,matthews_correlation_MEAN,matthews_correlation_STD,f1_MEAN,f1_STD
-cb,100,10,8,"[8, 2, 4, 6, 3, 9, 0, 7, 5, 1]",0.8482142857142858,0.01517565331426423,,,,,,,,,0.7506705532062902,0.03352139557558641
-mrpc,10,0,,[],,,,,,,,,,,,
-mrpc,25,0,,[],,,,,,,,,,,,
-mrpc,50,0,,[],,,,,,,,,,,,
