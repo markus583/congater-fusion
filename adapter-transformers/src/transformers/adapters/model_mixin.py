@@ -1106,7 +1106,7 @@ class ModelAdaptersMixin(PushAdapterToHubMixin, ABC):
         """
         os.makedirs(save_directory, exist_ok=True)
         for name in self.config.adapters.fusions:
-            if len(self.bert.encoder.layer[0].output.congosition_v1_layer) > 0:
+            if len(self.base_model.encoder.layer[0].output.congosition_v1_layer) > 0:
                 adapter_fusion_config = self.config.adapters.get_congosition_v1(name)
             else:
                 adapter_fusion_config = self.config.adapters.get_fusion(name)
@@ -1116,7 +1116,7 @@ class ModelAdaptersMixin(PushAdapterToHubMixin, ABC):
                 meta_dict.update({"config_id": h})
             else:
                 meta_dict = {"config_id": h}
-            if len(self.bert.encoder.layer[0].output.congosition_v1_layer) > 0:
+            if len(self.base_model.encoder.layer[0].output.congosition_v1_layer) > 0:
                 self.save_congosition(
                     save_path,
                     name,
