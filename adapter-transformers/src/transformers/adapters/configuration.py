@@ -1938,6 +1938,14 @@ class VectorConfig2AvgInitDropout03(CongositionV1Config):
     dropout_ratio: float = 0.3
     
 @dataclass(eq=False)
+class VectorConfigAvgInitDropout03(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: str = "vector"
+    omega_init_type: str = "avg"
+    omega_init_scale: float = 1.
+    dropout_ratio: float = 0.3
+    
+@dataclass(eq=False)
 class ScalarConfig2AvgInitDropout03(CongositionV1Config):
     learn_omega: bool = True
     omega_shape: str = "scalar"
@@ -1953,6 +1961,7 @@ CONGOSITIONV1_CONFIG_MAP = {
     "sharedL_vector_2_avg_d03": VectorLayerwiseConfig2AvgInitDropout03(),
     "sharedL_scalar_2_avg_d03": StaticLayerwiseConfig2AvgInitDropout03(),
     "splitL__vector_2_avg_d03": VectorConfig2AvgInitDropout03(),
+    "splitL__vector_avg_d03": VectorConfigAvgInitDropout03(),
     "splitL__scalar_2_avg_d03": ScalarConfig2AvgInitDropout03(),
     
     

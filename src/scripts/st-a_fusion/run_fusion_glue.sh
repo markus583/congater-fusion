@@ -22,18 +22,12 @@ if [ ${#SEEDS[@]} -eq 0 ]; then
 fi
 
 
-for TASK in mrpc rte cola sst2 stsb qnli mnli qqp; do
+for TASK in mrpc rte cola stsb sst2 qnli mnli qqp; do
   for SEED in "${SEEDS[@]}"; do
     # these tasks only run with seeds 0 to 4
     if [ $SEED -gt 4 ] && [ $TASK = "sst2" -o $TASK = "qnli" -o $TASK = "qqp" -o $TASK = "mnli" ]; then
       echo "Skipping $TASK with seed $SEED"
       continue
-    fi
-
-    if [ $TASK = "copa" ]; then
-      GRADIENT_CHECKPOINTING="--gradient_checkpointing"
-    else
-      GRADIENT_CHECKPOINTING=""
     fi
 
     for TRAIN_PCT in 100; do
@@ -69,8 +63,7 @@ for TASK in mrpc rte cola sst2 stsb qnli mnli qqp; do
       --seed $SEED \
       --overwrite_output_dir \
       --fp16 \
-      --fusion_type dynamic \
-      $GRADIENT_CHECKPOINTING
+      --fusion_type dynamic
 
       rm -rf ../../runs/$RUN_NAME/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED/checkpoint*
     done

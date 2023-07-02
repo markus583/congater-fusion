@@ -93,10 +93,10 @@ def detect_last_checkpoint(training_arguments: transformers.TrainingArguments) -
         checkpoint = get_last_checkpoint(training_arguments.output_dir)
         if checkpoint is None and len(os.listdir(training_arguments.output_dir)) > 0:
             raise ValueError(
-            f"Output directory ({training_arguments.output_dir}) already exists and is not empty. "
+                f"Output directory ({training_arguments.output_dir}) already exists and is not empty. "
                 "Use --overwrite_output_dir to overcome."
             )
-            
+
         elif (
             checkpoint is not None and training_arguments.resume_from_checkpoint is None
         ):
@@ -129,7 +129,14 @@ def setup_logging(training_args: transformers.TrainingArguments) -> None:
 
 def main() -> None:
     args = get_args()
-    model_args, data_args, training_args, adapter_args, fusion_args, congater_args = args
+    (
+        model_args,
+        data_args,
+        training_args,
+        adapter_args,
+        fusion_args,
+        congater_args,
+    ) = args
 
     if adapter_args.train_adapter:
         if adapter_args.adapter_config == "pfeiffer":
@@ -137,7 +144,10 @@ def main() -> None:
         else:
             WANDBPROJECT = "THESIS_ct_1-a"
     elif fusion_args.train_fusion:
-        WANDBPROJECT = "THESIS_st-a-fusion"
+        if congater_args.congosition_type:
+            WANDBPROJECT = "THESIS_congosition"
+        else:
+            WANDBPROJECT = "THESIS_st-a-fusion"
     elif not adapter_args.train_adapter and not fusion_args.train_fusion:
         WANDBPROJECT = "THESIS_full"
     else:
@@ -164,7 +174,7 @@ def main() -> None:
             )
     print("dataset_name", data_args.dataset_name)
     print("task_name", data_args.task_name)
-        
+
     if not data_args.eval_adapter:
         last_checkpoint = detect_last_checkpoint(training_arguments=training_args)
     else:
@@ -191,12 +201,14 @@ def main() -> None:
         if congater_args.congosition_type is not None:
             model.save_congosition(training_args.output_dir, ",".join(adapter_setup[0]))
         else:
-            model.save_adapter_fusion(training_args.output_dir, ",".join(adapter_setup[0]))
+            model.save_adapter_fusion(
+                training_args.output_dir, ",".join(adapter_setup[0])
+            )
     elif adapter_args.train_adapter:
         logger.info("Saving adapter.")
         if data_args.source_task:
             model.save_adapter(training_args.output_dir, data_args.source_task)
-        else:
+        elif not congater_args.congosition_type:
             model.save_adapter(training_args.output_dir, data_args.task_name)
 
     if training_args.do_eval:
