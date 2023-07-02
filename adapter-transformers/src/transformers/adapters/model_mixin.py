@@ -748,7 +748,7 @@ class ModelAdaptersMixin(PushAdapterToHubMixin, ABC):
             self.base_model.shared_parameters[
                 ",".join(adapter_names)
             ] = init_shared_parameters_congosition(
-                congosition_config, self.config.hidden_size, self.device
+                congosition_config, self.config.hidden_size, len(adapter_names), self.device
             )
 
     def delete_adapter(self, adapter_name: str):

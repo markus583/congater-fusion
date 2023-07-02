@@ -1164,7 +1164,7 @@ class AdapterFusionConfig(AdapterConfigBase):
     w_omega: bool = False
     w_omega_input: str = "key"
     w_omega_sigmoid: bool = False
-    omega_init: Union[None, float] = None
+    omega_init_scale: Union[None, float] = None
     clamp_omega: Union[None, float] = None
     ttsigmoid_omega_offset: Union[None, float] = None
     value_initialized: float = 1.0
@@ -1212,79 +1212,6 @@ class AdapterFusionConfig(AdapterConfigBase):
             config_dict = config_dict.to_dict()
         config_dict.update(kwargs)
         return AdapterFusionConfig.from_dict(config_dict)
-
-
-@dataclass(eq=False)
-class CongositionV1Config(AdapterConfigBase):
-    """Base class that models the architecture of an adapter fusion layer."""
-    # DUMMY
-    fn: bool = False
-    query_before_ln: bool = False
-    # GRID, not learned
-    qqp: Union[None, float] = None
-    mnli: Union[None, float] = None
-    qnli: Union[None, float] = None
-    cb: Union[None, float] = None
-    copa: Union[None, float] = None
-    rte: Union[None, float] = None
-    mrpc: Union[None, float] = None
-    wic: Union[None, float] = None
-    wsc: Union[None, float] = None
-    sst2: Union[None, float] = None
-    stsb: Union[None, float] = None
-    boolq: Union[None, float] = None
-    # OMEGA + BETA
-    learn_omega: bool = False
-    omega_shape: Union[None, tuple] = None
-    omega_init: Union[None, float] = None
-    learn_beta: bool = False
-    beta_shape: Union[None, tuple] = None
-    beta_init: Union[None, float] = None
-    beta_first: bool = False
-    sigmoid: bool = False
-    sigmoid_temperature: float = 1.0
-    clamp: bool = False
-    uplift_target: bool = False
-    ln: bool = False
-    ln_before_residual: bool = True
-    tanh: bool = False
-    residual: bool = True
-    dropout_ratio: float = 0.0
-    rescaling_factor: Union[None, tuple] = None
-    per_layer: bool = False
-    regularization: bool = False
-    lambda_reg: float = 0.0
-    # FULL FUSION
-    full_fusion: bool = False
-    output_omegas: bool = False
-    omega_shape: Union[None, tuple] = None
-    bottleneck: bool = False
-    reduction_factor: Union[None, int] = None
-
-    @classmethod
-    def load(cls, config: Union[dict, str], **kwargs):
-        """
-        Loads a given adapter fusion configuration specifier into a full AdapterFusionConfig instance.
-
-        Args:
-            config (Union[dict, str]): The configuration to load. Can be either:
-
-                - a dictionary representing the full config
-                - an identifier string available in ADAPTERFUSION_CONFIG_MAP
-                - the path to a file containing a full adapter fusion configuration
-
-        Returns:
-            dict: The resolved adapter fusion configuration dictionary.
-        """
-        # currently storing AdapterFusion weights on AdapterHub is not supported.
-        config_dict = resolve_adapter_config(
-            config, local_map=CONGOSITIONV1_CONFIG_MAP, try_loading_from_hub=False
-        )
-        # convert back to dict to allow attr overrides
-        if isinstance(config_dict, CongositionV1Config):
-            config_dict = config_dict.to_dict()
-        config_dict.update(kwargs)
-        return CongositionV1Config.from_dict(config_dict)
 
 
 @dataclass(eq=False)
@@ -1782,685 +1709,130 @@ class DynamicAdapterFusionConfigOmega(AdapterFusionConfig):
     value_before_softmax: bool = True
     value_initialized: str = True
     learn_omega: bool = True
-
-
-@dataclass(eq=False)
-class StaticCongositionV1Config(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 0.5
-
-
-@dataclass(eq=False)
-class StaticCongositionV1ConfigAvgInit(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 1 / 12
-
-@dataclass(eq=False)
-class StaticCongositionV1ConfigSigmoid(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = -2.0
-    sigmoid: bool = True
-
-
-@dataclass(eq=False)
-class StaticCongositionV1ConfigSigmoidAvgInit(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = -2.3978952728
-    sigmoid: bool = True
     
-# BETA
-@dataclass(eq=False)
-class StaticCongositionV1ConfigClamp2AvgInitBetaFirstElwiseInit0(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 2 / 12
-    clamp: bool = True
-    learn_beta: bool = True
-    beta_shape: tuple = (12, 768)
-    beta_init: float = 0.0
-    beta_first: bool = True
-    
-@dataclass(eq=False)
-class StaticCongositionV1ConfigClamp2AvgInitBetaFirstSingleInit0(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 2 / 12
-    clamp: bool = True
-    learn_beta: bool = True
-    beta_shape: tuple = (12, 1)
-    beta_init: float = 0.0
-    beta_first: bool = True
-    
-@dataclass(eq=False)
-class StaticCongositionV1ConfigClamp2AvgInitBetaFirstElwiseInit0Dropout03(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 2 / 12
-    clamp: bool = True
-    learn_beta: bool = True
-    beta_shape: tuple = (12, 768)
-    beta_init: float = 0.0
-    beta_first: bool = True
-    dropout_ratio: float = 0.3
-    
-@dataclass(eq=False)
-class StaticCongositionV1ConfigClamp2AvgInitBetaFirstSingleInit0Dropout03(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 2 / 12
-    clamp: bool = True
-    learn_beta: bool = True
-    beta_shape: tuple = (12, 1)
-    beta_init: float = 0.0
-    beta_first: bool = True
-    dropout_ratio: float = 0.3
-
-
-# -----------------
-# ElWise
-# -----------------
-
+ADAPTERFUSION_CONFIG_MAP = {
+    "dynamic_omega": DynamicAdapterFusionConfigOmega(),
+    "dynamic_cv2": DynamicAdapterFusionConfigCV2(),
+    #
+    "static": StaticAdapterFusionConfig(),
+    "dynamic": DynamicAdapterFusionConfig(),
+    "dynamic_nd": DynamicAdapterFusionConfigND(),
+    #
+    "dynamic_nd_sigmoid": DynamicAdapterFusionConfigNDSigmoid(),
+    "dynamic_nd_sigmoid_value_init_avg": DynamicAdapterFusionConfigNDSigmoidValueInitAvg(),
+    #
+    "dynamic_congaterV5": DynamicCongaterV5FusionConfig(),
+    "dynamic_congaterV5_value_after": DynamicCongaterV5FusionConfigValueAfter(),
+    "dynamic_congaterV0": DynamicCongaterV0FusionConfig(),
+    #
+    "dynamic_congaterV5_double_tt": DynamicCongaterV5FusionConfigDoubleTT(),
+    "dynamic_congaterV5_double_tt_value_after": DynamicCongaterV5FusionConfigDoubleTTValueAfter(),
+    "dynamic_congaterV0_double_tt": DynamicCongaterV0FusionConfigDoubleTT(),
+    #
+    "dynamic_congaterV5_nd": DynamicCongaterV5FusionConfigND(),
+    "dynamic_congaterV5_nd_sigmoid": DynamicCongaterV5FusionConfigNDSigmoid(),
+    "dynamic_congaterV5_nd_sigmoid_value_init_avg": DynamicCongaterV5FusionConfigNDSigmoidValueInitAvg(),
+    "dynamic_congaterV5_nd_sigmoid_target_tanh": DynamicCongaterV5FusionConfigNDSigmoidTargetTanh(),
+    "dynamic_congaterV5_double_tt_nd_sigmoid_target_tanh": DynamicCongaterV5FusionConfigDoubleTTNDSigmoidTargetTanh(),
+    "dynamic_congaterV5_nd_sigmoid_value_init_avg_target_tanh": DynamicCongaterV5FusionConfigNDSigmoidTargetTanhValueInitAvg(),
+    #
+    "dynamic_congaterV5_scale_dk": DynamicCongaterV5FusionConfigScaleDk(),
+    "dynamic_congaterV5_value_normal": DynamicCongaterV5FusionConfigValueNormal(),
+    #
+    "dynamic_congaterV0_omega": DynamicCongaterV0FusionConfigOmega(),
+    "dynamic_congaterV0_omega_normal5": DynamicCongaterV0FusionConfigOmegaNormal5(),
+    "dynamic_congaterV0_omega_clamp1": DynamicCongaterV0FusionConfigOmegaClamp1(),
+    "dynamic_congaterV0_omega_normal0_plus2": DynamicCongaterV0FusionConfigOmegaNormal0Plus2(),
+    "dynamic_congaterV5_omega": DynamicCongaterV5FusionConfigOmega(),
+    "dynamic_congaterV5_omega_normal0_minus1": DynamicCongaterV5FusionConfigOmegaMinus1(),
+    "dynamic_congaterV5_omega_normal0_minus1_softmax": DynamicCongaterV5FusionConfigOmegaMinus1Softmax(),
+    "dynamic_congaterV5_omega_normal0_minus1_12only": DynamicCongaterV5FusionConfigOmegaMinus1_12only(),
+    "dynamic_congaterV5_omega_normal0_minus1_BIG": DynamicCongaterV5FusionConfigOmegaMinus1_BIG(),
+    "dynamic_congaterV5_omega_normal0_minus1_MID": DynamicCongaterV5FusionConfigOmegaMinus1_MID(),
+    "dynamic_congaterV5_omega_normal0_minus1_difflr": DynamicCongaterV5FusionConfigOmegaDiffLR(),
+    "dynamic_congaterV5_omega_normal0_minus1_V3": DynamicCongaterV5FusionConfigOmegaMinus1V3(),
+    "dynamic_congaterV5_omega_normal0_minus1_att-as-omega": DynamicCongaterV5FusionConfigAttAsOmega(),
+    "dynamic_congaterV5_omega_normal0_minus1_att-as-omega-MEAN": DynamicCongaterV5FusionConfigAttAsOmegaMEAN(),
+    #
+    "dynamic_congaterV5_Womega": DynamicCongaterV5FusionConfigWOmega(),
+    "dynamic_congaterV5_WomegaVN": DynamicCongaterV5FusionConfigWOmegaVN(),
+    "dynamic_congaterV5_Womega_sigmoid": DynamicCongaterV5FusionConfigWOmegaSigmoid(),
+}
 
 @dataclass(eq=False)
-class ElWiseCongositionV1ConfigSigmoidAvgInit(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = -2.3978952728
-    sigmoid: bool = True
-
-
-@dataclass(eq=False)
-class ElWiseCongositionV1ConfigClampAvgInit(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 1 / 12
-    clamp: bool = True
-
-
-@dataclass(eq=False)
-class ElWiseCongositionV1ConfigClamp2AvgInitRescale1(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    clamp: bool = True
-    rescaling_factor: tuple = (1, 1)
-
-
-@dataclass(eq=False)
-class ElWiseCongositionV1ConfigClamp2AvgInitRescale12(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    clamp: bool = True
-    rescaling_factor: tuple = (12, 1)
-
-
-@dataclass(eq=False)
-class ElWiseCongositionV1ConfigClamp2AvgInit(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    clamp: bool = True
-
-
-@dataclass(eq=False)
-class ElWiseCongositionV1ConfigClamp3AvgInit(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 3 / 12
-    clamp: bool = True
-
-
-@dataclass(eq=False)
-class ElWiseCongositionV1ConfigClamp2AvgInitDropout01(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    clamp: bool = True
-    dropout_ratio: float = 0.1
-
-
-@dataclass(eq=False)
-class ElWiseCongositionV1ConfigClamp2AvgInitDropout025(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    clamp: bool = True
-    dropout_ratio: float = 0.25
-    
-@dataclass(eq=False)
-class ElWiseCongositionV1ConfigClamp2AvgInitDropout03(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    clamp: bool = True
-    dropout_ratio: float = 0.3
-
-@dataclass(eq=False)
-class ElWiseCongositionV1ConfigClamp2AvgInitDropout04(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    clamp: bool = True
-    dropout_ratio: float = 0.4
-
-
-@dataclass(eq=False)
-class ElWiseCongositionV1ConfigClamp2AvgInitDropout05(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    clamp: bool = True
-    dropout_ratio: float = 0.5
-
-
-@dataclass(eq=False)
-class ElWiseCongositionV1Config2AvgInitDropout025(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
+class CongositionV1Config(AdapterConfigBase):
+    """Base class that models the architecture of an adapter fusion layer."""
+    # DUMMY
+    fn: bool = False
+    query_before_ln: bool = False
+    # GRID, not learned
+    qqp: Union[None, float] = None
+    mnli: Union[None, float] = None
+    qnli: Union[None, float] = None
+    cb: Union[None, float] = None
+    copa: Union[None, float] = None
+    rte: Union[None, float] = None
+    mrpc: Union[None, float] = None
+    wic: Union[None, float] = None
+    wsc: Union[None, float] = None
+    sst2: Union[None, float] = None
+    stsb: Union[None, float] = None
+    boolq: Union[None, float] = None
+    # OMEGA + BETA
+    learn_omega: bool = False
+    omega_shape: Union[None, str] = None
+    omega_init_type: Union[None, str] = None
+    omega_init_scale: Union[None, float] = None
+    # learn_beta: bool = False
+    # beta_shape: Union[None, tuple] = None
+    # beta_init: Union[None, float] = None
+    # beta_first: bool = False
+    sigmoid: bool = False
+    sigmoid_temperature: float = 1.0
     clamp: bool = False
-    dropout_ratio: float = 0.25
-    
-@dataclass(eq=False)
-class ElWiseCongositionV1Config2AvgInitDropout03(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    clamp: bool = False
-    dropout_ratio: float = 0.3
-    
-@dataclass(eq=False)
-class ElWiseCongositionV1Config2AvgInit(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    clamp: bool = False
-    
-@dataclass(eq=False)
-class ElWiseCongositionV1Config2AvgInitDropout03Reg001(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    clamp: bool = False
-    dropout_ratio: float = 0.3
-    regularization: bool = True
-    lambda_reg: float = 0.01
-
-@dataclass(eq=False)
-class ElWiseCongositionV1ConfigClampAvgInitTanh(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 1 / 12
-    clamp: bool = True
-    tanh: bool = True
-
-
-@dataclass(eq=False)
-class ElWiseCongositionV1ConfigClamp2AvgInitBetaFirstElwiseInit0(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    clamp: bool = True
-    learn_beta: bool = True
-    beta_shape: tuple = (12, 768)
-    beta_init: float = 0.0
-    beta_first: bool = True
-
-
-@dataclass(eq=False)
-class ElWiseCongositionV1ConfigClamp2AvgInitBetaFirstSingleInit0(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    clamp: bool = True
-    learn_beta: bool = True
-    beta_shape: tuple = (12, 1)
-    beta_init: float = 0.0
-    beta_first: bool = True
-
-
-@dataclass(eq=False)
-class ElWiseCongositionV1ConfigClamp2AvgInitBetaFirstSingleInit0Dropout025(
-    CongositionV1Config
-):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    clamp: bool = True
-    learn_beta: bool = True
-    beta_shape: tuple = (12, 1)
-    beta_init: float = 0.0
-    beta_first: bool = True
-    dropout_ratio: float = 0.25
-
-
-@dataclass(eq=False)
-class ElWiseCongositionV1ConfigClamp2AvgInitBetaFirstSingleInit0Dropout05(
-    CongositionV1Config
-):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    clamp: bool = True
-    learn_beta: bool = True
-    beta_shape: tuple = (12, 1)
-    beta_init: float = 0.0
-    beta_first: bool = True
-    dropout_ratio: float = 0.5
-
-
-@dataclass(eq=False)
-class ElWiseCongositionV1ConfigClamp2AvgInitBetaFirstElwiseInit0Dropout025(
-    CongositionV1Config
-):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    clamp: bool = True
-    learn_beta: bool = True
-    beta_shape: tuple = (12, 768)
-    beta_init: float = 0.0
-    beta_first: bool = True
-    dropout_ratio: float = 0.25
-
-
-@dataclass(eq=False)
-class ElWiseCongositionV1ConfigClamp2AvgInitBetaFirstElwiseInit0Dropout05(
-    CongositionV1Config
-):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    clamp: bool = True
-    learn_beta: bool = True
-    beta_shape: tuple = (12, 768)
-    beta_init: float = 0.0
-    beta_first: bool = True
-    dropout_ratio: float = 0.55
-
-
-@dataclass(eq=False)
-class ElWiseCongositionV1ConfigClamp2AvgInitBetaAfterElwiseInit0(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    clamp: bool = True
-    learn_beta: bool = True
-    beta_shape: tuple = (12, 768)
-    beta_init: float = 0.0
-    beta_first: bool = False
-    
-@dataclass(eq=False)
-class ElWiseCongositionV1ConfigClamp2AvgInitBetaAfterElwiseInit0Dropout025(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    clamp: bool = True
-    learn_beta: bool = True
-    beta_shape: tuple = (12, 768)
-    beta_init: float = 0.0
-    beta_first: bool = False
-    dropout_ratio: float = 0.25
-    
-
-@dataclass(eq=False)
-class StaticCongositionV1ConfigSigmoidMinusAvgInit(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 2.3978952728
-    sigmoid: bool = True
-
-
-@dataclass(eq=False)
-class StaticCongositionV1ConfigClampAvgInit(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 1 / 12
-    clamp: bool = True
-    
-@dataclass(eq=False)
-class StaticCongositionV1ConfigClamp2AvgInit(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 2 / 12
-    clamp: bool = True
-    
-@dataclass(eq=False)
-class StaticCongositionV1Config2AvgInit(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 2 / 12
-    clamp: bool = False
-    
-@dataclass(eq=False)
-class StaticCongositionV1ConfigClamp2AvgInitDropout025(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 2 / 12
-    clamp: bool = True
-    dropout_ratio: float = 0.25
-    
-@dataclass(eq=False)
-class StaticCongositionV1ConfigClamp2AvgInitDropout03(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 2 / 12
-    clamp: bool = True
-    dropout_ratio: float = 0.3
-    
-@dataclass(eq=False)
-class StaticCongositionV1Config2AvgInitDropout025(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 2 / 12
-    clamp: bool = False
-    dropout_ratio: float = 0.25
-        
-@dataclass(eq=False)
-class StaticCongositionV1Config2AvgInitDropout03(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 2 / 12
-    clamp: bool = False
-    dropout_ratio: float = 0.3
-    
-@dataclass(eq=False)
-class StaticCongositionV1Config2AvgInitDropout03Reg001(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 2 / 12
-    clamp: bool = False
-    dropout_ratio: float = 0.3
-    regularization: bool = True
-    lambda_reg: float = 0.01
-
-@dataclass(eq=False)
-class StaticCongositionV1ConfigClampAvgInitLNBefore(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 1 / 12
-    clamp: bool = True
-    ln: bool = True
+    uplift_target: bool = False
+    ln: bool = False
     ln_before_residual: bool = True
+    tanh: bool = False
+    residual: bool = True
+    dropout_ratio: float = 0.0
+    rescaling_factor: Union[None, tuple] = None
+    per_layer: bool = False
+    regularization: bool = False
+    lambda_reg: float = 0.0
+    # FULL FUSION
+    full_fusion: bool = False
+    output_omegas: bool = False
+    omega_shape: Union[None, tuple] = None
+    bottleneck: bool = False
+    reduction_factor: Union[None, int] = None
+
+    @classmethod
+    def load(cls, config: Union[dict, str], **kwargs):
+        """
+        Loads a given adapter fusion configuration specifier into a full AdapterFusionConfig instance.
+
+        Args:
+            config (Union[dict, str]): The configuration to load. Can be either:
+
+                - a dictionary representing the full config
+                - an identifier string available in ADAPTERFUSION_CONFIG_MAP
+                - the path to a file containing a full adapter fusion configuration
+
+        Returns:
+            dict: The resolved adapter fusion configuration dictionary.
+        """
+        # currently storing AdapterFusion weights on AdapterHub is not supported.
+        config_dict = resolve_adapter_config(
+            config, local_map=CONGOSITIONV1_CONFIG_MAP, try_loading_from_hub=False
+        )
+        # convert back to dict to allow attr overrides
+        if isinstance(config_dict, CongositionV1Config):
+            config_dict = config_dict.to_dict()
+        config_dict.update(kwargs)
+        return CongositionV1Config.from_dict(config_dict)
 
 
-@dataclass(eq=False)
-class StaticCongositionV1ConfigClampAvgInitLNAfter(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 1 / 12
-    clamp: bool = True
-    ln: bool = True
-    ln_before_residual: bool = False
-
-
-@dataclass(eq=False)
-class StaticCongositionV1ConfigClamp05Init(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 0.5
-    clamp: bool = True
-
-
-@dataclass(eq=False)
-class StaticCongositionV1ConfigClampMinusAvgInit(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 11 / 12
-    clamp: bool = True
-
-
-@dataclass(eq=False)
-class StaticCongositionV1ConfigClampAvgInitTanh(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 1 / 12
-    clamp: bool = True
-    tanh: bool = True
-
-
-@dataclass(eq=False)
-class StaticCongositionV1ConfigSigmoidAvgInitTanh(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = -2.3978952728
-    sigmoid: bool = True
-    tanh: bool = True
-
-
-@dataclass(eq=False)
-class StaticCongositionV1ConfigClampAvgInitNoRes(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 1 / 12
-    clamp: bool = True
-    residual: bool = False
-
-
-@dataclass(eq=False)
-class StaticCongositionV1ConfigSigmoidAvgInitNoRes(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = -2.3978952728
-    sigmoid: bool = True
-    residual: bool = False
-
-
-@dataclass(eq=False)
-class StaticCongositionV1ConfigSigmoid05Init(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 0.5
-    sigmoid: bool = True
-
-
-@dataclass(eq=False)
-class StaticCongositionV1ConfigSigmoid5AvgInit(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = -2.3978952728 / 5
-    sigmoid: bool = True
-    sigmoid_temperature: float = 5.0
-
-
-@dataclass(eq=False)
-class StaticCongositionV1ConfigSigmoidUplift(CongositionV1Config):
-    learn_omega: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = -2.0
-    sigmoid: bool = True
-    uplift_target: bool = True
-
-####################
-# Layerwise
-####################
-
-@dataclass(eq=False)
-class StaticLayerwiseConfig2AvgInit(CongositionV1Config):
-    learn_omega: bool = True
-    per_layer: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 2 / 12
-    clamp: bool = False
-    
-@dataclass(eq=False)
-class StaticLayerwiseConfig2AvgInitDropout03(CongositionV1Config):
-    learn_omega: bool = True
-    per_layer: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 2 / 12
-    clamp: bool = False
-    dropout_ratio: float = 0.3
-    
-@dataclass(eq=False)
-class StaticLayerwiseConfig2AvgInitDropout03Reg001(CongositionV1Config):
-    learn_omega: bool = True
-    per_layer: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 2 / 12
-    clamp: bool = False
-    dropout_ratio: float = 0.3
-    regularization: bool = True
-    lambda_reg: float = 0.01
-    
-@dataclass(eq=False)
-class StaticLayerwiseConfigClamp2AvgInit(CongositionV1Config):
-    learn_omega: bool = True
-    per_layer: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 2 / 12
-    clamp: bool = True
-    
-@dataclass(eq=False)
-class StaticLayerwiseConfigClamp2AvgInitDropout03(CongositionV1Config):
-    learn_omega: bool = True
-    per_layer: bool = True
-    omega_shape: tuple = (12, 1)
-    omega_init: float = 2 / 12
-    dropout_ratio: float = 0.3
-    clamp: bool = True
-    
-@dataclass(eq=False)
-class ElwiseLayerwiseConfig2AvgInit(CongositionV1Config):
-    learn_omega: bool = True
-    per_layer: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    clamp: bool = False
-    
-@dataclass(eq=False)
-class ElwiseLayerwiseConfig2AvgInitDropout03(CongositionV1Config):
-    learn_omega: bool = True
-    per_layer: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    dropout_ratio: float = 0.3
-    clamp: bool = False
-    
-@dataclass(eq=False)
-class ElwiseLayerwiseConfigClamp2AvgInit(CongositionV1Config):
-    learn_omega: bool = True
-    per_layer: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    clamp: bool = True
-    
-@dataclass(eq=False)
-class ElwiseLayerwiseConfigClamp2AvgInitDropout03(CongositionV1Config):
-    learn_omega: bool = True
-    per_layer: bool = True
-    omega_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    clamp: bool = True
-    dropout_ratio: float = 0.3
-
-####################
-# Layerwise + Beta
-####################
-@dataclass(eq=False)
-class StaticLayerwiseConfig2AvgInitBetaFirstSingleInit0(CongositionV1Config):
-    learn_omega: bool = True
-    learn_beta: bool = True
-    per_layer: bool = True
-    omega_shape: tuple = (12, 1)
-    beta_shape: tuple = (12, 1)
-    omega_init: float = 2 / 12
-    clamp: bool = False
-    beta_first: bool = True
-    beta_init: float = 0.0
-    
-@dataclass(eq=False)
-class StaticLayerwiseConfig2AvgInitBetaFirstSingleInit0Dropout03(CongositionV1Config):
-    learn_omega: bool = True
-    learn_beta: bool = True
-    per_layer: bool = True
-    omega_shape: tuple = (12, 1)
-    beta_shape: tuple = (12, 1)
-    omega_init: float = 2 / 12
-    clamp: bool = False
-    beta_first: bool = True
-    beta_init: float = 0.0
-    dropout_ratio: float = 0.3
-    
-@dataclass(eq=False)
-class ElwiseLayerwiseConfig2AvgInitBetaFirstSingleInit0(CongositionV1Config):
-    learn_omega: bool = True
-    learn_beta: bool = True
-    per_layer: bool = True
-    omega_shape: tuple = (12, 768)
-    beta_shape: tuple = (12, 1)
-    omega_init: float = 2 / 12
-    clamp: bool = False
-    beta_first: bool = True
-    beta_init: float = 0.0
-    
-@dataclass(eq=False)
-class ElwiseLayerwiseConfig2AvgInitBetaFirstSingleInit0Dropout03(CongositionV1Config):
-    learn_omega: bool = True
-    learn_beta: bool = True
-    per_layer: bool = True
-    omega_shape: tuple = (12, 768)
-    beta_shape: tuple = (12, 1)
-    omega_init: float = 2 / 12
-    clamp: bool = False
-    beta_first: bool = True
-    beta_init: float = 0.0
-    dropout_ratio: float = 0.3
-    
-@dataclass(eq=False)
-class StaticLayerwiseConfig2AvgInitBetaFirstElwiseInit0(CongositionV1Config):
-    learn_omega: bool = True
-    learn_beta: bool = True
-    per_layer: bool = True
-    omega_shape: tuple = (12, 1)
-    beta_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    clamp: bool = False
-    beta_first: bool = True
-    beta_init: float = 0.0
-    
-@dataclass(eq=False)
-class StaticLayerwiseConfig2AvgInitBetaFirstElwiseInit0Dropout03(CongositionV1Config):
-    learn_omega: bool = True
-    learn_beta: bool = True
-    per_layer: bool = True
-    omega_shape: tuple = (12, 1)
-    beta_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    clamp: bool = False
-    beta_first: bool = True
-    beta_init: float = 0.0
-    dropout_ratio: float = 0.3
-    
-@dataclass(eq=False)
-class ElwiseLayerwiseConfig2AvgInitBetaFirstElwiseInit0(CongositionV1Config):
-    learn_omega: bool = True
-    learn_beta: bool = True
-    per_layer: bool = True
-    omega_shape: tuple = (12, 768)
-    beta_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    clamp: bool = False
-    beta_first: bool = True
-    beta_init: float = 0.0
-    
-@dataclass(eq=False)
-class ElwiseLayerwiseConfig2AvgInitBetaFirstElwiseInit0Dropout03(CongositionV1Config):
-    learn_omega: bool = True
-    learn_beta: bool = True
-    per_layer: bool = True
-    omega_shape: tuple = (12, 768)
-    beta_shape: tuple = (12, 768)
-    omega_init: float = 2 / 12
-    clamp: bool = False
-    beta_first: bool = True
-    beta_init: float = 0.0
-    dropout_ratio: float = 0.3
 
 
 @dataclass(eq=False)
@@ -2539,135 +1911,51 @@ class FullFusionOmegaElwiseDropout03(CongositionV1Config):
     omega_shape: tuple = (12, 768)
     dropout_ratio: float = 0.3
     
+@dataclass(eq=False)
+class VectorLayerwiseConfig2AvgInitDropout03(CongositionV1Config):
+    learn_omega: bool = True
+    per_layer: bool = True
+    omega_shape: str = "vector"
+    omega_init_type: str = "avg"
+    omega_init_scale: float = 2.
+    dropout_ratio: float = 0.3
+    
+@dataclass(eq=False)
+class StaticLayerwiseConfig2AvgInitDropout03(CongositionV1Config):
+    learn_omega: bool = True
+    per_layer: bool = True
+    omega_shape: str = "scalar"
+    omega_init_type: str = "avg"
+    omega_init_scale: float = 2.
+    dropout_ratio: float = 0.3
+    
+@dataclass(eq=False)
+class VectorConfig2AvgInitDropout03(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: str = "vector"
+    omega_init_type: str = "avg"
+    omega_init_scale: float = 2.
+    dropout_ratio: float = 0.3
+    
+@dataclass(eq=False)
+class ScalarConfig2AvgInitDropout03(CongositionV1Config):
+    learn_omega: bool = True
+    omega_shape: str = "scalar"
+    omega_init_type: str = "avg"
+    omega_init_scale: float = 2.
+    dropout_ratio: float = 0.3
+    
 
-ADAPTERFUSION_CONFIG_MAP = {
-    "dynamic_omega": DynamicAdapterFusionConfigOmega(),
-    "dynamic_cv2": DynamicAdapterFusionConfigCV2(),
-    #
-    "static": StaticAdapterFusionConfig(),
-    "dynamic": DynamicAdapterFusionConfig(),
-    "dynamic_nd": DynamicAdapterFusionConfigND(),
-    #
-    "dynamic_nd_sigmoid": DynamicAdapterFusionConfigNDSigmoid(),
-    "dynamic_nd_sigmoid_value_init_avg": DynamicAdapterFusionConfigNDSigmoidValueInitAvg(),
-    #
-    "dynamic_congaterV5": DynamicCongaterV5FusionConfig(),
-    "dynamic_congaterV5_value_after": DynamicCongaterV5FusionConfigValueAfter(),
-    "dynamic_congaterV0": DynamicCongaterV0FusionConfig(),
-    #
-    "dynamic_congaterV5_double_tt": DynamicCongaterV5FusionConfigDoubleTT(),
-    "dynamic_congaterV5_double_tt_value_after": DynamicCongaterV5FusionConfigDoubleTTValueAfter(),
-    "dynamic_congaterV0_double_tt": DynamicCongaterV0FusionConfigDoubleTT(),
-    #
-    "dynamic_congaterV5_nd": DynamicCongaterV5FusionConfigND(),
-    "dynamic_congaterV5_nd_sigmoid": DynamicCongaterV5FusionConfigNDSigmoid(),
-    "dynamic_congaterV5_nd_sigmoid_value_init_avg": DynamicCongaterV5FusionConfigNDSigmoidValueInitAvg(),
-    "dynamic_congaterV5_nd_sigmoid_target_tanh": DynamicCongaterV5FusionConfigNDSigmoidTargetTanh(),
-    "dynamic_congaterV5_double_tt_nd_sigmoid_target_tanh": DynamicCongaterV5FusionConfigDoubleTTNDSigmoidTargetTanh(),
-    "dynamic_congaterV5_nd_sigmoid_value_init_avg_target_tanh": DynamicCongaterV5FusionConfigNDSigmoidTargetTanhValueInitAvg(),
-    #
-    "dynamic_congaterV5_scale_dk": DynamicCongaterV5FusionConfigScaleDk(),
-    "dynamic_congaterV5_value_normal": DynamicCongaterV5FusionConfigValueNormal(),
-    #
-    "dynamic_congaterV0_omega": DynamicCongaterV0FusionConfigOmega(),
-    "dynamic_congaterV0_omega_normal5": DynamicCongaterV0FusionConfigOmegaNormal5(),
-    "dynamic_congaterV0_omega_clamp1": DynamicCongaterV0FusionConfigOmegaClamp1(),
-    "dynamic_congaterV0_omega_normal0_plus2": DynamicCongaterV0FusionConfigOmegaNormal0Plus2(),
-    "dynamic_congaterV5_omega": DynamicCongaterV5FusionConfigOmega(),
-    "dynamic_congaterV5_omega_normal0_minus1": DynamicCongaterV5FusionConfigOmegaMinus1(),
-    "dynamic_congaterV5_omega_normal0_minus1_softmax": DynamicCongaterV5FusionConfigOmegaMinus1Softmax(),
-    "dynamic_congaterV5_omega_normal0_minus1_12only": DynamicCongaterV5FusionConfigOmegaMinus1_12only(),
-    "dynamic_congaterV5_omega_normal0_minus1_BIG": DynamicCongaterV5FusionConfigOmegaMinus1_BIG(),
-    "dynamic_congaterV5_omega_normal0_minus1_MID": DynamicCongaterV5FusionConfigOmegaMinus1_MID(),
-    "dynamic_congaterV5_omega_normal0_minus1_difflr": DynamicCongaterV5FusionConfigOmegaDiffLR(),
-    "dynamic_congaterV5_omega_normal0_minus1_V3": DynamicCongaterV5FusionConfigOmegaMinus1V3(),
-    "dynamic_congaterV5_omega_normal0_minus1_att-as-omega": DynamicCongaterV5FusionConfigAttAsOmega(),
-    "dynamic_congaterV5_omega_normal0_minus1_att-as-omega-MEAN": DynamicCongaterV5FusionConfigAttAsOmegaMEAN(),
-    #
-    "dynamic_congaterV5_Womega": DynamicCongaterV5FusionConfigWOmega(),
-    "dynamic_congaterV5_WomegaVN": DynamicCongaterV5FusionConfigWOmegaVN(),
-    "dynamic_congaterV5_Womega_sigmoid": DynamicCongaterV5FusionConfigWOmegaSigmoid(),
-}
 
 CONGOSITIONV1_CONFIG_MAP = {
-    "param_direct": StaticCongositionV1Config(),
-    # "dynamic":
     "omega_grid": OmegaGrid(),
-    # DIRECT
-    "param_direct_sigmoid": StaticCongositionV1ConfigSigmoid(),
-    "param_direct_sigmoid_uplift": StaticCongositionV1ConfigSigmoidUplift(),
-    "param_direct_sigmoid_avg-init": StaticCongositionV1ConfigSigmoidAvgInit(),
-    "param_direct_clamp_avg-init": StaticCongositionV1ConfigClampAvgInit(),
-    "param_direct_clamp_avg-init_LN-before": StaticCongositionV1ConfigClampAvgInitLNBefore(),
-    "param_direct_clamp_avg-init_LN-after": StaticCongositionV1ConfigClampAvgInitLNAfter(),
-    "param_direct_avg-init": StaticCongositionV1ConfigAvgInit(),
-    "param_direct_sigmoid5_avg-init": StaticCongositionV1ConfigSigmoid5AvgInit(),
-    "param_direct_clamp_05-init": StaticCongositionV1ConfigClamp05Init(),
-    "param_direct_sigmoid_05-init": StaticCongositionV1ConfigSigmoid05Init(),
-    "param_direct_sigmoid_minus-avg-init": StaticCongositionV1ConfigSigmoidMinusAvgInit(),
-    "param_direct_clamp_minus-avg-init": StaticCongositionV1ConfigClampMinusAvgInit(),
-    "param_direct_clamp_avg-init-tanh": StaticCongositionV1ConfigClampAvgInitTanh(),
-    "param_direct_sigmoid_avg-init-tanh": StaticCongositionV1ConfigSigmoidAvgInitTanh(),
-    "param_direct_clamp_avg-init-no_res": StaticCongositionV1ConfigClampAvgInitNoRes(),
-    "param_direct_sigmoid_avg-init-no_res": StaticCongositionV1ConfigSigmoidAvgInitNoRes(),
-    "param_direct_clamp_2avg-init": StaticCongositionV1ConfigClamp2AvgInit(),
-    "param_direct_2avg-init": StaticCongositionV1Config2AvgInit(),
-    "param_direct_clamp_2avg-init-dropout025": StaticCongositionV1ConfigClamp2AvgInitDropout025(),
-    "param_direct_clamp_2avg-init-dropout03": StaticCongositionV1ConfigClamp2AvgInitDropout03(),
-    "param_direct_2avg-init-dropout025": StaticCongositionV1Config2AvgInitDropout025(),
-    "param_direct_2avg-init-dropout03": StaticCongositionV1Config2AvgInitDropout03(),
-    # DIRECT + BETA
-    "param_direct_clamp_2avg-init-BETA_elwise-first-0": StaticCongositionV1ConfigClamp2AvgInitBetaFirstElwiseInit0(),
-    "param_direct_clamp_2avg-init-BETA_single-first-0": StaticCongositionV1ConfigClamp2AvgInitBetaFirstSingleInit0(),
-    "param_direct_clamp_2avg-init-BETA_elwise-first-0-dropout03": StaticCongositionV1ConfigClamp2AvgInitBetaFirstElwiseInit0Dropout03(),
-    "param_direct_clamp_2avg-init-BETA_single-first-0-dropout03": StaticCongositionV1ConfigClamp2AvgInitBetaFirstSingleInit0Dropout03(),
-    # ELWISE
-    "param_elwise_sigmoid_avg-init": ElWiseCongositionV1ConfigSigmoidAvgInit(),
-    "param_elwise_clamp_avg-init": ElWiseCongositionV1ConfigClampAvgInit(),
-    "param_elwise_clamp_avg-init-tanh": ElWiseCongositionV1ConfigClampAvgInitTanh(),
-    "param_elwise_clamp_2avg-init": ElWiseCongositionV1ConfigClamp2AvgInit(),
-    "param_elwise_clamp_3avg-init": ElWiseCongositionV1ConfigClamp3AvgInit(),
-    "param_elwise_clamp_2avg-init-dropout01": ElWiseCongositionV1ConfigClamp2AvgInitDropout01(),
-    "param_elwise_clamp_2avg-init-dropout025": ElWiseCongositionV1ConfigClamp2AvgInitDropout025(),
-    "param_elwise_clamp_2avg-init-dropout03": ElWiseCongositionV1ConfigClamp2AvgInitDropout03(),
-    "param_elwise_clamp_2avg-init-dropout04": ElWiseCongositionV1ConfigClamp2AvgInitDropout04(),
-    "param_elwise_clamp_2avg-init-dropout05": ElWiseCongositionV1ConfigClamp2AvgInitDropout05(),
-    "param_elwise_clamp_2avg-init-rescale1": ElWiseCongositionV1ConfigClamp2AvgInitRescale1(),
-    "param_elwise_clamp_2avg-init-rescale12": ElWiseCongositionV1ConfigClamp2AvgInitRescale12(),
-    "param_elwise_2avg-init-dropout025": ElWiseCongositionV1Config2AvgInitDropout025(),
-    "param_elwise_2avg-init-dropout03": ElWiseCongositionV1Config2AvgInitDropout03(),
-    "param_elwise_2avg-init": ElWiseCongositionV1Config2AvgInit(),
-    # ELWISE + BETA
-    "param_elwise_clamp_2avg-init-BETA_elwise-first-0": ElWiseCongositionV1ConfigClamp2AvgInitBetaFirstElwiseInit0(),
-    "param_elwise_clamp_2avg-init-BETA_elwise-after-0": ElWiseCongositionV1ConfigClamp2AvgInitBetaAfterElwiseInit0(),
-    "param_elwise_clamp_2avg-init-BETA_elwise-after-0-dropout025": ElWiseCongositionV1ConfigClamp2AvgInitBetaAfterElwiseInit0Dropout025(),
-    "param_elwise_clamp_2avg-init-BETA_elwise-first-0-dropout025": ElWiseCongositionV1ConfigClamp2AvgInitBetaFirstElwiseInit0Dropout025(),
-    "param_elwise_clamp_2avg-init-BETA_elwise-first-0-dropout05": ElWiseCongositionV1ConfigClamp2AvgInitBetaFirstElwiseInit0Dropout05(),
-    "param_elwise_clamp_2avg-init-BETA_single-first-0": ElWiseCongositionV1ConfigClamp2AvgInitBetaFirstSingleInit0(),
-    "param_elwise_clamp_2avg-init-BETA_single-first-0-dropout025": ElWiseCongositionV1ConfigClamp2AvgInitBetaFirstSingleInit0Dropout025(),
-    "param_elwise_clamp_2avg-init-BETA_single-first-0-dropout05": ElWiseCongositionV1ConfigClamp2AvgInitBetaFirstSingleInit0Dropout05(),
-    # LAYER
-    "layer_direct_2avg-init": StaticLayerwiseConfig2AvgInit(),
-    "layer_direct_2avg-init-dropout03": StaticLayerwiseConfig2AvgInitDropout03(),
-    "layer_direct_clamp_2avg-init": StaticLayerwiseConfigClamp2AvgInit(),
-    "layer_direct_clamp_2avg-init-dropout03": StaticLayerwiseConfigClamp2AvgInitDropout03(),
-    "layer_elwise_2avg-init": ElwiseLayerwiseConfig2AvgInit(),
-    "layer_elwise_2avg-init-dropout03": ElwiseLayerwiseConfig2AvgInitDropout03(),
-    "layer_elwise_clamp_2avg-init": ElwiseLayerwiseConfigClamp2AvgInit(),
-    "layer_elwise_clamp_2avg-init-dropout03": ElwiseLayerwiseConfigClamp2AvgInitDropout03(),
-    # LAYER + BETA
-    "layer_direct_2avg-init-BETA_single-first-0": StaticLayerwiseConfig2AvgInitBetaFirstSingleInit0(),
-    "layer_elwise_2avg-init-BETA_single-first-0": ElwiseLayerwiseConfig2AvgInitBetaFirstSingleInit0(),
-    "layer_direct_2avg-init-BETA_single-first-0-dropout03": StaticLayerwiseConfig2AvgInitBetaFirstSingleInit0Dropout03(),
-    "layer_elwise_2avg-init-BETA_single-first-0-dropout03": ElwiseLayerwiseConfig2AvgInitBetaFirstSingleInit0Dropout03(),
-    "layer_direct_2avg-init-BETA_elwise-first-0": StaticLayerwiseConfig2AvgInitBetaFirstElwiseInit0(),
-    "layer_elwise_2avg-init-BETA_elwise-first-0": ElwiseLayerwiseConfig2AvgInitBetaFirstElwiseInit0(),
-    "layer_direct_2avg-init-BETA_elwise-first-0-dropout03": StaticLayerwiseConfig2AvgInitBetaFirstElwiseInit0Dropout03(),
-    "layer_elwise_2avg-init-BETA_elwise-first-0-dropout03": ElwiseLayerwiseConfig2AvgInitBetaFirstElwiseInit0Dropout03(),
-    # REGULARIZATION
-    "param_direct_2avg-init-dropout03-REG001": StaticCongositionV1Config2AvgInitDropout03Reg001(),
-    "param_elwise_2avg-init-dropout03-REG001": ElWiseCongositionV1Config2AvgInitDropout03Reg001(),
-    "layer_direct_2avg-init-dropout03-REG001": StaticLayerwiseConfig2AvgInitDropout03Reg001(),
+    # NEW
+    "sharedL_vector_2_avg_d03": VectorLayerwiseConfig2AvgInitDropout03(),
+    "sharedL_scalar_2_avg_d03": StaticLayerwiseConfig2AvgInitDropout03(),
+    "splitL__vector_2_avg_d03": VectorConfig2AvgInitDropout03(),
+    "splitL__scalar_2_avg_d03": ScalarConfig2AvgInitDropout03(),
+    
+    
     # FULL FUSION
     "full_fusion": FullFusion(),
     "full_fusion_omega-single": FullFusionOmegaSingle(),

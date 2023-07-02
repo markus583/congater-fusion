@@ -865,25 +865,26 @@ class CongositionBase(nn.Module):
         super(CongositionBase, self).__init__()
         print(config)
         self.config = config
-        omega = torch.normal(
-            self.config["omega_init"],
-            0.001,
-            self.config["omega_shape"],
-        )
-        if self.config["uplift_target"]:
-            omega[-1] = -self.config["omega_init"]
-        self.omega = nn.Parameter(omega, requires_grad=True)
-        if self.config["learn_beta"]:
-            self.beta = nn.Parameter(
-                torch.normal(
-                    self.config["beta_init"],
-                    0.001,
-                    self.config["beta_shape"],
-                ),
-                requires_grad=True,
-            )
+        if self.config["omega_shape"] == "vector":
+            self.omega_shape = (n_congaters, dense_size)
+        elif self.config["omega_shape"] == "scalar":
+            self.omega_shape = (n_congaters, 1)
         else:
-            self.beta = None
+            raise ValueError("omega_shape must be either vector or scalar")
+        if self.config["omega_init_type"] == "avg":
+            self.omega_init_value = self.config["omega_init_scale"] / n_congaters
+        else:
+            raise ValueError("omega_init_type must be avg")
+        print("omega_init_value", self.omega_init_value)
+        print("omega_shape", self.omega_shape)
+        omega = torch.normal(
+            self.omega_init_value,
+            0.001,
+            (self.omega_shape),
+        )
+        # if self.config["uplift_target"]:
+        #     omega[-1] = -self.config["omega_init"]
+        self.omega = nn.Parameter(omega, requires_grad=True)
         # 1/12: -2.3978952728 = -ln(11)
         if self.config["sigmoid"]:
             self.gate = nn.Sigmoid()
@@ -916,20 +917,11 @@ class CongositionBase(nn.Module):
                 omegas = self.gate(self.omega)
         else:
             omegas = self.omega
-        betas = self.beta
 
         if self.config["dropout_ratio"] > 0:
             omegas = self.dropout(omegas)
-            if self.config["learn_beta"]:
-                betas = self.dropout(betas)
 
-        if self.config["learn_beta"]:
-            if self.config["beta_first"]:
-                weighted_x = omegas * (up_list + betas)
-            else:
-                weighted_x = omegas * up_list + betas
-        else:
-            weighted_x = omegas * up_list
+        weighted_x = omegas * up_list
 
         if self.config["rescaling_factor"]:
             weighted_x = self.rescaling_factor * weighted_x
@@ -976,8 +968,6 @@ class CongositionLayer(nn.Module):
         parameters = ForwardContext.get_context().shared_parameters[self.name]
         if self.config["learn_omega"]:
             omegas = parameters.omega
-        if self.config["learn_beta"]:
-            betas = parameters.beta
 
         if self.config["sigmoid"] or self.config["clamp"]:
             if self.config["sigmoid_temperature"]:
@@ -988,16 +978,8 @@ class CongositionLayer(nn.Module):
         if self.config["dropout_ratio"] > 0:
             if self.config["learn_omega"]:
                 omegas = self.dropout(omegas)
-            if self.config["learn_beta"]:
-                betas = self.dropout(betas)
 
-        if self.config["learn_beta"]:
-            if self.config["beta_first"]:
-                weighted_x = omegas * (up_list + betas)
-            else:
-                weighted_x = omegas * up_list + betas
-        else:
-            weighted_x = omegas * up_list
+        weighted_x = omegas * up_list
 
         weighted_x = torch.sum(weighted_x, dim=2)
         if self.config["ln"] and self.config["ln_before_residual"]:
@@ -1010,30 +992,33 @@ class CongositionLayer(nn.Module):
         return weighted_x
 
 
-def init_shared_parameters_congosition(config, in_features, device):
+def init_shared_parameters_congosition(config, in_features, n_congaters: int, device):
     """
     Create and initialize the parameters shared by all compacter modules
     """
     parameters = nn.ParameterDict()
     if config["per_layer"]:
         if config["learn_omega"]:
+            if config["omega_shape"] == "vector":
+                omega_shape = (n_congaters, in_features)
+            elif config["omega_shape"] == "scalar":
+                omega_shape = (n_congaters, 1)
+            else:
+                raise ValueError("omega_shape must be either vector or scalar")
+            if config["omega_init_type"] == "avg":
+                omega_init_value = config["omega_init_scale"] / n_congaters
+            else:
+                raise ValueError("omega_init_type must be avg")
+            print("omega_init_value", omega_init_value)
+            print("omega_shape", omega_shape)
             omega = torch.normal(
-                config["omega_init"],
+                omega_init_value,
                 0.001,
-                config["omega_shape"],
-            )
+                (omega_shape),
+            )          
             omega = nn.Parameter(omega, requires_grad=True)
+
         parameters["omega"] = omega
-        if config["learn_beta"]:
-            beta = nn.Parameter(
-                torch.normal(
-                    config["beta_init"],
-                    0.001,
-                    config["beta_shape"],
-                ),
-                requires_grad=True,
-            )
-            parameters["beta"] = beta
     else:
         raise NotImplementedError
     return parameters
