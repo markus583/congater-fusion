@@ -21,7 +21,7 @@ if [ ${#SEEDS[@]} -eq 0 ]; then
   SEEDS=(0 1 2 3 4 5 6 7 8 9)
 fi
 
-for TASK in record; do
+for TASK in wsc wic; do
   for SEED in "${SEEDS[@]}"; do
     # these tasks only run with seeds 0 to 4
     if [ $SEED -gt 4 ] && [ $TASK = "sst2" -o $TASK = "qnli" -o $TASK = "qqp" -o $TASK = "mnli" ]; then

@@ -1,4 +1,4 @@
-RUN_NAME=st-a-fusion-FP16-30-SUPERGLUE
+RUN_NAME=st-a-fusion-FP16-30-GSG2
 
 MODEL_NAME=roberta-base
 GPU_ID=0
@@ -22,10 +22,10 @@ if [ ${#SEEDS[@]} -eq 0 ]; then
 fi
 
 
-for TASK in cb copa wsc wic boolq multirc record; do
+for TASK in cb copa wsc rte mrpc cola wic boolq stsb sst2 multirc qnli mnli qqp record; do
   for SEED in "${SEEDS[@]}"; do
     # these tasks only run with seeds 0 to 4
-    if [ $SEED -gt 4 ] && [ $TASK = "multirc" -o $TASK = "record" ]; then
+    if [ $SEED -gt 2 ] && [ $TASK = "multirc" -o $TASK = "record" -o $TASK = "sst2" -o $TASK = "qnli" -o $TASK = "qqp" -o $TASK = "mnli"]; then
       echo "Skipping $TASK with seed $SEED"
       continue
     fi
@@ -49,7 +49,7 @@ for TASK in cb copa wsc wic boolq multirc record; do
       --do_train \
       --do_eval \
       --train_fusion \
-      --fusion_load_dir af_config_SUPERGLUE.json \
+      --fusion_load_dir af_config_GSG2.json \
       --per_device_train_batch_size 32 \
       --per_device_eval_batch_size 32 \
       --dataloader_num_workers 0 \

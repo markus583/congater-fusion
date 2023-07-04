@@ -13,10 +13,26 @@ os.chdir(os.path.dirname(os.path.realpath(__file__)))
 # runs/full/$TASK_NAME/$MODEL_NAME/$SEED/checkpoint-xxxxx
 
 
+tasks2list = {}
+
+tasks2list["GLUE"] = [
+    "rte",
+    "mrpc",
+    "cola",
+    "stsb",
+    "sst2",
+    "qnli",
+    "qqp",
+    "mnli",
+]
+
+tasks2list["SUPERGLUE"] = ["cb", "copa", "wsc", "wic", "boolq", "multirc", "record"]
+
+tasks2list["GSG2"] = tasks2list["GLUE"] + tasks2list["SUPERGLUE"]
+
 # do this for every TASK_NAME and MAX_SEQ_LEN
 # calculate mean and standard deviation of WANTED_NUMB
-def extract_statistics(OUT_FILES, DIR_NAMES):
-    MODEL_NAME = "bert-base-uncased"
+def extract_statistics(OUT_FILES, DIR_NAMES, MODEL_NAME, task_list):
 
     for output_file, dir_name in zip(OUT_FILES, DIR_NAMES):
         df = pd.DataFrame(
@@ -39,20 +55,9 @@ def extract_statistics(OUT_FILES, DIR_NAMES):
             ]
         )
 
-        for task in [
-            "cb",
-            "copa",
-            "wsc",
-            "wic",
-            "rte",
-            "mrpc",
-            "stsb",
-            "boolq",
-            "sst2",
-            "qnli",
-            "qqp",
-            "mnli",
-        ]:
+        tasks = tasks2list[task_list]
+
+        for task in tasks:
             # get all directories in subfolder
             subfolder = os.path.join("..", "src", "runs", dir_name, task, MODEL_NAME)
             if not os.path.isdir(subfolder):
@@ -152,6 +157,7 @@ def extract_statistics(OUT_FILES, DIR_NAMES):
                     "spearmanr",
                     "matthews_correlation",
                     "f1",
+                    "exact_match",
                 ]:
                     metric_values = [
                         float(m[metric]) for m in all_metrics.values() if metric in m
@@ -187,28 +193,52 @@ def extract_statistics(OUT_FILES, DIR_NAMES):
         # if no train_pct 10, 25, 50, 100: add empty row, task mrpc, n_runs 0
         for train_pct in ["10", "25", "50", "100"]:
             if train_pct not in df["train_pct"].unique():
-                df = df.append(
-                    {
-                        "task": "mrpc",
-                        "train_pct": train_pct,
-                        "n_runs": 0,
-                        "best_seed": None,
-                        "seeds": [],
-                        "accuracy_MEAN": None,
-                        "accuracy_STD": None,
-                        "accuracy_mm_MEAN": None,
-                        "accuracy_mm_STD": None,
-                        "pearson_MEAN": None,
-                        "pearson_STD": None,
-                        "spearmanr_MEAN": None,
-                        "spearmanr_STD": None,
-                        "matthews_correlation_MEAN": None,
-                        "matthews_correlation_STD": None,
-                        "f1_MEAN": None,
-                        "f1_STD": None,
-                    },
-                    ignore_index=True,
-                )
+                if task_list == "GLUE":
+                    df = df.append(
+                        {
+                            "task": "mrpc",
+                            "train_pct": train_pct,
+                            "n_runs": 0,
+                            "best_seed": None,
+                            "seeds": [],
+                            "accuracy_MEAN": None,
+                            "accuracy_STD": None,
+                            "accuracy_mm_MEAN": None,
+                            "accuracy_mm_STD": None,
+                            "pearson_MEAN": None,
+                            "pearson_STD": None,
+                            "spearmanr_MEAN": None,
+                            "spearmanr_STD": None,
+                            "matthews_correlation_MEAN": None,
+                            "matthews_correlation_STD": None,
+                            "f1_MEAN": None,
+                            "f1_STD": None,
+                        },
+                        ignore_index=True,
+                    )
+                else:
+                    df = df.append(
+                        {
+                            "task": "cb",
+                            "train_pct": train_pct,
+                            "n_runs": 0,
+                            "best_seed": None,
+                            "seeds": [],
+                            "accuracy_MEAN": None,
+                            "accuracy_STD": None,
+                            "accuracy_mm_MEAN": None,
+                            "accuracy_mm_STD": None,
+                            "pearson_MEAN": None,
+                            "pearson_STD": None,
+                            "spearmanr_MEAN": None,
+                            "spearmanr_STD": None,
+                            "matthews_correlation_MEAN": None,
+                            "matthews_correlation_STD": None,
+                            "f1_MEAN": None,
+                            "f1_STD": None,
+                        },
+                        ignore_index=True,
+                    )
         df.to_csv(output_file, index=False)
         print(f"Saved {output_file}")
 

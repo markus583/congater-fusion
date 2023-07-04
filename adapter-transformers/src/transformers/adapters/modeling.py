@@ -873,6 +873,8 @@ class CongositionBase(nn.Module):
             raise ValueError("omega_shape must be either vector or scalar")
         if self.config["omega_init_type"] == "avg":
             self.omega_init_value = self.config["omega_init_scale"] / n_congaters
+        elif self.config["omega_init_type"] == "value":
+            self.omega_init_value = self.config["omega_init_scale"]
         else:
             raise ValueError("omega_init_type must be avg")
         print("omega_init_value", self.omega_init_value)

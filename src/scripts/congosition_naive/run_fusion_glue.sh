@@ -1,6 +1,10 @@
-LR=1e-2
-CONFIG=splitL__vector_avg_d03
-RUN_NAME=st-a-$CONFIG-lr$LR-GLUE
+LR=5e-3
+CONFIG=splitL__vector_2_avg_d03
+RUN_NAME=st-a-$CONFIG-lr$LR-cosine-GLUE
+
+# splitL__scalar
+# sharedL__vector
+# sharedL__scalar
 
 
 MODEL_NAME=roberta-base
@@ -25,7 +29,7 @@ if [ ${#SEEDS[@]} -eq 0 ]; then
 fi
 
 
-for TASK in mrpc rte cola stsb sst2 qnli mnli qqp; do
+for TASK in rte mrpc cola stsb sst2 qnli mnli qqp; do
   for SEED in "${SEEDS[@]}"; do
     # these tasks only run with seeds 0 to 4
     if [ $SEED -gt 4 ] && [ $TASK = "sst2" -o $TASK = "qnli" -o $TASK = "qqp" -o $TASK = "mnli" ]; then
@@ -60,7 +64,7 @@ for TASK in mrpc rte cola stsb sst2 qnli mnli qqp; do
         --early_stopping True \
         --early_stopping_patience 30 \
         --load_best_model_at_end True \
-        --lr_scheduler_type linear \
+        --lr_scheduler_type cosine \
         --report_to wandb \
         --run_name $TASK-$MODEL_NAME-$TRAIN_PCT-$SEED-$RUN_NAME \
         --seed $SEED \

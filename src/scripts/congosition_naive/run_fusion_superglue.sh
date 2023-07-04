@@ -1,6 +1,10 @@
 LR=1e-2
-CONFIG=param_elwise_2avg-init-dropout03
-RUN_NAME=st-a-congosition_naive-$CONFIG-lr$LR
+CONFIG=splitL__vector_2_avg_d03
+RUN_NAME=st-a-$CONFIG-lr$LR-SUPERGLUE
+
+# splitL__scalar
+# sharedL__vector
+# sharedL__scalar
 
 
 MODEL_NAME=roberta-base
@@ -25,12 +29,18 @@ if [ ${#SEEDS[@]} -eq 0 ]; then
 fi
 
 
-for TASK in cb copa rte mrpc wsc boolq wic stsb sst2 qnli qqp mnli; do
+for TASK in cb copa wsc wic boolq multirc record; do
   for SEED in "${SEEDS[@]}"; do
     # these tasks only run with seeds 0 to 4
-    if [ $SEED -gt 4 ] && [ $TASK = "sst2" -o $TASK = "qnli" -o $TASK = "qqp" -o $TASK = "mnli" ]; then
+    if [ $SEED -gt 4 ] && [ $TASK = "multirc" -o $TASK = "record" ]; then
       echo "Skipping $TASK with seed $SEED"
       continue
+    fi
+
+    if [ $TASK = "copa" -o $TASK = "record" ]; then
+      GRADIENT_CHECKPOINTING="--gradient_checkpointing"
+    else
+      GRADIENT_CHECKPOINTING=""
     fi
     
     for TRAIN_PCT in 100; do
@@ -39,21 +49,22 @@ for TASK in cb copa rte mrpc wsc boolq wic stsb sst2 qnli qqp mnli; do
       echo $TASK
       echo $TRAIN_PCT
 
-      CUDA_VISIBLE_DEVICES=$GPU_ID python ../../run_dev.py \
+      CUDA_VISIBLE_DEVICES=$GPU_ID python ../../run.py \
         --model_name_or_path $MODEL_NAME \
         --task_name $TASK \
         --max_seq_length 128 \
         --do_train \
         --do_eval \
         --train_fusion \
-        --fusion_load_dir af_config_GSG.json \
+        --fusion_load_dir af_config_SUPERGLUE.json \
         --per_device_train_batch_size 32 \
         --per_device_eval_batch_size 32 \
         --dataloader_num_workers 0 \
         --learning_rate $LR \
         --num_train_epochs 30 \
         --output_dir ../../runs/$RUN_NAME/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED \
-        --logging_strategy epoch \
+        --logging_strategy steps \
+        --logging_steps 100 \
         --save_strategy epoch \
         --evaluation_strategy epoch \
         --early_stopping True \
@@ -68,6 +79,7 @@ for TASK in cb copa rte mrpc wsc boolq wic stsb sst2 qnli qqp mnli; do
         --fp16 \
         --congosition_type $CONFIG \
         --fusion_type $CONFIG \
+        $GRADIENT_CHECKPOINTING
 
         rm -rf ../../runs/$RUN_NAME/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED/checkpoint*
     done

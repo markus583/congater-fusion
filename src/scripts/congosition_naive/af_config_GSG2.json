@@ -1,0 +1,17 @@
+{
+    "rte": "runs/st-a/rte/roberta-base/0",
+    "mrpc": "runs/st-a/mrpc/roberta-base/0",
+    "cola": "runs/st-a/cola/roberta-base/0",
+    "mnli": "runs/st-a/mnli/roberta-base/1",
+    "qnli": "runs/st-a/qnli/roberta-base/0",
+    "qqp": "runs/st-a/qqp/roberta-base/0",
+    "sst2": "runs/st-a/sst2/roberta-base/0",
+    "stsb": "runs/st-a/stsb/roberta-base/0",
+    "cb": "runs/st-a/cb/roberta-base/0",
+    "copa": "runs/st-a/copa/roberta-base/0",
+    "wsc": "runs/st-a/wsc/roberta-base/0",
+    "wic": "runs/st-a/wic/roberta-base/0",
+    "boolq": "runs/st-a/boolq/roberta-base/0",
+    "multirc": "runs/st-a/multirc/roberta-base/0",
+    "record": "runs/st-a/record/roberta-base/0"
+}

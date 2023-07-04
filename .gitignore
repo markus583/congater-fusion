@@ -7,6 +7,7 @@ src/scripts/ct_0-a/run_glue.sh
 wandb
 */wandb
 *.json
+!af_config_*.json
 *.png
 *.csv
 *.pth

@@ -1,0 +1,10 @@
+{
+    "rte": "runs/st-a/rte/roberta-base/0",
+    "mrpc": "runs/st-a/mrpc/roberta-base/0",
+    "cola": "runs/st-a/cola/roberta-base/0",
+    "mnli": "runs/st-a/mnli/roberta-base/1",
+    "qnli": "runs/st-a/qnli/roberta-base/0",
+    "qqp": "runs/st-a/qqp/roberta-base/0",
+    "sst2": "runs/st-a/sst2/roberta-base/0",
+    "stsb": "runs/st-a/stsb/roberta-base/0"
+}
