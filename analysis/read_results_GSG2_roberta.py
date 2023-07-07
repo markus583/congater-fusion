@@ -18,50 +18,35 @@ BASE_DIR = f"{TASKS}-{MODEL_NAME}/results/"
 if not os.path.exists(BASE_DIR):
     os.makedirs(BASE_DIR)
 OUT_FILES = [
-    "FULL.csv",
+    # "FULL.csv",
     "ST-A.csv",
     "ST-A-FUSION-30-GSG2.csv",
+    "st-a-splitL__vector_2_avg_d03-lr1e-2-GSG2.csv",
 ]
 
 OUT_FILES = [BASE_DIR + f for f in OUT_FILES]
 DIR_NAMES = [
-    "full",
+    # "full",
     "st-a",
-    "st-a-fusion-FP16-30-GSG2",
+    "/share/rk3/home/markus-frohmann/congater-fusion/src/runs/st-a-fusion-FP16-30-GSG2",
+    "st-a-splitL__vector_2_avg_d03-lr1e-2-GSG2",
 ]
 
 print(len(OUT_FILES), len(DIR_NAMES))
 extract_statistics(OUT_FILES, DIR_NAMES, MODEL_NAME, TASKS)
 
-EXCLUDE_LIST = [
-    "ln_after",
-    "ln_before-after",
-    "residual",
-    "CUSTOM",
-    "C-V6",
-    "C-V7",
-    # "C-V8",
-    "C-V5-ln_before",
-    "FUSION-ND",
-    "STATIC",
-    "value_init_avg",
-    "value_after",
-    "value_normal",
-    # "LR",
-    "dk",
-    "C-V0-FUSION-GSG-roberta-FP16-TT-DOUBLETT",
-]
+EXCLUDE_LIST = []
 
 compare_dict = {
     "BASELINES": {
         "exclude": [],
         "include": [],
         "include_list_exactly": [
-            "FULL",
             "ST-A",
             "ST-A-FUSION-30-GSG2",
+            "st-a-splitL__vector_2_avg_d03-lr1e-2-GSG2",
         ],
-        "diff_base": "FULL",
+        "diff_base": "ST-A",
     },
     "splitL__vector_comparison": {
         "exclude": [],
@@ -69,6 +54,7 @@ compare_dict = {
         "include_list_exactly": [
             "ST-A",
             "ST-A-FUSION-30-GSG2",
+            "st-a-splitL__vector_2_avg_d03-lr1e-2-GSG2",
         ],
         "diff_base": "ST-A",
     },
@@ -173,7 +159,7 @@ def sort_tasks(task):
             return 999
         
 # get task order based on sorting function
-task_order = sorted(result_dict["FULL"]["task"].unique(), key=sort_tasks)
+task_order = sorted(result_dict["ST-A"]["task"].unique(), key=sort_tasks)
 
 
 for setup in result_dict.keys():
@@ -239,23 +225,24 @@ for name, df in result_dict.items():
     avg = df.groupby("train_pct").mean()["metric_MEAN"]
     # add 1 row for each train_pct
     for train_pct in [10, 25, 50, 100]:
-        df = df.append(
-            {
-                "task": "AVG",
-                "train_pct": train_pct,
-                "metric_MEAN": avg[train_pct],
-                "% of Training Data": str(train_pct),
-                "n_runs": df[df["train_pct"] == train_pct]["n_runs"].mean(),
-                "x_axis": "AVG ("
-                + str(df[df["train_pct"] == train_pct]["n_runs"].mean())[:3]
-                + ")",
-            },
-            ignore_index=True,
-        )
+        # df = df.append(
+        #     {
+        #         "task": "AVG",
+        #         "train_pct": train_pct,
+        #         "metric_MEAN": avg[train_pct],
+        #         "% of Training Data": str(train_pct),
+        #         "n_runs": df[df["train_pct"] == train_pct]["n_runs"].mean(),
+        #         "x_axis": "AVG ("
+        #         + str(df[df["train_pct"] == train_pct]["n_runs"].mean())[:3]
+        #         + ")",
+        #     },
+        #     ignore_index=True,
+        # )
+        pass
     result_dict[name] = df
 
     n_complete_runs = len(df[df["train_pct"] == 100])
-    if n_complete_runs == 9:
+    if n_complete_runs == len(tasks2list[TASKS]):
         print(name)
         # average metric value with train_pct 100
         mean_100 = df[df["train_pct"] == 100]["metric_MEAN"].mean()
@@ -516,8 +503,8 @@ def plot_100(
     
     category_order = sorted(df["Model"].unique().tolist())
     # remove ST-A-Fusion and put it back at position 1
-    category_order.remove(diff_base)
-    category_order.insert(1, diff_base)
+    # category_order.remove(diff_base)
+    # category_order.insert(1, diff_base)
     
     fig = px.bar(
         df,

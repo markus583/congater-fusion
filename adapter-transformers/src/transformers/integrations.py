@@ -947,7 +947,7 @@ class WandbCallback(TrainerCallback):
 
                         all_omegas = np.array(all_omegas)
                         # if some dimension greater than 12: skip
-                        if all_omegas.shape[1] > 12:
+                        if all_omegas.shape[1] > 16:
                             return
                         fig, ax = plt.subplots()
                         sns.heatmap(

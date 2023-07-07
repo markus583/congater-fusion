@@ -36,7 +36,14 @@ def get_model(
     config: AutoConfig.from_pretrained,
     fix_bert: bool = False,
 ):
-    model_args, data_args, training_args, adapter_args, fusion_args, congater_args = args
+    (
+        model_args,
+        data_args,
+        training_args,
+        adapter_args,
+        fusion_args,
+        congater_args,
+    ) = args
 
     if adapter_args.train_adapter:  # or data_args.task_name == "wsc":
         # We use the AutoAdapterModel class here for better adapter support.
@@ -85,3 +92,19 @@ def get_model(
     total_param = all_param - bert_param
     print("***** total param is {} *****".format(total_param))
     return model
+
+
+def get_model_multi(
+    args,
+    task_type: TaskType,
+    config: AutoConfig.from_pretrained,
+    fix_bert: bool = False,
+):
+    (
+        model_args,
+        data_args,
+        training_args,
+        adapter_args,
+        fusion_args,
+        congater_args,
+    ) = args
