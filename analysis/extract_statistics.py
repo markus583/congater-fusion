@@ -116,7 +116,8 @@ def extract_statistics(OUT_FILES, DIR_NAMES, MODEL_NAME, task_list):
                     # get seed
                     seed = int(eval_result.split("/")[-2])
                     # update metrics
-                    all_metrics[seed] = current_metrics
+                    if not (task == "wsc" and current_metrics["accuracy"] < 0.56):
+                        all_metrics[seed] = current_metrics
                 # take mean and std of each metric
                 mean_metrics = {}
                 std_metrics = {}

@@ -26,9 +26,9 @@ require_version(
     "To fix: pip install -r examples/pytorch/text-classification/requirements.txt",
 )
 # os.environ["TOKENIZERS_PARALLELISM"] = "false"
-os.environ["WANDB_PROJECT"] = "THESIS_st-a"
-os.environ["WANDB_WATCH"] = "all"
-os.environ["WANDB_LOG_MODEL "] = "true"
+os.environ["WANDB_PROJECT"] = "MULTI"
+# os.environ["WANDB_WATCH"] = "all"
+# os.environ["WANDB_LOG_MODEL "] = "true"
 logger = logging.getLogger(__name__)
 
 
@@ -49,38 +49,29 @@ def train_fn(trainer, training_args, last_checkpoint=None):
     trainer.save_state()
 
 
-def evaluate_fn(trainer, data_args, dataset):
-    # Loop to handle MNLI double evaluation (matched, mis-matched)
-    tasks = [data_args.task_name]
-    test_datasets = [dataset.test_dataset]
-    if data_args.task_name == "mnli":
-        tasks.append("mnli-mm")
-        valid_mm_dataset = dataset.test_dataset_mm
-        if data_args.max_eval_samples is not None:
-            max_eval_samples = min(len(valid_mm_dataset), data_args.max_eval_samples)
-            valid_mm_dataset = valid_mm_dataset.select(range(max_eval_samples))
-        test_datasets.append(valid_mm_dataset)
-        combined = {}
-
-    for ds, task in zip(test_datasets, tasks):
-        metrics = trainer.evaluate(eval_dataset=ds, metric_key_prefix="test")
-
-        max_eval_samples = (
-            data_args.max_eval_samples
-            if data_args.max_eval_samples is not None
-            else len(ds)
+def evaluate_fn(trainer, data_args, eval_dataset):
+    all_metrics = {}
+    for eval_dataset_name, eval_dataset in eval_dataset.items():
+        metrics = trainer.evaluate(
+            eval_dataset=eval_dataset,
+            metric_key_prefix=f"test_{eval_dataset_name}",
         )
-        metrics["test_samples"] = min(max_eval_samples, len(ds))
 
-        if task == "mnli-mm":
-            metrics = {k + "_mm": v for k, v in metrics.items()}
-        if task is not None and "mnli" in task:
-            combined.update(metrics)
-
-        trainer.log_metrics("test", metrics)
-        trainer.save_metrics(
-            "test", combined if task is not None and "mnli" in task else metrics
+        max_test_samples = (
+            data_args.max_test_samples
+            if data_args.max_test_samples is not None
+            else len(eval_dataset)
         )
+        metrics[f"test_{eval_dataset_name}_samples"] = min(
+            max_test_samples, len(eval_dataset)
+        )
+        all_metrics.update(metrics)
+
+    trainer.log_metrics("test", all_metrics)
+    # TODO: check effect of max_steps & epochs
+    # TODO: record
+    # TODO: adapter
+    trainer.save_metrics("test", all_metrics)
 
 
 def detect_last_checkpoint(training_arguments: transformers.TrainingArguments) -> str:
@@ -108,8 +99,6 @@ def detect_last_checkpoint(training_arguments: transformers.TrainingArguments) -
 
 
 def setup_logging(training_args: transformers.TrainingArguments) -> None:
-    with open(training_args.output_dir + "/terminal_logs.txt", "w") as f:
-        f.write("start")
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
         datefmt="%m/%d/%Y %H:%M:%S",
@@ -140,48 +129,14 @@ def main() -> None:
         congater_args,
     ) = args
 
-    if adapter_args.train_adapter:
-        if adapter_args.adapter_config == "pfeiffer":
-            WANDBPROJECT = "THESIS_st-a"
-        else:
-            WANDBPROJECT = "THESIS_ct_1-a"
-    elif fusion_args.train_fusion:
-        if congater_args.congosition_type:
-            WANDBPROJECT = "THESIS_congosition"
-        else:
-            WANDBPROJECT = "THESIS_st-a-fusion"
-    elif not adapter_args.train_adapter and not fusion_args.train_fusion:
-        WANDBPROJECT = "THESIS_full"
-    else:
-        raise NotImplementedError
-    os.environ["WANDB_WATCH"] = "all"
-    os.environ["WANDB_LOG_MODEL "] = "true"
-
-    os.environ["WANDB_PROJECT"] = WANDBPROJECT
-    # os.environ[
-    #     "WANDB_NAME"
-    # ] = f"{data_args.task_name}-{model_args.model_name_or_path}-{data_args.max_train_pct}-{training_args.seed}"
+    os.environ["WANDB_PROJECT"] = "MULTI"
+    # os.environ["WANDB_WATCH"] = "all"
+    # os.environ["WANDB_LOG_MODEL "] = "true"
 
     setup_logging(training_args)
 
     if data_args.train_tasks == None or len(data_args.train_tasks) == 0:
         data_args.train_tasks = data_args.tasks
-
-    logging.basicConfig(
-        filename=training_args.output_dir + "/terminal_logs.txt",
-        format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
-        datefmt="%m/%d/%Y %H:%M:%S",
-        level=logging.INFO if training_args.local_rank in [-1, 0] else logging.WARN,
-    )
-    logger.warning(
-        "Process rank: %s, device: %s, n_gpu: %s, distributed training: %s, 16-bits training: %s",
-        training_args.local_rank,
-        training_args.device,
-        training_args.n_gpu,
-        bool(training_args.local_rank != -1),
-        training_args.fp16,
-    )
-    logger.info("Training/evaluation parameters %s", training_args)
 
     if not data_args.eval_adapter:
         last_checkpoint = detect_last_checkpoint(training_arguments=training_args)
@@ -191,56 +146,35 @@ def main() -> None:
     set_seed(training_args.seed)
 
     if len(data_args.tasks) == 1:
-            # convert ["['rte', 'mrpc', ...]"] to ['rte', 'mrpc', ...]
+        # convert ["['rte', 'mrpc', ...]"] to ['rte', 'mrpc', ...]
         data_args.tasks = eval(data_args.tasks[0])
     if len(data_args.eval_tasks) == 1:
         data_args.eval_tasks = eval(data_args.eval_tasks[0])
-    trainer, model, dataset, adapter_setup = get_trainer(args=args)
+    trainer, model, train_dataset, eval_datasets, test_datasets = get_trainer(args=args)
 
     if training_args.do_train:
         # Log a few random samples from the training set:
-        for index in random.sample(range(len(dataset.train_dataset)), 3):
-            logger.info(
-                f"Sample {index} of the training set: {dataset.train_dataset[index]}."
-            )
+        for ds in train_dataset.datasets:
+            logger.info(f"Dataset: {ds[0]['task']}")
+            for index in random.sample(range(len(ds)), 3):
+                logger.info(
+                    f"Sample {index} of the training set: {ds[index]}."
+                )
+            logger.info("-" * 100)
 
         train_fn(trainer, training_args, last_checkpoint)
 
-    # save adapter
-    print(adapter_args)
-    if fusion_args.train_fusion:
-        logger.info("Saving Fusion.")
-
-        if congater_args.congosition_type is not None:
-            model.save_congosition(training_args.output_dir, ",".join(adapter_setup[0]))
-        else:
-            model.save_adapter_fusion(
-                training_args.output_dir, ",".join(adapter_setup[0])
-            )
-    elif adapter_args.train_adapter:
-        logger.info("Saving adapter.")
-        if data_args.source_task:
-            model.save_adapter(training_args.output_dir, data_args.source_task)
-        elif not congater_args.congosition_type:
-            model.save_adapter(training_args.output_dir, data_args.task_name)
-
     if training_args.do_eval:
         logger.info("*** Evaluate ***")
-        evaluate_fn(trainer, data_args, dataset)
+        evaluate_fn(trainer, data_args, test_datasets)
 
     kwargs = {
         "finetuned_from": model_args.model_name_or_path,
         "tasks": "text-classification",
     }
-    if data_args.task_name is not None:
+    if data_args.eval_tasks is not None:
         kwargs["language"] = "en"
-        kwargs["dataset_args"] = data_args.task_name
-        if data_args.dataset_name.lower() == "glue":
-            kwargs["dataset_tags"] = data_args.dataset_name
-            kwargs["dataset"] = f"GLUE {data_args.task_name.upper()}"
-        elif data_args.dataset_name.lower() == "superglue":
-            kwargs["dataset_tags"] = data_args.dataset_name
-            kwargs["dataset"] = f"SuperGLUE {data_args.task_name.upper()}"
+        kwargs["dataset_args"] = data_args.eval_tasks
 
     if training_args.push_to_hub:
         trainer.push_to_hub(**kwargs)
@@ -256,8 +190,8 @@ if __name__ == "__main__":
         sys.argv += [
             "--model_name_or_path",
             "roberta-base",
-            # "--max_seq_length",
-            # "128",
+            "--max_seq_length",
+            "128",
             "--do_train",
             "--do_eval",
             "--per_device_train_batch_size",
@@ -265,45 +199,38 @@ if __name__ == "__main__":
             "--per_device_eval_batch_size",
             "32",
             "--learning_rate",
-            "5e-3",
+            "2e-5",
             "--num_train_epochs",
-            "30",
+            "10",
             # "--train_adapter",
             # "True",
             "--output_dir",
-            "runs/TEST",
+            "runs/FULL-MULTI-GSG2",
             "--logging_strategy",
             "steps",
             "--logging_steps",
-            "10",
+            "20",
             "--evaluation_strategy",
             "epoch",
+            # "--eval_steps",
+            # "3",
             "--save_strategy",
             "epoch",
-            "--early_stopping",
-            "True",
-            "--early_stopping_patience",
-            "5",
-            "--load_best_model_at_end",
-            "True",
             "--report_to",
             "wandb",
             "--run_name",
-            "i0-rte-TEST",
+            "FULL-MULTI-GSG2",
             "--seed",
             "0",
             "--overwrite_output_dir",
-            "--no_cuda",
+            # "--no_cuda",
             # "--max_steps",
             # "10",
-            "--debug_congater",
-            "True",
-            "--congosition_type",
-            "splitL__vector_avg_d03",
             "--tasks",
-            '["copa", "mrpc", "qnli", "rte"]',
+            '["cb", "copa", "wsc", "boolq", "rte", "wic", "multirc", "record", "mrpc", "qnli", "qqp", "sst2", "stsb", "mnli", "qnli",]',
             "--eval_tasks",
-            '["copa", "mrpc", "qnli", "rte"]'
-
-                    ]
+            '["cb", "copa", "wsc", "boolq", "rte", "wic", "multirc", "record", "mrpc", "qnli", "qqp", "sst2", "stsb", "mnli", "qnli",]',
+            "--fp16",
+            # "--gradient_checkpointing",
+        ]
     main()

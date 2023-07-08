@@ -891,6 +891,8 @@ class WandbCallback(TrainerCallback):
                 all_omegas = []
                 all_betas = []
                 # check if wanted parameters exist
+                if not hasattr(model, "model.base_model.encoder"):
+                    return
                 named_params = list(
                     model.base_model.encoder.layer[
                         0

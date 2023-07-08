@@ -242,9 +242,9 @@ if __name__ == "__main__":
     if "--model_name_or_path" not in sys.argv:
         sys.argv += [
             "--model_name_or_path",
-            "bert-base-uncased",
+            "roberta-base",
             "--task_name",
-            "cb",
+            "record",
             "--dataset_name",
             "superglue",
             "--max_seq_length",

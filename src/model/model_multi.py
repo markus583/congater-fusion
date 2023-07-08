@@ -3,6 +3,22 @@ from operator import attrgetter
 
 import torch.nn as nn
 from transformers import PretrainedConfig, PreTrainedModel, RobertaPreTrainedModel
+import functools
+
+
+def rsetattr(obj, attr, val):
+    pre, _, post = attr.rpartition(".")
+    return setattr(rgetattr(obj, pre) if pre else obj, post, val)
+
+
+# using wonder's beautiful simplification: https://stackoverflow.com/questions/31174295/getattr-and-setattr-on-nested-objects/31174427?noredirect=1#comment86638618_31174427
+
+
+def rgetattr(obj, attr, *args):
+    def _getattr(obj, attr):
+        return getattr(obj, attr, *args)
+
+    return functools.reduce(_getattr, [obj] + attr.split("."))
 
 
 class MultitaskModel(RobertaPreTrainedModel):
@@ -27,8 +43,8 @@ class MultitaskModel(RobertaPreTrainedModel):
             if shared_encoder is None:
                 shared_encoder = model.base_model
                 if own_params is not None:
-                    shared_params = (
-                        set(model.base_model.state_dict().keys()) - own_params
+                    shared_params = set(model.base_model.state_dict().keys()) - set(
+                        own_params
                     )
                 else:
                     shared_params = set(model.base_model.state_dict().keys())
@@ -37,9 +53,9 @@ class MultitaskModel(RobertaPreTrainedModel):
                 for param_name, param in model.base_model.named_parameters():
                     if param_name in shared_params:
                         # print(param_name)
-                        weights = attrgetter(param_name)(shared_encoder)
+                        weights = rgetattr(shared_encoder, param_name)
                         # set the shared param to the new model's param
-                        param = weights
+                        rsetattr(model.base_model, param_name, weights)
 
             taskmodels_dict[task_name] = model
 
@@ -49,8 +65,9 @@ class MultitaskModel(RobertaPreTrainedModel):
             taskmodels_dict=taskmodels_dict,
         )
 
-    def forward(self, task_name, **kwargs):
-        return self.taskmodels_dict[task_name](**kwargs)
+    def forward(self, **kwargs):
+        task = kwargs.pop("task")
+        return self.taskmodels_dict[task](**kwargs)
 
     def print_parameter_info(self):
         print("Shared Parameters:")

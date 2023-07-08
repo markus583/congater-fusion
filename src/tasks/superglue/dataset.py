@@ -25,9 +25,14 @@ logger = logging.getLogger(__name__)
 
 
 class SuperGlueDataset:
-    def __init__(self, tokenizer: AutoTokenizer, data_args, training_args) -> None:
+    def __init__(
+        self, tokenizer: AutoTokenizer, data_args, training_args, name=None
+    ) -> None:
         super().__init__()
         # online
+        if name:
+            self.name = name
+            data_args.task_name = name
         raw_datasets = load_dataset("super_glue", data_args.task_name)
         self.tokenizer = tokenizer
         self.data_args = data_args
@@ -309,6 +314,7 @@ class SuperGlueDataset:
             exact_match_score,
             metric_max_over_ground_truths,
         )
+
         print("compute metrics now, RECORD")
         probs = p.predictions[0] if isinstance(p.predictions, tuple) else p.predictions
         examples = self.eval_dataset

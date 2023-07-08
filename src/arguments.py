@@ -80,13 +80,10 @@ class DataTrainingArguments:
     )
     template_id: Optional[int] = field(
         default=1,
-        metadata={
-            "help": "The specific prompt string to use"
-        },
+        metadata={"help": "The specific prompt string to use"},
     )
     pilot: Optional[str] = field(
-        default=None, 
-        metadata={"help": "do the pilot experiments."}
+        default=None, metadata={"help": "do the pilot experiments."}
     )
     max_train_samples: Optional[int] = field(
         default=None,
@@ -136,7 +133,7 @@ class DataTrainingArguments:
         default=None,
         metadata={"help": "A csv or a json file containing the test data."},
     )
-    
+
     eval_adapter: Optional[str] = field(
         default=False,
         metadata={"help": "The adapter to evaluate."},
@@ -245,10 +242,9 @@ class ModelArguments:
         default=5,
         metadata={"help": "Patience for early stopping."},
     )
-    
+
     omega: float = field(
-        default=1.0,
-        metadata={"help": "Static value of omega to use for t-sigmoid"}
+        default=1.0, metadata={"help": "Static value of omega to use for t-sigmoid"}
     )
 
 
@@ -285,11 +281,12 @@ class FusionArguments:
     fusion_unfreeze_adapters: str = field(
         default=None, metadata={"help": "Whether to unfreeze adapters."}
     )
-    
+
     learn_omega: bool = field(
         default=False, metadata={"help": "Whether to learn omega or not."}
     )
-    
+
+
 @dataclass
 class CongaterArguments:
     debug_congater: bool = field(
@@ -298,7 +295,6 @@ class CongaterArguments:
     congosition_type: str = field(
         default=None, metadata={"help": "Type of congosition to perform."}
     )
-    
 
 
 def get_args():
@@ -310,7 +306,7 @@ def get_args():
             TrainingArguments,
             AdapterArguments,
             FusionArguments,
-            CongaterArguments
+            CongaterArguments,
         )
     )
 

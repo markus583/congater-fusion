@@ -22,6 +22,7 @@ OUT_FILES = [
     "ST-A.csv",
     "ST-A-FUSION-30-GSG2.csv",
     "st-a-splitL__vector_2_avg_d03-lr1e-2-GSG2.csv",
+    "st-a-splitL__vector_2_avg_d03-lr5e-3-GSG2.csv",
 ]
 
 OUT_FILES = [BASE_DIR + f for f in OUT_FILES]
@@ -30,6 +31,7 @@ DIR_NAMES = [
     "st-a",
     "/share/rk3/home/markus-frohmann/congater-fusion/src/runs/st-a-fusion-FP16-30-GSG2",
     "st-a-splitL__vector_2_avg_d03-lr1e-2-GSG2",
+    "st-a-splitL__vector_2_avg_d03-lr5e-3-GSG2",
 ]
 
 print(len(OUT_FILES), len(DIR_NAMES))
@@ -45,6 +47,7 @@ compare_dict = {
             "ST-A",
             "ST-A-FUSION-30-GSG2",
             "st-a-splitL__vector_2_avg_d03-lr1e-2-GSG2",
+            "st-a-splitL__vector_2_avg_d03-lr5e-3-GSG2",
         ],
         "diff_base": "ST-A",
     },
@@ -55,6 +58,7 @@ compare_dict = {
             "ST-A",
             "ST-A-FUSION-30-GSG2",
             "st-a-splitL__vector_2_avg_d03-lr1e-2-GSG2",
+            "st-a-splitL__vector_2_avg_d03-lr5e-3-GSG2",
         ],
         "diff_base": "ST-A",
     },

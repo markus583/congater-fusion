@@ -13,6 +13,7 @@ from transformers import (
 task_to_keys = {
     "cola": ("sentence", None),
     "mnli": ("premise", "hypothesis"),
+    "mnli_mismatched": ("premise", "hypothesis"),
     "mrpc": ("sentence1", "sentence2"),
     "qnli": ("question", "sentence"),
     "qqp": ("question1", "question2"),
@@ -27,16 +28,23 @@ logger = logging.getLogger(__name__)
 
 class GlueDataset:
     def __init__(
-        self, tokenizer: AutoTokenizer.from_pretrained, data_args, training_args
+        self,
+        tokenizer: AutoTokenizer.from_pretrained,
+        data_args,
+        training_args,
+        name=None,
     ) -> None:
         super().__init__()
+        if name:
+            self.name = name
+            data_args.task_name = name
         raw_datasets = load_dataset("glue", data_args.task_name)
         self.tokenizer = tokenizer
         self.data_args = data_args
         # labels
         self.is_regression = data_args.task_name == "stsb"
         self.multiple_choice = False
-        
+
         if not self.is_regression:
             self.label_list = raw_datasets["train"].features["label"].names
             self.num_labels = len(self.label_list)

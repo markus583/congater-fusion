@@ -24,3 +24,5 @@ adapter-reproduction
 src/runs
 */TEST
 merges.txt
+.lock
+terminal_logs.txt

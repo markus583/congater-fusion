@@ -19,6 +19,7 @@ from transformers.adapters.configuration import (
 from transformers.adapters.training import setup_adapter_training
 from transformers.adapters import AutoAdapterModel
 import datasets
+from torch.utils.data import ConcatDataset
 
 from torchinfo import summary
 
@@ -30,6 +31,7 @@ from tasks.glue.dataset import GlueDataset
 from tasks.abstract_task import TaskDataset, build_compute_metrics_fn
 from tasks.superglue.dataset import SuperGlueDataset
 from tasks.utils import GLUE_DATASETS, SUPERGLUE_DATASETS
+from tasks.multitask_collator import TaskCollator
 from training.utils import map_omega_grid
 from training.multi_trainer import MultiTrainer
 
@@ -41,12 +43,7 @@ class AutoTask:
     def get(self, task_name: int):
         if task_name in GLUE_DATASETS or task_name in SUPERGLUE_DATASETS:
             return TaskDataset(task_name)
-        raise ValueError(
-            "Unrecognized task {} for AutoTask Model: {}.\n"
-            "Task name should be one of {}.".format(
-                ", ".join(c for c in TASK_MAPPING.keys())
-            )
-        )
+        raise ValueError
 
 
 def get_trainer(args):
@@ -87,28 +84,41 @@ def get_trainer(args):
     train_datasets = [
         ds.get_dataset(
             split="train",
-            n_obs=data_args.n_train,
+            n_obs=data_args.max_train_samples,
         )
         for ds in train_datasets_cls
     ]
     dataset_sizes = [len(train_dataset) for train_dataset in train_datasets]
-    train_dataset = datasets.concatenate_datasets(train_datasets)
+    logger.warn(f"Train dataset sizes: {dataset_sizes}")
+    # train_dataset = datasets.concatenate_datasets(train_datasets)
+    train_dataset = ConcatDataset(train_datasets)
     training_args.remove_unused_columns = False
     eval_datasets = {
         task: AutoTask.get(task).get_dataset(
             split="validation",
-            n_obs=data_args.n_val,  ## for cross lingual transfer, some task only have test set.
+            n_obs=data_args.max_eval_samples,  ## for cross lingual transfer, some task only have test set.
         )
         for task in data_args.eval_tasks
     }
+    logger.warn(
+        f"Eval dataset sizes: {[len(eval_dataset) for eval_dataset in eval_datasets.values()]}"
+    )
 
     test_datasets = {
         task: AutoTask.get(task).get_dataset(
             split="test",
-            n_obs=data_args.n_test,  ## for cross lingual transfer, some task only have test set.
+            n_obs=data_args.max_test_samples,  ## for cross lingual transfer, some task only have test set.
         )
         for task in data_args.eval_tasks
     }
+    if "mnli" in data_args.eval_tasks:
+        test_datasets["mnli_mismatched"] = AutoTask.get("mnli_mismatched").get_dataset(
+            split="test",
+            n_obs=data_args.max_test_samples,
+        )
+    logger.warn(
+        f"Test dataset sizes: {[len(test_dataset) for test_dataset in test_datasets.values()]}"
+    )
     compute_metrics_fn = build_compute_metrics_fn(data_args.eval_tasks)
 
     model_config_dict = {
@@ -125,10 +135,7 @@ def get_trainer(args):
         for task in train_datasets_cls
     }
     if adapter_args.train_adapter:
-        model_type_dict = {
-            task.name: AutoAdapterModel
-            for task in train_datasets_cls
-        }
+        model_type_dict = {task.name: AutoAdapterModel for task in train_datasets_cls}
         model = MultitaskAdapterModel.create(
             model_name=model_args.model_name_or_path,
             model_type_dict=model_type_dict,
@@ -148,9 +155,22 @@ def get_trainer(args):
             model_config_dict=model_config_dict,
         )
     model.print_parameter_info()
+    # TODO: check for taskmodels pointer
+    for i, task in enumerate(train_datasets_cls):
+        if i == 0:
+            ptr_0 = model.taskmodels_dict[
+                task.name
+            ].base_model.embeddings.word_embeddings.weight.data_ptr()
+        else:
+            assert (
+                ptr_0
+                == model.taskmodels_dict[
+                    task.name
+                ].base_model.embeddings.word_embeddings.weight.data_ptr()
+            )
 
     param_optimizer = list(model.named_parameters())
-    logger.info("Trainable parameters:")
+    logger.warn("Trainable parameters:")
     for n, p in param_optimizer:
         if p.requires_grad:
             logger.info(f"{n}")
@@ -177,22 +197,24 @@ def get_trainer(args):
     # else:
     #     early_stopping_callback = []
 
-    logger.info(summary(model, depth=10))
+    logger.info(summary(model, depth=3))
 
-        trainer = MultiTrainer(
-            model=model,
-            config=model_config_dict,  # TODO: change to model.config pattern
-            args=training_args,
-            train_dataset=train_dataset
-            eval_dataset=eval_datasets,
-            data_collator=TaskCollator(
-                tokenizer, data_args, tpu_num_cores=training_args.tpu_num_cores
-            ),
-            compute_metrics=None,
-            multi_task_compute_metrics=compute_metrics_fn,
-            data_args=data_args,
-            dataset_sizes=dataset_sizes,
-            adapter_config=adapter_config,
-        )
+    trainer = MultiTrainer(
+        model=model,
+        config=list(model_config_dict.values())[
+            0
+        ],  # TODO: change to model.config pattern
+        args=training_args,
+        train_dataset=train_dataset,
+        eval_dataset=eval_datasets,
+        data_collator=TaskCollator(
+            tokenizer, data_args, tpu_num_cores=training_args.tpu_num_cores
+        ),
+        compute_metrics=None,
+        multi_task_compute_metrics=compute_metrics_fn,
+        data_args=data_args,
+        dataset_sizes=dataset_sizes,
+        # adapter_config=adapter_config,
+    )
 
-    return trainer, model, dataset, adapter_setup
+    return trainer, model, train_dataset, eval_datasets, test_datasets

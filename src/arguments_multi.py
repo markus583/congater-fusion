@@ -12,6 +12,7 @@ from transformers.adapters import (
 task_to_keys = {
     "cola": ("sentence", None),
     "mnli": ("premise", "hypothesis"),
+    "mnli_mismatched": ("premise", "hypothesis"),
     "mrpc": ("sentence1", "sentence2"),
     "qnli": ("question", "sentence"),
     "qqp": ("question1", "question2"),
@@ -24,7 +25,7 @@ task_to_keys = {
     "wic": ("processed_sentence1", None),
     "wsc": ("span2_word_text", "span1_text"),
     "copa": (None, None),
-    "record": (None, None),
+    "record": ("passage", "question"),
     "multirc": ("paragraph", "question_answer"),
 }
 
@@ -105,42 +106,21 @@ class DataTrainingArguments:
         default=None,
         metadata={"help": "The grid of omega values to use for probing."},
     )
-    max_source_length: Optional[int] = field(
+    max_seq_length: Optional[int] = field(
         default=128,
         metadata={
             "help": "The maximum total input sequence length after tokenization. Sequences longer "
             "than this will be truncated, sequences shorter will be padded."
         },
     )
-    max_target_length: Optional[int] = field(
-        default=128,
-        metadata={
-            "help": "The maximum total sequence length for target text after tokenization. Sequences longer "
-            "than this will be truncated, sequences shorter will be padded."
-        },
+    max_train_samples: Optional[int] = field(
+        default=None, metadata={"help": "# training examples. -1 means use all."}
     )
-    val_max_target_length: Optional[int] = field(
-        default=128,
-        metadata={
-            "help": "The maximum total sequence length for validation target text after tokenization. Sequences longer "
-            "than this will be truncated, sequences shorter will be padded."
-        },
+    max_eval_samples: Optional[int] = field(
+        default=None, metadata={"help": "# validation examples. -1 means use all."}
     )
-    test_max_target_length: Optional[int] = field(
-        default=128,
-        metadata={
-            "help": "The maximum total sequence length for test target text after tokenization. Sequences longer "
-            "than this will be truncated, sequences shorter will be padded."
-        },
-    )
-    n_train: Optional[int] = field(
-        default=-1, metadata={"help": "# training examples. -1 means use all."}
-    )
-    n_val: Optional[int] = field(
-        default=-1, metadata={"help": "# validation examples. -1 means use all."}
-    )
-    n_test: Optional[int] = field(
-        default=-1, metadata={"help": "# test examples. -1 means use all."}
+    max_test_samples: Optional[int] = field(
+        default=None, metadata={"help": "# test examples. -1 means use all."}
     )
 
     temperature: Optional[int] = field(

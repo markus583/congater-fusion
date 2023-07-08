@@ -6,8 +6,12 @@ import torch
 import torch.distributed as dist
 from torch.utils.data import Sampler
 from typing import TypeVar, Optional, List
+import logging
 
 T_co = TypeVar("T_co", covariant=True)
+
+logger = logging.getLogger(__name__)
+
 
 
 class MultiTaskBatchSampler(Sampler[T_co]):
@@ -84,6 +88,7 @@ class MultiTaskBatchSampler(Sampler[T_co]):
             ]
         )
         weights = weights / np.sum(weights)
+        logging.info("Dataset weights: {}".format(weights))
         return torch.as_tensor(weights, dtype=torch.double)
 
     def __iter__(self):

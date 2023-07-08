@@ -1,4 +1,4 @@
-LR=1e-2
+LR=5e-3
 CONFIG=splitL__vector_2_avg_d03
 RUN_NAME=st-a-$CONFIG-lr$LR-GSG2
 
@@ -24,7 +24,7 @@ if [ ${#SEEDS[@]} -eq 0 ]; then
 fi
 
 
-for TASK in multirc qnli mnli qqp record; do
+for TASK in rte mrpc cola wic boolq stsb multirc sst2 qnli mnli qqp record; do
   for SEED in "${SEEDS[@]}"; do
     # these tasks only run with seeds 0 to 2
     if [ $SEED -gt 2 ] && [ $TASK = "multirc" -o $TASK = "record" -o $TASK = "sst2" -o $TASK = "qnli" -o $TASK = "qqp" -o $TASK = "mnli"]; then
