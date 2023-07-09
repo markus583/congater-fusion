@@ -22,7 +22,7 @@ if [ ${#SEEDS[@]} -eq 0 ]; then
 fi
 
 
-for TASK in cb copa wsc rte mrpc cola wic boolq stsb sst2 multirc qnli mnli qqp record; do
+for TASK in copa wsc rte mrpc cola wic boolq stsb sst2 multirc qnli mnli qqp record; do
   for SEED in "${SEEDS[@]}"; do
     # these tasks only run with seeds 0 to 2
     if [ $SEED -gt 2 ] && [ $TASK = "multirc" -o $TASK = "record" -o $TASK = "sst2" -o $TASK = "qnli" -o $TASK = "qqp" -o $TASK = "mnli" ]; then
@@ -31,9 +31,11 @@ for TASK in cb copa wsc rte mrpc cola wic boolq stsb sst2 multirc qnli mnli qqp 
     fi
 
     if [ $TASK = "copa" -o $TASK = "record" -o $TASK = "multirc" ]; then
-      GRADIENT_CHECKPOINTING="--gradient_checkpointing"
+      GRADIENT_ACCUMULATION_STEPS=2
+      BATCH_SIZE=16
     else
-      GRADIENT_CHECKPOINTING=""
+      GRADIENT_ACCUMULATION_STEPS=1
+      BATCH_SIZE=32
     fi
 
     for TRAIN_PCT in 100; do
@@ -50,7 +52,7 @@ for TASK in cb copa wsc rte mrpc cola wic boolq stsb sst2 multirc qnli mnli qqp 
       --do_eval \
       --train_fusion \
       --fusion_load_dir af_config_GSG2.json \
-      --per_device_train_batch_size 32 \
+      --per_device_train_batch_size $BATCH_SIZE \
       --per_device_eval_batch_size 32 \
       --dataloader_num_workers 0 \
       --learning_rate 5e-5 \
@@ -70,7 +72,7 @@ for TASK in cb copa wsc rte mrpc cola wic boolq stsb sst2 multirc qnli mnli qqp 
       --overwrite_output_dir \
       --fp16 \
       --fusion_type dynamic \
-      $GRADIENT_CHECKPOINTING
+      --gradient_accumulation_steps $GRADIENT_ACCUMULATION_STEPS \
 
       rm -rf ../../runs/$RUN_NAME/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED/checkpoint*
     done

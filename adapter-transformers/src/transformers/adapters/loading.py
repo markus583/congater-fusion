@@ -425,9 +425,9 @@ class AdapterLoader(WeightsLoader):
             name=name,
             model_class=self.model.__class__.__name__,
         )
-        print("OMEGA:", config_dict["config"]["omega"])
+        # print("OMEGA:", config_dict["config"]["omega"])
         # now, log it
-        logger.info("OMEGA: {}".format(config_dict["config"]["omega"]))
+        # logger.info("OMEGA: {}".format(config_dict["config"]["omega"]))
 
         # Save the adapter configuration
         self.weights_helper.save_weights_config(
