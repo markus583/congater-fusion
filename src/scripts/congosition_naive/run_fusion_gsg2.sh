@@ -1,6 +1,6 @@
-LR=5e-3
+LR=1e-2
 CONFIG=splitL__vector_2_avg_d03
-RUN_NAME=st-a-$CONFIG-lr$LR-GSG2
+RUN_NAME=st-a-$CONFIG-lr$LR-cosine-GSG2
 
 MODEL_NAME=roberta-base
 GPU_ID=0
@@ -24,18 +24,12 @@ if [ ${#SEEDS[@]} -eq 0 ]; then
 fi
 
 
-for TASK in rte mrpc cola wic boolq stsb multirc sst2 qnli mnli qqp record; do
+for TASK in cb copa wsc rte mrpc cola wic boolq stsb multirc sst2 qnli mnli qqp record; do
   for SEED in "${SEEDS[@]}"; do
     # these tasks only run with seeds 0 to 2
-    if [ $SEED -gt 2 ] && [ $TASK = "multirc" -o $TASK = "record" -o $TASK = "sst2" -o $TASK = "qnli" -o $TASK = "qqp" -o $TASK = "mnli"]; then
+    if [ $SEED -gt 2 ] && [ $TASK = "multirc" -o $TASK = "record" -o $TASK = "sst2" -o $TASK = "qnli" -o $TASK = "qqp" -o $TASK = "mnli" ]; then
       echo "Skipping $TASK with seed $SEED"
       continue
-    fi
-
-    if [ $TASK = "copa" -o $TASK = "record" ]; then
-      GRADIENT_CHECKPOINTING="--gradient_checkpointing"
-    else
-      GRADIENT_CHECKPOINTING=""
     fi
 
     for TRAIN_PCT in 100; do
@@ -65,7 +59,7 @@ for TASK in rte mrpc cola wic boolq stsb multirc sst2 qnli mnli qqp record; do
         --early_stopping True \
         --early_stopping_patience 30 \
         --load_best_model_at_end True \
-        --lr_scheduler_type linear \
+        --lr_scheduler_type cosine \
         --report_to wandb \
         --run_name $TASK-$MODEL_NAME-$TRAIN_PCT-$SEED-$RUN_NAME \
         --seed $SEED \

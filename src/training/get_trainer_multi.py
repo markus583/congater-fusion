@@ -141,6 +141,7 @@ def get_trainer(args):
             model_type_dict=model_type_dict,
             model_config_dict=model_config_dict,
             dataset_cls=train_datasets_cls,
+            freeze_base_model=model_args.freeze_base_model,
         )
     else:
         model_type_dict = {

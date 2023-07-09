@@ -226,6 +226,10 @@ class ModelArguments:
     omega: float = field(
         default=1.0, metadata={"help": "Static value of omega to use for t-sigmoid"}
     )
+    
+    freeze_base_model: bool = field(
+        default=True, metadata={"help": "Whether to freeze the base model or not for adapter-based MTL."}
+    )
 
 
 @dataclass

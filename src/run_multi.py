@@ -13,6 +13,7 @@ from transformers import set_seed
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version
 from transformers.utils.versions import require_version
+import torch
 
 from arguments_multi import get_args
 from tasks.utils import GLUE_DATASETS, SUPERGLUE_DATASETS, TASKS
@@ -38,6 +39,12 @@ def train_fn(trainer, training_args, last_checkpoint=None):
         checkpoint = training_args.resume_from_checkpoint
     elif last_checkpoint is not None:
         checkpoint = last_checkpoint
+    
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()  # wait for move to complete
+        start = torch.cuda.Event(enable_timing=True)
+        end = torch.cuda.Event(enable_timing=True)
+        start.record()
     train_result = trainer.train(resume_from_checkpoint=checkpoint)
     metrics = train_result.metrics
     metrics["train_samples"] = len(trainer.train_dataset)
@@ -47,9 +54,16 @@ def train_fn(trainer, training_args, last_checkpoint=None):
     trainer.log_metrics("train", metrics)
     trainer.save_metrics("train", metrics)
     trainer.save_state()
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()  # wait for all_reduce to complete
+        end.record()
+        total_time = {"total_time": start.elapsed_time(end)}
+        print("###### total_time ", total_time["total_time"])
+        return total_time
+    return None
 
 
-def evaluate_fn(trainer, data_args, eval_dataset):
+def evaluate_fn(trainer, data_args, eval_dataset, total_time):
     all_metrics = {}
     for eval_dataset_name, eval_dataset in eval_dataset.items():
         metrics = trainer.evaluate(
@@ -67,10 +81,14 @@ def evaluate_fn(trainer, data_args, eval_dataset):
         )
         all_metrics.update(metrics)
 
+    if torch.cuda.is_available():
+        peak_memory = torch.cuda.max_memory_allocated() / 1024**2
+        all_metrics["peak_memory_mb"] = peak_memory
+        all_metrics["total_time_s"] = total_time["total_time"] / 1000
+        all_metrics["total_time_min"] = total_time["total_time"] / 1000 / 60
+        all_metrics["total_time_h"] = total_time["total_time"] / 1000 / 60 / 60
     trainer.log_metrics("test", all_metrics)
     # TODO: check effect of max_steps & epochs
-    # TODO: record
-    # TODO: adapter
     trainer.save_metrics("test", all_metrics)
 
 
@@ -162,11 +180,11 @@ def main() -> None:
                 )
             logger.info("-" * 100)
 
-        train_fn(trainer, training_args, last_checkpoint)
+        total_time = train_fn(trainer, training_args, last_checkpoint)
 
     if training_args.do_eval:
         logger.info("*** Evaluate ***")
-        evaluate_fn(trainer, data_args, test_datasets)
+        evaluate_fn(trainer, data_args, test_datasets, total_time)
 
     kwargs = {
         "finetuned_from": model_args.model_name_or_path,
@@ -205,7 +223,7 @@ if __name__ == "__main__":
             "--train_adapter",
             "True",
             "--output_dir",
-            "runs/A-MULTI-GSG2-0",
+            "runs/MULTI-TEST",
             "--logging_strategy",
             "steps",
             "--logging_steps",
@@ -219,21 +237,23 @@ if __name__ == "__main__":
             "--report_to",
             "wandb",
             "--run_name",
-            "A-MULTI-GSG2-0",
+            "MULTI-TEST",
             "--seed",
             "0",
             "--overwrite_output_dir",
             # "--no_cuda",
-            # "--max_steps",
-            # "10",
+            "--max_steps",
+            "10",
             "--tasks",
-            '["cb", "copa", "wsc", "boolq", "rte", "wic", "multirc", "record", "mrpc", "qnli", "qqp", "sst2", "stsb", "mnli", "qnli",]',
+            '["cb",]',
             "--eval_tasks",
-            '["cb", "copa", "wsc", "boolq", "rte", "wic", "multirc", "record", "mrpc", "qnli", "qqp", "sst2", "stsb", "mnli", "qnli",]',
+            '["cb", ]',
             "--fp16",
-            # "--gradient_checkpointing",
+            "--gradient_checkpointing",
             "--warmup_ratio",
             "0.1",
+            "--freeze_base_model",
+            "True",
         ]
     main()
 

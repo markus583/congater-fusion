@@ -39,6 +39,7 @@ class MultitaskAdapterModel(RobertaPreTrainedModel):
         model_config_dict,
         dataset_cls,
         own_params=None,
+        freeze_base_model: bool = True,
     ):
         shared_encoder = None
         taskmodels_dict = {}
@@ -57,14 +58,7 @@ class MultitaskAdapterModel(RobertaPreTrainedModel):
                 if own_params is not None:
                     shared_params = set(model.base_model.state_dict().keys()) - set(
                         own_params
-                    )
-                    # filter out adapter params from shared params
-                    # adapter_params = set()
-                    # for param_name in model.base_model.state_dict().keys():
-                    #     if "adapters" in param_name:
-                    #         adapter_params.add(param_name)
-                    # shared_params = shared_params - adapter_params
-                    
+                    )                    
                 else:
                     shared_params = set(model.base_model.state_dict().keys())
                 print(len(shared_params))
@@ -89,7 +83,8 @@ class MultitaskAdapterModel(RobertaPreTrainedModel):
                     if not dataset.is_regression
                     else None,
                 )
-            model.train_adapter([task_name])
+            if freeze_base_model:
+                model.train_adapter([task_name])
             model.set_active_adapters(task_name)
             taskmodels_dict[task_name] = model
 

@@ -748,7 +748,10 @@ class ModelAdaptersMixin(PushAdapterToHubMixin, ABC):
             self.base_model.shared_parameters[
                 ",".join(adapter_names)
             ] = init_shared_parameters_congosition(
-                congosition_config, self.config.hidden_size, len(adapter_names), self.device
+                congosition_config,
+                self.config.hidden_size,
+                len(adapter_names),
+                self.device,
             )
 
     def delete_adapter(self, adapter_name: str):
@@ -968,9 +971,16 @@ class ModelAdaptersMixin(PushAdapterToHubMixin, ABC):
         # since omega is parameter
         if config is not None:
             for i in range(len(loader.model.base_model.encoder.layer)):
-                loader.model.base_model.encoder.layer[i].output.adapters[
-                    load_name
-                ].omega.data.fill_(config.omega)
+                # check if value exists
+                if (
+                    loader.model.base_model.encoder.layer[i]
+                    .output.adapters[load_name]
+                    .omega
+                    is not None
+                ):
+                    loader.model.base_model.encoder.layer[i].output.adapters[
+                        load_name
+                    ].omega.data.fill_(config.omega)
 
         # load additional custom weights
         if custom_weights_loaders:
@@ -1241,25 +1251,38 @@ class ModelAdaptersMixin(PushAdapterToHubMixin, ABC):
         if len(self.shared_parameters) > 0:
             for name, param in self.shared_parameters.named_parameters():
                 if "omega" in name:
-                    module_name = list(self.encoder.layer[0].output.congosition_v1_layer)[0]
-                    config = self.encoder.layer[0].output.congosition_v1_layer[module_name].config
+                    module_name = list(
+                        self.encoder.layer[0].output.congosition_v1_layer
+                    )[0]
+                    config = (
+                        self.encoder.layer[0]
+                        .output.congosition_v1_layer[module_name]
+                        .config
+                    )
                     if config["regularization"]:
                         if param.requires_grad:
-                            reg_loss = config["lambda_reg"] * (target - param.sum(dim=1)).pow(2).sum()
+                            reg_loss = (
+                                config["lambda_reg"]
+                                * (target - param.sum(dim=1)).pow(2).sum()
+                            )
 
         else:
             for i, layer in self.iter_layers():
                 for module in layer.modules():
                     if isinstance(module, AdapterLayer):
                         for _, layer_fusion in module.congosition_v1_layer.items():
-                            if hasattr(list(module.congosition_v1_layer.items())[0][1], "omega"):
+                            if hasattr(
+                                list(module.congosition_v1_layer.items())[0][1], "omega"
+                            ):
                                 module_name = list(module.congosition_v1_layer)[0]
                                 config = module.congosition_v1_layer[module_name].config
                                 if config["regularization"]:
                                     if layer_fusion.omega.requires_grad:
                                         layer_reg_loss = (
                                             config["lambda_reg"]
-                                            * (target - layer_fusion.omega.mean(dim=1)).pow(2).sum()
+                                            * (target - layer_fusion.omega.mean(dim=1))
+                                            .pow(2)
+                                            .sum()
                                         )
                                         if reg_loss is None:
                                             reg_loss = layer_reg_loss
@@ -1268,7 +1291,6 @@ class ModelAdaptersMixin(PushAdapterToHubMixin, ABC):
             else:
                 if reg_loss is not None:
                     reg_loss /= len(self.active_adapters[0])
-                
 
         return reg_loss
 
