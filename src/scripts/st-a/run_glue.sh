@@ -49,7 +49,7 @@ for TASK in rte mrpc cola stsb sst2 qnli qqp mnli; do
       --adapter_config pfeiffer \
       --output_dir ../../runs/$RUN_NAME/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED \
       --logging_strategy steps \
-      --logging_steps 100 \
+      --logging_steps 20 \
       --save_strategy epoch \
       --evaluation_strategy epoch \
       --early_stopping True \

@@ -1,5 +1,5 @@
 LR=1e-2
-CONFIG=splitL__vector_2_avg_d03
+CONFIG=splitL__scalar_2_avg_d03
 RUN_NAME=st-a-$CONFIG-lr$LR-SUPERGLUE
 
 # splitL__scalar
@@ -32,7 +32,7 @@ fi
 for TASK in cb copa wsc wic boolq multirc record; do
   for SEED in "${SEEDS[@]}"; do
     # these tasks only run with seeds 0 to 4
-    if [ $SEED -gt 4 ] && [ $TASK = "multirc" -o $TASK = "record" ]; then
+    if [ $SEED -gt 0 ] && [ $TASK = "multirc" -o $TASK = "record" ]; then
       echo "Skipping $TASK with seed $SEED"
       continue
     fi

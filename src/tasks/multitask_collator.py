@@ -74,12 +74,13 @@ class TaskCollator:
             for examples in batched_examples
         ]
 
-        if tasks[0] == "multirc" or tasks[0] == "record":
-            max_length = self.max_seq_length * 2
+        if tasks[0] == "multirc":
+            max_length = 348
         else:
             max_length = self.max_seq_length
         if tasks[0] == "record":
             truncation = "only_first"
+            max_length = self.max_seq_length * 2
         else:
             truncation = True
         result = self.tokenizer(
@@ -91,6 +92,5 @@ class TaskCollator:
         )
 
         result["task"] = tasks[0]
-        # result["label"] = [x["label"] for x in batched_examples]
         result["labels"] = torch.tensor([x["label"] for x in batched_examples])
         return result.data
