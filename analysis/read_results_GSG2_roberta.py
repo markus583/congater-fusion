@@ -18,7 +18,7 @@ BASE_DIR = f"{TASKS}-{MODEL_NAME}/results/"
 if not os.path.exists(BASE_DIR):
     os.makedirs(BASE_DIR)
 OUT_FILES = [
-    # "FULL.csv",
+    "FULL.csv",
     "ST-A.csv",
     "ST-A-FUSION-30-GSG2.csv",
     "st-a-splitL__vector_2_avg_d03-lr1e-2-GSG2.csv",
@@ -27,7 +27,7 @@ OUT_FILES = [
 
 OUT_FILES = [BASE_DIR + f for f in OUT_FILES]
 DIR_NAMES = [
-    # "full",
+    "full",
     "st-a",
     "/share/rk3/home/markus-frohmann/congater-fusion/src/runs/st-a-fusion-FP16-30-GSG2",
     "st-a-splitL__vector_2_avg_d03-lr1e-2-GSG2",
@@ -44,6 +44,7 @@ compare_dict = {
         "exclude": [],
         "include": [],
         "include_list_exactly": [
+            "FULL",
             "ST-A",
             "ST-A-FUSION-30-GSG2",
             "st-a-splitL__vector_2_avg_d03-lr1e-2-GSG2",

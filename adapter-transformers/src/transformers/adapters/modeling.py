@@ -74,10 +74,11 @@ class Adapter(nn.Module):
         if self.variable_omega:
             self.omega = nn.Parameter(torch.tensor(config["omega"]), requires_grad=True)
         else:
-            self.omega = nn.Parameter(
-                torch.tensor(config["omega"]), requires_grad=False
-            )
-            self.omega.requires_grad = False
+            # self.omega = nn.Parameter(
+            #     torch.tensor(config["omega"]), requires_grad=False
+            # )
+            # self.omega.requires_grad = False
+            self.omega = None
         self.use_ttsigmoid = config["use_ttsigmoid"]
 
         if self.apply_tsigmoid:

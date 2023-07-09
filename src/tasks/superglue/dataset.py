@@ -274,7 +274,7 @@ class SuperGlueDataset:
             else (examples[self.sentence1_key], examples[self.sentence2_key])
         )
         if self.data_args.task_name == "multirc":
-            max_length = self.max_seq_length * 2
+            max_length = 348
         else:
             max_length = self.max_seq_length
         print("max_length", max_length)

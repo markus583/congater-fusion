@@ -235,7 +235,9 @@ def build_compute_metrics_fn(
 
     def compute_metrics(self, p: EvalPrediction, task: str, metrics):
         preds = p.predictions[0] if isinstance(p.predictions, tuple) else p.predictions
-        preds = np.argmax(preds, axis=1)
+        preds = np.squeeze(preds) if task == "stsb" else np.argmax(preds, axis=1)
+
+        # preds = np.argmax(preds, axis=1)
         print(preds.sum())
 
         if task == "record":
