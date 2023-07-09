@@ -24,13 +24,13 @@ fi
 
 for TASK in cb copa wsc rte mrpc cola wic boolq stsb sst2 multirc qnli mnli qqp record; do
   for SEED in "${SEEDS[@]}"; do
-    # these tasks only run with seeds 0 to 4
-    if [ $SEED -gt 2 ] && [ $TASK = "multirc" -o $TASK = "record" -o $TASK = "sst2" -o $TASK = "qnli" -o $TASK = "qqp" -o $TASK = "mnli"]; then
+    # these tasks only run with seeds 0 to 2
+    if [ $SEED -gt 2 ] && [ $TASK = "multirc" -o $TASK = "record" -o $TASK = "sst2" -o $TASK = "qnli" -o $TASK = "qqp" -o $TASK = "mnli" ]; then
       echo "Skipping $TASK with seed $SEED"
       continue
     fi
 
-    if [ $TASK = "copa" -o $TASK = "record" ]; then
+    if [ $TASK = "copa" -o $TASK = "record" -o $TASK = "multirc" ]; then
       GRADIENT_CHECKPOINTING="--gradient_checkpointing"
     else
       GRADIENT_CHECKPOINTING=""

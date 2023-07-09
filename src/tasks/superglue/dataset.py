@@ -76,7 +76,7 @@ class SuperGlueDataset:
             raw_datasets = raw_datasets.map(
                 self.record_preprocess_function,
                 batched=True,
-                load_from_cache_file=not data_args.overwrite_cache,
+                load_from_cache_file=False,
                 remove_columns=raw_datasets["train"].column_names,
                 desc="Running tokenizer on dataset",
             )
@@ -84,7 +84,7 @@ class SuperGlueDataset:
             raw_datasets = raw_datasets.map(
                 self.preprocess_function,
                 batched=True,
-                load_from_cache_file=not data_args.overwrite_cache,
+                load_from_cache_file=False,
                 desc="Running tokenizer on dataset",
             )
 
