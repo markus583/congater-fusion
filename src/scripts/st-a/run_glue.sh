@@ -23,8 +23,8 @@ fi
 
 for TASK in rte mrpc cola stsb sst2 qnli qqp mnli; do
   for SEED in "${SEEDS[@]}"; do
-    # these tasks only run with seeds 0 to 4
-    if [ $SEED -gt 4 ] && [ $TASK = "sst2" -o $TASK = "qnli" -o $TASK = "qqp" -o $TASK = "mnli" ]; then
+    # these tasks only run with seeds 0 to 2
+    if [ $SEED -gt 2 ] && [ $TASK = "sst2" -o $TASK = "qnli" -o $TASK = "qqp" -o $TASK = "mnli" ]; then
       echo "Skipping $TASK with seed $SEED"
       continue
     fi
