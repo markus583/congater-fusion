@@ -230,6 +230,10 @@ class ModelArguments:
     freeze_base_model: bool = field(
         default=True, metadata={"help": "Whether to freeze the base model or not for adapter-based MTL."}
     )
+    
+    separate_task_adapters: bool = field(
+        default=True, metadata={"help": "Whether to use separate task adapters for adapter-based MTL."}
+    )
 
 
 @dataclass

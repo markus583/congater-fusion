@@ -17,7 +17,7 @@ while getopts ":g:s:" opt; do
   esac
 done
 
-# if no seeds are specified, use default seeds 0 to 9
+# if no seeds are specified, use default seeds 0 to 2
 if [ ${#SEEDS[@]} -eq 0 ]; then
   SEEDS=(0 1 2)
 fi
@@ -39,17 +39,25 @@ for SEED in "${SEEDS[@]}"; do
     --per_device_eval_batch_size 32 \
     --dataloader_num_workers 0 \
     --learning_rate 2e-5 \
-    --num_train_epochs 5 \
     --output_dir ../../runs/$RUN_NAME/$MODEL_NAME/$SEED \
+    --max_steps 262144 \
     --logging_strategy steps \
     --logging_steps 20 \
-    --save_strategy epoch \
-    --evaluation_strategy epoch \
+    --save_strategy steps \
+    --save_steps 8192 \
+    --evaluation_strategy steps \
+    --eval_steps 8192 \
+    --early_stopping \
+    --early_stopping_patience 5 \
+    --load_best_model_at_end \
+    --metric_for_best_model eval_loss_mean \
+    --greater_is_better False \
     --report_to wandb \
     --run_name $RUN_NAME-$MODEL_NAME-$SEED \
     --seed $SEED \
     --overwrite_output_dir \
     --warmup_ratio 0.1 \
+    --fp16 \
 
     rm -rf ../../runs/$RUN_NAME/$MODEL_NAME/$SEED
 done

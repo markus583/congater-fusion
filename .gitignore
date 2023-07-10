@@ -26,3 +26,5 @@ src/runs
 merges.txt
 .lock
 terminal_logs.txt
+/ProPETL
+.ProPETL

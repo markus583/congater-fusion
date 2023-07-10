@@ -75,7 +75,7 @@ class TaskCollator:
         ]
 
         if tasks[0] == "multirc":
-            max_length = 348
+            max_length = 324
         else:
             max_length = self.max_seq_length
         if tasks[0] == "record":

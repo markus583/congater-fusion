@@ -68,7 +68,6 @@ for TASK in cb copa wsc rte mrpc cola wic boolq stsb multirc sst2 qnli mnli qqp 
         --fp16 \
         --congosition_type $CONFIG \
         --fusion_type $CONFIG \
-        $GRADIENT_CHECKPOINTING
 
         rm -rf ../../runs/$RUN_NAME/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED/checkpoint*
     done

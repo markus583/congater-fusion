@@ -1,4 +1,4 @@
-RUN_NAME=MTA-MULTI-GSG2
+RUN_NAME=MTA_unfreeze_encoder-MULTI-GSG2
 TASKS=(cb copa wsc rte mrpc cola wic boolq stsb sst2 multirc qnli mnli qqp record)
 
 MODEL_NAME=roberta-base
@@ -37,8 +37,8 @@ for SEED in "${SEEDS[@]}"; do
     --do_eval \
     --per_device_train_batch_size 32 \
     --per_device_eval_batch_size 32 \
-    --dataloader_num_workers 4 \
-    --learning_rate 1e-4 \
+    --dataloader_num_workers 0 \
+    --learning_rate 2e-5 \
     --output_dir ../../runs/$RUN_NAME/$MODEL_NAME/$SEED \
     --max_steps 262144 \
     --logging_strategy steps \
@@ -58,8 +58,7 @@ for SEED in "${SEEDS[@]}"; do
     --overwrite_output_dir \
     --warmup_ratio 0.1 \
     --train_adapter \
-    --freeze_base_model True \
-    --separate_task_adapter False \
+    --freeze_base_model False \
     --fp16 \
 
     rm -rf ../../runs/$RUN_NAME/$MODEL_NAME/$SEED

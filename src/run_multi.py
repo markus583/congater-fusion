@@ -40,7 +40,7 @@ def train_fn(trainer, training_args, last_checkpoint=None):
     elif last_checkpoint is not None:
         checkpoint = last_checkpoint
     
-    if torch.cuda.is_available():
+    if not training_args.no_cuda:
         torch.cuda.synchronize()  # wait for move to complete
         start = torch.cuda.Event(enable_timing=True)
         end = torch.cuda.Event(enable_timing=True)
@@ -54,7 +54,7 @@ def train_fn(trainer, training_args, last_checkpoint=None):
     trainer.log_metrics("train", metrics)
     trainer.save_metrics("train", metrics)
     trainer.save_state()
-    if torch.cuda.is_available():
+    if not training_args.no_cuda:
         torch.cuda.synchronize()  # wait for all_reduce to complete
         end.record()
         total_time = {"total_time": start.elapsed_time(end)}
@@ -63,7 +63,7 @@ def train_fn(trainer, training_args, last_checkpoint=None):
     return None
 
 
-def evaluate_fn(trainer, data_args, eval_dataset, total_time):
+def evaluate_fn(trainer, data_args, training_args, eval_dataset, total_time):
     all_metrics = {}
     for eval_dataset_name, eval_dataset in eval_dataset.items():
         metrics = trainer.evaluate(
@@ -81,7 +81,7 @@ def evaluate_fn(trainer, data_args, eval_dataset, total_time):
         )
         all_metrics.update(metrics)
 
-    if torch.cuda.is_available():
+    if not training_args.no_cuda:
         peak_memory = torch.cuda.max_memory_allocated() / 1024**2
         all_metrics["peak_memory_mb"] = peak_memory
         all_metrics["total_time_s"] = total_time["total_time"] / 1000
@@ -184,7 +184,7 @@ def main() -> None:
 
     if training_args.do_eval:
         logger.info("*** Evaluate ***")
-        evaluate_fn(trainer, data_args, test_datasets, total_time)
+        evaluate_fn(trainer, data_args, training_args, test_datasets, total_time)
 
     kwargs = {
         "finetuned_from": model_args.model_name_or_path,
@@ -229,11 +229,13 @@ if __name__ == "__main__":
             "--logging_steps",
             "20",
             "--evaluation_strategy",
-            "epoch",
-            # "--eval_steps",
-            # "3",
+            "steps",
+            "--eval_steps",
+            "4",
             "--save_strategy",
-            "epoch",
+            "steps",
+            "--save_steps",
+            "4",
             "--report_to",
             "wandb",
             "--run_name",
@@ -241,19 +243,27 @@ if __name__ == "__main__":
             "--seed",
             "0",
             "--overwrite_output_dir",
-            # "--no_cuda",
+            "--no_cuda",
             "--max_steps",
-            "10",
+            "20",
             "--tasks",
-            '["cb",]',
+            '["cb", "copa", "mrpc"]',
             "--eval_tasks",
-            '["cb", ]',
-            "--fp16",
-            "--gradient_checkpointing",
+            '["cb", "copa", "mrpc"]',
+            # "--fp16",
+            # "--gradient_checkpointing",
             "--warmup_ratio",
             "0.1",
             "--freeze_base_model",
             "True",
+            "--load_best_model_at_end",
+            "True",
+            "--metric_for_best_model",
+            "eval_loss_mean",
+            "--greater_is_better",
+            "False",
+            "--separate_task_adapters",
+            "False",
         ]
     main()
 

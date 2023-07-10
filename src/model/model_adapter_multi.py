@@ -24,12 +24,13 @@ def rgetattr(obj, attr, *args):
 
 
 class MultitaskAdapterModel(RobertaPreTrainedModel):
-    def __init__(self, encoder, shared_params, taskmodels_dict):
+    def __init__(self, encoder, shared_params, taskmodels_dict, separate_task_adapters):
         super().__init__(PretrainedConfig())
 
         self.encoder = encoder
         self.shared_params = shared_params
         self.taskmodels_dict = nn.ModuleDict(taskmodels_dict)
+        self.separate_task_adapters = separate_task_adapters
 
     @classmethod
     def create(
@@ -40,6 +41,7 @@ class MultitaskAdapterModel(RobertaPreTrainedModel):
         dataset_cls,
         own_params=None,
         freeze_base_model: bool = True,
+        separate_task_adapters: bool = True,
     ):
         shared_encoder = None
         taskmodels_dict = {}
@@ -51,7 +53,10 @@ class MultitaskAdapterModel(RobertaPreTrainedModel):
                 model_name,
                 config=model_config_dict[task_name],
             )
-            model.add_adapter(adapter_name=task_name, config="pfeiffer")
+            if separate_task_adapters:
+                model.add_adapter(adapter_name=task_name, config="pfeiffer")
+            else:
+                model.add_adapter(adapter_name="MT", config="pfeiffer")
 
             if shared_encoder is None:
                 shared_encoder = model.base_model
@@ -64,11 +69,14 @@ class MultitaskAdapterModel(RobertaPreTrainedModel):
                 print(len(shared_params))
             else:
                 for param_name, param in model.base_model.named_parameters():
-                    if param_name in shared_params and "adapter" not in param_name:
-                        # print(param_name)
-                        weights = rgetattr(shared_encoder, param_name)
-                        # set the shared param to the new model's param
-                        rsetattr(model.base_model, param_name, weights)
+                    if separate_task_adapters:
+                        if param_name in shared_params and "adapter" not in param_name:
+                            weights = rgetattr(shared_encoder, param_name)
+                            rsetattr(model.base_model, param_name, weights)
+                    else:
+                        if param_name in shared_params:
+                            weights = rgetattr(shared_encoder, param_name)
+                            rsetattr(model.base_model, param_name, weights)
 
             if dataset.multiple_choice:
                 model.add_multiple_choice_head(
@@ -83,15 +91,21 @@ class MultitaskAdapterModel(RobertaPreTrainedModel):
                     if not dataset.is_regression
                     else None,
                 )
-            if freeze_base_model:
-                model.train_adapter([task_name])
-            model.set_active_adapters(task_name)
+            if separate_task_adapters:
+                if freeze_base_model:
+                    model.train_adapter([task_name])
+                model.set_active_adapters(task_name)
+            else:
+                if freeze_base_model:
+                    model.train_adapter(["MT"])
+                model.set_active_adapters(["MT"])
             taskmodels_dict[task_name] = model
 
         return cls(
             encoder=shared_encoder,
             shared_params=shared_params,
             taskmodels_dict=taskmodels_dict,
+            separate_task_adapters=separate_task_adapters,
         )
 
     def forward(self, **kwargs):
@@ -125,14 +139,26 @@ class MultitaskAdapterModel(RobertaPreTrainedModel):
                 print(
                     f"Parameter: {param_name}, params: {param.numel()}, Trainable: {trainable}"
                 )
-        print("\nNon-shared Adapter Parameters:")
-        print("======================")
-        for task in self.taskmodels_dict:
-            for param_name, param in self.taskmodels_dict[task].named_parameters():     
+        if self.separate_task_adapters:
+            print("\nNon-shared Adapter Parameters:")
+            print("======================")
+            for task in self.taskmodels_dict:
+                for param_name, param in self.taskmodels_dict[task].named_parameters():     
+                    if "adapters" in param_name:
+                        non_shared_param_count += param.numel()
+                        trainable = param.requires_grad
+                        non_shared_trainable_count += param.numel() if trainable else 0
+                        print(
+                            f"Parameter: {param_name}, params: {param.numel()}, Trainable: {param.requires_grad}"
+                        )
+        else:
+            print("\nShared Adapter Parameters:")
+            print("======================")
+            for param_name, param in self.named_parameters():
                 if "adapters" in param_name:
-                    non_shared_param_count += param.numel()
+                    shared_param_count += param.numel()
                     trainable = param.requires_grad
-                    non_shared_trainable_count += param.numel() if trainable else 0
+                    shared_trainable_count += param.numel() if trainable else 0
                     print(
                         f"Parameter: {param_name}, params: {param.numel()}, Trainable: {param.requires_grad}"
                     )

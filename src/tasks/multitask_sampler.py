@@ -13,7 +13,6 @@ T_co = TypeVar("T_co", covariant=True)
 logger = logging.getLogger(__name__)
 
 
-
 class MultiTaskBatchSampler(Sampler[T_co]):
     """Defines a sampler to sample multiple datasets with temperature sampling
     in a distributed fashion."""
@@ -88,7 +87,7 @@ class MultiTaskBatchSampler(Sampler[T_co]):
             ]
         )
         weights = weights / np.sum(weights)
-        logging.info("Dataset weights: {}".format(weights))
+        logging.warning("Dataset weights: {}".format(weights))
         return torch.as_tensor(weights, dtype=torch.double)
 
     def __iter__(self):

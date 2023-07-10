@@ -89,7 +89,6 @@ def get_trainer(args):
         for ds in train_datasets_cls
     ]
     dataset_sizes = [len(train_dataset) for train_dataset in train_datasets]
-    logger.warn(f"Train dataset sizes: {dataset_sizes}")
     # train_dataset = datasets.concatenate_datasets(train_datasets)
     train_dataset = ConcatDataset(train_datasets)
     training_args.remove_unused_columns = False
@@ -116,10 +115,15 @@ def get_trainer(args):
             split="test",
             n_obs=data_args.max_test_samples,
         )
+
+    compute_metrics_fn = build_compute_metrics_fn(data_args.eval_tasks)
+    logger.warn(f"Train dataset sizes: {dataset_sizes}")
+    logger.warn(
+        f"Eval dataset sizes: {[len(eval_dataset) for eval_dataset in eval_datasets.values()]}"
+    )
     logger.warn(
         f"Test dataset sizes: {[len(test_dataset) for test_dataset in test_datasets.values()]}"
     )
-    compute_metrics_fn = build_compute_metrics_fn(data_args.eval_tasks)
 
     model_config_dict = {
         task.name: AutoConfig.from_pretrained(
@@ -142,6 +146,7 @@ def get_trainer(args):
             model_config_dict=model_config_dict,
             dataset_cls=train_datasets_cls,
             freeze_base_model=model_args.freeze_base_model,
+            separate_task_adapters=model_args.separate_task_adapters,
         )
     else:
         model_type_dict = {
@@ -184,19 +189,19 @@ def get_trainer(args):
     #     else Trainer
     # )
 
-    # # early stopping
-    # if model_args.early_stopping:
-    #     logger.info(
-    #         "Early stopping is enabled with patience %d",
-    #         model_args.early_stopping_patience,
-    #     )
-    #     early_stopping_callback = [
-    #         EarlyStoppingCallback(
-    #             early_stopping_patience=model_args.early_stopping_patience
-    #         )
-    #     ]
-    # else:
-    #     early_stopping_callback = []
+    # early stopping
+    if model_args.early_stopping:
+        logger.info(
+            "Early stopping is enabled with patience %d",
+            model_args.early_stopping_patience,
+        )
+        early_stopping_callback = [
+            EarlyStoppingCallback(
+                early_stopping_patience=model_args.early_stopping_patience
+            )
+        ]
+    else:
+        early_stopping_callback = []
 
     logger.info(summary(model, depth=3))
 
@@ -215,6 +220,7 @@ def get_trainer(args):
         multi_task_compute_metrics=compute_metrics_fn,
         data_args=data_args,
         dataset_sizes=dataset_sizes,
+        callbacks=early_stopping_callback,
         # adapter_config=adapter_config,
     )
 
