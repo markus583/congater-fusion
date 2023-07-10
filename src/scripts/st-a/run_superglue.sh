@@ -21,16 +21,16 @@ if [ ${#SEEDS[@]} -eq 0 ]; then
   SEEDS=(0 1 2 3 4 5 6 7 8 9)
 fi
 
-for TASK in multirc; do
+for TASK in record; do
   for SEED in "${SEEDS[@]}"; do
     # these tasks only run with seeds 0 to 4
-    if [ $SEED -gt 4 ] && [ $TASK = "sst2" -o $TASK = "qnli" -o $TASK = "qqp" -o $TASK = "mnli" ]; then
+    if [ $SEED -gt 2 ] && [ $TASK = "record" ]; then
       echo "Skipping $TASK with seed $SEED"
       continue
     fi
 
     # fp16 only for multirc
-    if [ $TASK = "multirc" ]; then
+    if [ $TASK = "multirc" -o $TASK = "record" ]; then
       FP16="--fp16"
     else
       FP16=""
@@ -49,14 +49,14 @@ for TASK in multirc; do
       --do_eval \
       --per_device_train_batch_size 32 \
       --per_device_eval_batch_size 32 \
-      --dataloader_num_workers 8 \
+      --dataloader_num_workers 4 \
       --learning_rate 1e-4 \
       --num_train_epochs 30 \
       --train_adapter \
       --adapter_config pfeiffer \
       --output_dir ../../runs/$RUN_NAME/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED \
       --logging_strategy steps \
-      --logging_steps 100 \
+      --logging_steps 20 \
       --save_strategy epoch \
       --evaluation_strategy epoch \
       --early_stopping True \
