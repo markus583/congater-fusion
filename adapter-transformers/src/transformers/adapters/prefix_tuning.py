@@ -69,6 +69,79 @@ class PrefixTuning(nn.Module, ModuleUtilsMixin):
 
         return key_values
 
+class SharePrefixTuning(nn.Module, ModuleUtilsMixin):
+    def __init__(
+        self,
+        n_layers: int,
+        n_heads: int,
+        input_size: int,
+        config: PrefixTuningConfig,
+    ):
+        super().__init__()
+        self.n_layers = n_layers
+        self.n_heads = n_heads
+        self.input_size = input_size
+        self.n_embd_per_head = self.input_size // self.n_heads
+        self.config = config
+
+        self.wte = nn.Embedding(self.config.prefix_length, self.input_size)
+        self.control_trans = nn.Sequential(
+            nn.Linear(self.input_size, self.config.bottleneck_size),
+            Activation_Function_Class(self.config.non_linearity.lower()),
+            nn.Linear(self.config.bottleneck_size, 2 * self.input_size),
+        )
+        self.dropout = nn.Dropout(self.config.dropout)
+
+        self.adapters_mask = PrefixSubnet(
+            self.n_layers,
+            self.config.prefix_length,
+            self.input_size,
+            self.config.sparsity,
+        )
+
+    def extend_prefix(self, prefix_base):
+        # seqlen, emb => seqlen, layer_num * emb
+        layers = []
+        for l in range(self.n_layers):
+            layer_mask = self.adapters_mask(l)
+            layers.append(prefix_base * layer_mask)
+        return torch.cat(layers, axis=1)  # seqlen, layer_num * emb
+
+    def eject(self):
+        input_tokens = torch.arange(self.config.prefix_length).long().to(self.device)
+        embs = self.wte(input_tokens)
+        key_values = self.control_trans(embs)
+        key_values = (
+            self.extend_prefix(key_values).unsqueeze(0).expand(1, -1, -1)
+        )  # batch_size x prefix_length x n_layers*2*input_size
+        # import pdb; pdb.set_trace()
+        key_values = key_values.view(
+            self.config.prefix_length * self.n_layers * 2 * self.input_size
+        )  # *2 for key and value
+
+        return key_values
+
+    def forward(self, batch_size):
+        input_tokens = torch.arange(self.config.prefix_length).long().to(self.device)
+        embs = self.wte(input_tokens)
+        key_values = self.control_trans(embs)
+        key_values = self.extend_prefix(key_values).expand(
+            batch_size, -1, -1
+        )  # batch_size x prefix_length x n_layers*2*input_size
+        # import pdb; pdb.set_trace()
+        key_values = key_values.view(
+            batch_size,
+            self.config.prefix_length,
+            self.n_layers * 2,
+            self.n_heads,
+            self.n_embd_per_head,
+        )  # *2 for key and value
+        key_values = self.dropout(key_values)
+        # n_layers * (2 x batch_size x n_heads x prefix_length x n_embd_per_head)
+        key_values = key_values.permute(2, 0, 3, 1, 4).split(2)
+
+        return key_values
+
 
 class FlatPrefixTuning(nn.Module, ModuleUtilsMixin):
     def __init__(
@@ -117,7 +190,12 @@ class PrefixTuningGroup(nn.ModuleDict):
         if prefix_tuning_config["flat"]:
             prefix_tuning_class = FlatPrefixTuning
         else:
-            prefix_tuning_class = PrefixTuning
+            prefix_tuning_class = (
+                SharePrefixTuning
+                if prefix_tuning_config.share_adapter
+                else PrefixTuning
+            )
+            
         for k, kwargs in module_configs.items():
             self[k] = prefix_tuning_class(**kwargs, config=prefix_tuning_config)
 
@@ -303,6 +381,16 @@ class PrefixTuningShim(AdapterLayerBase, nn.Module):
                 gate.weight.data.normal_(mean=0.0, std=0.02)
                 self.prefix_gates[adapter_name] = gate
 
+    def add_shared_adapter(
+        self,
+        adapter_name: str,
+        layer_idx: int,
+        sparsity: float,
+        shared_adapter,
+        tasks=None,
+    ):
+        self.add_adapter(adapter_name, layer_idx)
+        
     def delete_adapter(self, adapter_name: str):
         self.pool.delete_prefix(adapter_name)
         if adapter_name in self.prefixes:
@@ -324,6 +412,7 @@ class PrefixTuningShim(AdapterLayerBase, nn.Module):
         adapter_setup: AdapterCompositionBlock,
         unfreeze_adapters: bool,
         unfreeze_fusion: bool,
+        tasks=None,
     ):
         if unfreeze_adapters:
             for prefix_tuning_name in adapter_setup.flatten():

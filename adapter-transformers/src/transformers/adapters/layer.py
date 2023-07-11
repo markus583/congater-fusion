@@ -27,6 +27,7 @@ from .modeling import (
     CongositionLayer,
     FullFusion,
     NoOpModule,
+    AdapterSubnet,
 )
 
 
@@ -100,6 +101,12 @@ class AdapterLayerBase(ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    def add_shared_adapter(
+        self, adapter_name: str, layer_idx: int, sparsity: float, shared_adapter, tasks
+    ):
+        raise NotImplementedError()
+
+    @abstractmethod
     def delete_adapter(self, adapter_name: str):
         raise NotImplementedError()
 
@@ -121,6 +128,7 @@ class AdapterLayerBase(ABC):
         adapter_setup: AdapterCompositionBlock,
         unfreeze_adapters: bool,
         unfreeze_fusion: bool,
+        tasks=None,
     ):
         raise NotImplementedError()
 
@@ -137,6 +145,7 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
 
     def _init_adapter_modules(self):
         self.congosition_v1_layer = nn.ModuleDict(dict())
+        self.adapters_mask = nn.ModuleDict(dict())
         self.adapters = nn.ModuleDict(dict())
         self.adapter_fusion_layer = nn.ModuleDict(dict())
 
@@ -174,6 +183,59 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
             )
             adapter.train(self.training)  # make sure training mode is consistent
             self.adapters[adapter_name] = adapter
+
+    def add_shared_adapter(
+        self,
+        adapter_name: str,
+        layer_idx: int,
+        sparsity: float,
+        shared_adapter,
+        tasks=None,
+    ):
+        self.layer_idx = layer_idx
+        adapter_config = self.config.adapters.match(
+            adapter_name,
+            config_type=AdapterConfig,
+            layer_idx=self.layer_idx,
+            location_key=self.location_key,
+        )
+        if adapter_config is not None:
+            reduction_factor = adapter_config["reduction_factor"]
+            if isinstance(reduction_factor, Mapping):
+                if str(self.layer_idx) in reduction_factor:
+                    reduction_factor = reduction_factor[str(self.layer_idx)]
+                elif "default" in reduction_factor:
+                    reduction_factor = reduction_factor["default"]
+                else:
+                    raise KeyError(
+                        "The given reduction factor mapping does not give a default value and does not specify each "
+                        "reduction factor individually. You need to provide a default value like this: "
+                        '{"1": 16, "default": 16}'
+                    )
+
+            # define mask for the adapter
+            input_size = self.config.hidden_size
+            output_size = int(self.config.hidden_size // reduction_factor)
+
+            if tasks is not None:
+                for task in tasks:
+                    adapters_mask = AdapterSubnet(
+                        adapter_name, input_size, output_size, sparsity
+                    )
+                    adapters_mask.train(
+                        self.training
+                    )  # make sure training mode is consistent
+                    self.adapters_mask[task] = adapters_mask
+            else:
+                adapters_mask = AdapterSubnet(
+                    adapter_name, input_size, output_size, sparsity
+                )
+                adapters_mask.train(
+                    self.training
+                )  # make sure training mode is consistent
+                self.adapters_mask[adapter_name] = adapters_mask
+
+            self.adapters[adapter_name] = shared_adapter
 
     def delete_adapter(self, adapter_name: str):
         if adapter_name in self.adapters:
@@ -245,6 +307,7 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
         adapter_setup: AdapterCompositionBlock,
         unfreeze_adapters: bool,
         unfreeze_fusion: bool,
+        tasks=None,
     ):
         """
         Unfreezes a given list of adapters, the adapter fusion layer, or both
@@ -302,7 +365,13 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
             return None
 
     def adapter_stack(
-        self, adapter_setup: Stack, hidden_states, input_tensor, layer_norm, lvl=0
+        self,
+        adapter_setup: Stack,
+        hidden_states,
+        input_tensor,
+        layer_norm,
+        lvl=0,
+        task=None,
     ):
         """
         Forwards the given input through the given stack of adapters.
@@ -369,11 +438,29 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
                     hidden_states, input_tensor, layer_norm
                 )
                 context = ForwardContext.get_context()
-                layer_output = adapter_layer(
-                    hidden_states,
-                    residual_input=residual,
-                    output_gating=context.output_adapter_gating_scores,
-                )
+
+                if adapter_stack_layer in self.adapters_mask or (
+                    task is not None and task in self.adapters_mask
+                ):
+                    # shared
+                    if task is not None:
+                        down_mask, up_mask = self.adapters_mask[task]()
+                    else:
+                        down_mask, up_mask = self.adapters_mask[adapter_stack_layer]()
+
+                    layer_output = adapter_layer.forward_with_mask(
+                        hidden_states,
+                        down_mask,
+                        up_mask,
+                        residual_input=residual,
+                        output_gating=context.output_adapter_gating_scores,
+                    )
+                else:
+                    layer_output = adapter_layer(
+                        hidden_states,
+                        residual_input=residual,
+                        output_gating=context.output_adapter_gating_scores,
+                    )
                 hidden_states, up = layer_output[0], layer_output[2]
                 self._store_gating_score(adapter_stack_layer, layer_output[-1])
                 # as this stack might be part of a fusion block, return the adapter up-projection output here
@@ -415,12 +502,24 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
             # Case 2: We have a single adapter which is part of this module -> forward pass
             elif adapter_block in self.adapters:
                 adapter_layer = self.adapters[adapter_block]
-                layer_output = adapter_layer(
-                    hidden_states,
-                    residual_input=residual,
-                    output_gating=context.output_adapter_gating_scores,
-                    skip_tt=fusion_config.adapter_skip_tt,
-                )
+                if adapter_block in self.adapters_mask or (
+                    adapter_block is not None and adapter_block in self.adapters_mask
+                ):
+                    down_mask, up_mask = self.adapters_mask[adapter_block]()
+                    layer_output = adapter_layer.forward_with_mask(
+                        hidden_states,
+                        down_mask,
+                        up_mask,
+                        residual_input=residual,
+                        output_gating=context.output_adapter_gating_scores,
+                    )
+                else:
+                    layer_output = adapter_layer(
+                        hidden_states,
+                        residual_input=residual,
+                        output_gating=context.output_adapter_gating_scores,
+                        skip_tt=fusion_config.adapter_skip_tt,
+                    )
                 up = layer_output[2]
                 self._store_gating_score(adapter_block, layer_output[-1])
                 up_list.append(up)
@@ -519,13 +618,25 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
             # Case 2: We have a single adapter which is part of this module -> forward pass
             elif adapter_block in self.adapters:
                 adapter_layer = self.adapters[adapter_block]
-                layer_output = adapter_layer(
-                    hidden_states,
-                    residual_input=residual,
-                    # omega=omegas[:, i],
-                    output_gating=context.output_adapter_gating_scores,
-                    # train=self.training
-                )
+                if adapter_block in self.adapters_mask or (
+                    adapter_block is not None and adapter_block in self.adapters_mask
+                ):
+                    down_mask, up_mask = self.adapters_mask[adapter_block]()
+                    layer_output = adapter_layer.forward_with_mask(
+                        hidden_states,
+                        down_mask,
+                        up_mask,
+                        residual_input=residual,
+                        output_gating=context.output_adapter_gating_scores,
+                    )
+                else:
+                    layer_output = adapter_layer(
+                        hidden_states,
+                        residual_input=residual,
+                        # omega=omegas[:, i],
+                        output_gating=context.output_adapter_gating_scores,
+                        # train=self.training
+                    )
                 # print(adapter_layer.omega)
                 up = layer_output[2]
                 self._store_gating_score(adapter_block, layer_output[-1])
@@ -813,7 +924,7 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
         hidden_states = torch.cat(children_hidden, 0)
         return hidden_states
 
-    def adapter_layer_forward(self, hidden_states, residual_input, layer_norm):
+    def adapter_layer_forward(self, hidden_states, residual_input, layer_norm, task=None):
         """Forward pass through the adapter layer.
         NOTE: This method should only be called if the calling module directly inherits from AdapterLayer. Otherwise,
         call the regular forward() method.
@@ -836,7 +947,7 @@ class AdapterLayer(AdapterLayerBase, nn.Module):
 
             if isinstance(adapter_setup, Stack):
                 hidden_states, _, residual_input = self.adapter_stack(
-                    adapter_setup, hidden_states, residual_input, layer_norm
+                    adapter_setup, hidden_states, residual_input, layer_norm, task=task
                 )
             elif isinstance(adapter_setup, Fuse):
                 hidden_states = self.adapter_fusion(

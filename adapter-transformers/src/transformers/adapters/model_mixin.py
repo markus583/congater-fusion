@@ -27,10 +27,12 @@ from .loading import (
     PredictionHeadLoader,
     WeightsLoader,
     CongositionV1Loader,
+    MaskLoader,
 )
 from .lora import LoRALayer
 from .modeling import (
     Adapter,
+    ParallelAdapter,
     GLOWCouplingBlock,
     NICECouplingBlock,
     init_shared_parameters,
@@ -435,13 +437,16 @@ class ModelAdaptersMixin(PushAdapterToHubMixin, ABC):
         self,
         adapter_setup: Union[list, AdapterCompositionBlock],
         train_embeddings=False,
+        tasks=None,
     ):
         """Sets the model into mode for training the given adapters."""
         self.train()
         self.freeze_model(True)
         adapter_setup = parse_composition(adapter_setup)
         self.apply_to_adapter_layers(
-            lambda i, layer: layer.enable_adapters(adapter_setup, True, False)
+            lambda i, layer: layer.enable_adapters(
+                adapter_setup, True, False, tasks=tasks
+            )
         )
         for adapter_name in adapter_setup:
             if adapter_name in self.base_model.shared_parameters:
@@ -579,6 +584,89 @@ class ModelAdaptersMixin(PushAdapterToHubMixin, ABC):
         if set_active:
             self.set_active_adapters(adapter_name)
 
+    def add_shared_adapter(
+        self,
+        adapter_name: str,
+        config=None,
+        overwrite_ok: bool = False,
+        set_active: bool = False,
+        tasks=None,
+    ):
+        """
+        Adds a new adapter module of the specified type to the model.
+
+        Args:
+            adapter_name (str): The name of the adapter module to be added. config (str or dict or AdapterConfigBase,
+            optional): The adapter configuration, can be either:
+
+                - the string identifier of a pre-defined configuration dictionary
+                - a configuration dictionary specifying the full config
+                - if not given, the default configuration for this adapter type will be used
+            overwrite_ok (bool, optional):
+                Overwrite an adapter with the same name if it exists. By default (False), an
+            exception is thrown. set_active (bool, optional):
+                Set the adapter to be the active one. By default (False),
+            the adapter is added but not activated.
+        """
+        if isinstance(config, dict):
+            config = AdapterConfigBase.load(
+                config
+            )  # ensure config is ok and up-to-date
+        # In case adapter already exists and we allow overwriting, explicitly delete the existing one first
+        if overwrite_ok and adapter_name in self.config.adapters:
+            self.delete_adapter(adapter_name)
+        # import pdb; pdb.set_trace()
+        self.config.adapters.add(adapter_name, config=config)
+        try:
+            self._add_shared_adapter_weights(adapter_name, config, tasks=tasks)
+        except ValueError as ex:
+            self.delete_adapter(adapter_name)
+            raise ex
+        if set_active:
+            self.set_active_adapters(adapter_name)
+
+    def _add_shared_adapter_weights(
+        self, adapter_name: str, adapter_config=None, tasks=None
+    ):
+        """Helper method that performs the actual parameter additions when adding a new adapter."""
+        shared_adapter = None
+        if hasattr(adapter_config, "is_parallel"):
+            # only adapter module needs to share by this mean
+            if adapter_config.is_parallel:
+                adapter_class = ParallelAdapter
+            else:
+                adapter_class = Adapter
+            shared_adapter = adapter_class(
+                adapter_name=adapter_name,
+                input_size=self.config.hidden_size,
+                down_sample=int(
+                    self.config.hidden_size // adapter_config["reduction_factor"]
+                ),
+                config=adapter_config,
+            )
+            shared_adapter.train(self.training)
+
+        self.apply_to_adapter_layers(
+            lambda i, layer: layer.add_shared_adapter(
+                adapter_name, i, adapter_config["sparsity"], shared_adapter, tasks=tasks
+            )
+        )
+        # PHM Layer
+        if self.config.adapters.match(
+            adapter_name, AdapterConfig, location_key="phm_layer"
+        ):
+            self.base_model.shared_parameters[adapter_name] = (
+                list(self.get_adapter(adapter_name)[0].values())[0]
+                .adapter_down[0]
+                .init_shared_parameters()
+            )
+        # Prefix Tuning
+        for module in self.modules():
+            if isinstance(module, PrefixTuningPool):
+                module.confirm_prefix(adapter_name)
+        if isinstance(self, InvertibleAdaptersMixin):
+            self.add_invertible_adapter(adapter_name)
+            
     def _add_adapter_weights(self, adapter_name: str):
         """Helper method that performs the actual parameter additions when adding a new adapter."""
         self.apply_to_adapter_layers(
@@ -1496,20 +1584,64 @@ class ModelWithHeadsAdaptersMixin(ModelAdaptersMixin):
             self.base_model.add_adapter(
                 adapter_name, config, overwrite_ok=overwrite_ok, set_active=set_active
             )
+            
+    def add_shared_adapter(
+        self,
+        adapter_name: str,
+        config=None,
+        overwrite_ok: bool = False,
+        set_active: bool = False,
+        tasks=None,
+    ):
+        """
+        Adds a new adapter module of the specified type to the model.
+
+        Args:
+            adapter_name (str): The name of the adapter module to be added.
+            config (str or dict, optional): The adapter configuration, can be either:
+
+                - the string identifier of a pre-defined configuration dictionary
+                - a configuration dictionary specifying the full config
+                - if not given, the default configuration for this adapter type will be used
+            overwrite_ok (bool, optional):
+                Overwrite an adapter with the same name if it exists. By default (False), an exception is thrown.
+            set_active (bool, optional):
+                Set the adapter to be the active one. By default (False), the adapter is added but not activated.
+
+        If self.base_model is self, must inherit from a class that implements this method, to preclude infinite
+        recursion
+        """
+        if self.base_model is self:
+            super().add_shared_adapter(
+                adapter_name,
+                config,
+                overwrite_ok=overwrite_ok,
+                set_active=set_active,
+                tasks=tasks,
+            )
+        else:
+            self.base_model.add_shared_adapter(
+                adapter_name,
+                config,
+                overwrite_ok=overwrite_ok,
+                set_active=set_active,
+                tasks=tasks,
+            )
 
     def train_adapter(
         self,
         adapter_setup: Union[list, AdapterCompositionBlock],
         train_embeddings=False,
+        tasks=None,
     ):
         """
         Sets the model into mode for training the given adapters. If self.base_model is self, must inherit from a class
         that implements this method, to preclude infinite recursion
         """
         if self.base_model is self:
-            super().train_adapter(adapter_setup, train_embeddings)
+            super().train_adapter(adapter_setup, train_embeddings, tasks=tasks)
         else:
-            self.base_model.train_adapter(adapter_setup, train_embeddings)
+            self.base_model.train_adapter(adapter_setup, train_embeddings, tasks=tasks)
 
     def train_adapter_fusion(
         self,
@@ -1571,6 +1703,12 @@ class ModelWithHeadsAdaptersMixin(ModelAdaptersMixin):
             custom_weights_loaders.append(
                 PredictionHeadLoader(self, error_on_missing=False)
             )
+        
+        if self.config.share_adapter:
+            custom_weights_loaders.append(
+                MaskLoader(self, sparsity=self.config.sparsity, error_on_missing=False)
+            )
+            
         super().save_adapter(
             save_directory,
             adapter_name,
@@ -1599,6 +1737,19 @@ class ModelWithHeadsAdaptersMixin(ModelAdaptersMixin):
             custom_weights_loaders.append(
                 PredictionHeadLoader(
                     self,
+                    error_on_missing=False,
+                    convert_to_flex_head=self._convert_to_flex_head,
+                )
+            )
+            
+
+        if self.config.share_adapter:
+            if custom_weights_loaders is None:
+                custom_weights_loaders = []
+            custom_weights_loaders.append(
+                MaskLoader(
+                    self,
+                    sparsity=self.config.sparsity,
                     error_on_missing=False,
                     convert_to_flex_head=self._convert_to_flex_head,
                 )
