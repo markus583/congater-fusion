@@ -83,6 +83,9 @@ def get_trainer(args):
             use_auth_token=True if model_args.use_auth_token else None,
         )
 
+    config.share_adapter = model_args.share_adapter
+    config.sparsity = model_args.sparsity
+
     if not dataset.multiple_choice:
         model = get_model(
             args=args, task_type=TaskType.SEQUENCE_CLASSIFICATION, config=config
@@ -140,6 +143,7 @@ def get_trainer(args):
 
         logger.info(af_config)
         for _, adapter_dir in af_config.items():
+            adapter_config.sparsity = model_args.sparsity
             logger.info(adapter_dir)
             model.load_adapter(
                 f"{os.path.expanduser('~')}/congater-fusion/src/" + adapter_dir,
@@ -163,7 +167,7 @@ def get_trainer(args):
     elif adapter_args.train_adapter:
         if data_args.omega_grid and congater_args.congosition_type == "omega_grid":
             omega_grid = map_omega_grid(
-                config=data_args.omega_grid, 
+                config=data_args.omega_grid,
                 seed=training_args.seed,
                 adapter_type=adapter_args.adapter_config,
             )
@@ -176,11 +180,11 @@ def get_trainer(args):
             # get tasks from omega_grid
             source_tasks = [l.split("/")[2] for l in list(omega_grid.keys())]
             # create dict: task -> omega
-            omega_grid = {l.split("/")[2]:i for l, i in list(omega_grid.items())}
-            model.add_congosition_v1(source_tasks, congater_args.congosition_type, grid_values=omega_grid)
-            model.train_adapter_fusion(
-                [source_tasks], unfreeze_adapters=False
+            omega_grid = {l.split("/")[2]: i for l, i in list(omega_grid.items())}
+            model.add_congosition_v1(
+                source_tasks, congater_args.congosition_type, grid_values=omega_grid
             )
+            model.train_adapter_fusion([source_tasks], unfreeze_adapters=False)
         if data_args.eval_adapter:
             config = AdapterConfig.load(
                 training_args.output_dir + "/adapter_config.json"
@@ -207,7 +211,9 @@ def get_trainer(args):
                 else:
                     head_name = data_args.task_name
                 if dataset.multiple_choice:
-                        model.add_multiple_choice_head(head_name, num_choices=2, overwrite_ok=True)
+                    model.add_multiple_choice_head(
+                        head_name, num_choices=2, overwrite_ok=True
+                    )
                 else:
                     model.add_classification_head(
                         head_name,
@@ -240,7 +246,15 @@ def get_trainer(args):
             # Setup adapters
             # TODO: setup variable omega for training also (not only eval mode, i.e. data_args.eval_adapter = True)
             if not data_args.omega_grid:
-                setup_adapter_training(model, adapter_args, data_args.task_name)
+                setup_adapter_training(
+                    model,
+                    adapter_args,
+                    data_args.task_name,
+                    adapter_config_kwargs={
+                        "sparsity": model_args.sparsity,
+                        "share_adapter": model_args.share_adapter,
+                    },
+                )
     else:
         if adapter_args.load_adapter:
             raise ValueError(
@@ -268,9 +282,11 @@ def get_trainer(args):
             "Early stopping is enabled with patience %d",
             model_args.early_stopping_patience,
         )
-        early_stopping_callback = [EarlyStoppingCallback(
-            early_stopping_patience=model_args.early_stopping_patience
-        )]
+        early_stopping_callback = [
+            EarlyStoppingCallback(
+                early_stopping_patience=model_args.early_stopping_patience
+            )
+        ]
     else:
         early_stopping_callback = []
 

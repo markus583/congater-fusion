@@ -246,6 +246,19 @@ class ModelArguments:
     omega: float = field(
         default=1.0, metadata={"help": "Static value of omega to use for t-sigmoid"}
     )
+    sparsity: Optional[float] = field(
+        default=1.0,
+        metadata={
+            "help": "sparsity of the subnet for ProPETL"
+        },
+    )
+    share_adapter: bool = field(
+        default=False, metadata={"help": "Whether share the adapter across the layers for ProPETL."}
+    )
+    head_n_layers: Optional[int] = field(
+        default=None,
+        metadata={"help": "The number of layers in the classification head."},
+    )
 
 
 @dataclass

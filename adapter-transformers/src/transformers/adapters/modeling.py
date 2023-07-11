@@ -4,6 +4,8 @@ import copy
 
 import torch
 from torch import nn
+import torch.autograd as autograd
+import torch.nn.functional as F
 from transformers.activations import get_activation
 from transformers.adapters.t_sigmoid import (
     Tsigmoid,
@@ -56,6 +58,7 @@ class Adapter(nn.Module):
         self.add_layer_norm_after = config["ln_after"]
         self.adapter_residual_before_ln = config["adapter_residual_before_ln"]
         self.use_gating = config["use_gating"]
+        print("use LOCAL")
 
         # Params related to input & output of adapter
         self.residual_before_ln = config["residual_before_ln"]
@@ -325,6 +328,44 @@ class Adapter(nn.Module):
         if not self.kill_adapter_residual:
             if not self.adapter_residual_before_ln:
                 output = output + residual_input
+
+        if self.use_gating and output_gating:
+            return output, down, up, gate
+        return output, down, up
+    
+    def forward_with_mask(
+        self, x, down_mask, up_mask, residual_input, output_gating=False
+    ):
+        # down = self.adapter_down(x)
+        # linear + non_linear
+        down = self.adapter_down[1](
+            F.linear(
+                x, self.adapter_down[0].weight * down_mask.T, self.adapter_down[0].bias
+            )
+        )
+
+        # up = self.adapter_up(down)
+        up = F.linear(down, self.adapter_up.weight * up_mask.T, self.adapter_up.bias)
+        up = up * self.scaling
+        output = up
+
+        if self.use_gating:
+            # x.shape = (batch_size, seq_len, hidden_size)
+            gate = torch.sigmoid(self.gate(x))
+            gate = torch.mean(gate, dim=1).unsqueeze(-1)
+            output = output * gate
+
+        # apply residual connection before layer norm if configured in this way
+        if self.adapter_residual_before_ln:
+            output = output + residual_input
+
+        # apply layer norm if available
+        if self.add_layer_norm_after:
+            output = self.adapter_norm_after(output)
+
+        # if residual should be applied after layer norm, apply it here
+        if not self.adapter_residual_before_ln:
+            output = output + residual_input
 
         if self.use_gating and output_gating:
             return output, down, up, gate
@@ -1474,3 +1515,91 @@ def init_W(config, W_left=None, W_right=None, W=None):
                 W.data[i].normal_(mean=0, std=config["phm_init_range"])
     else:
         raise ValueError
+    
+class GetSubnet(autograd.Function):
+    @staticmethod
+    def forward(ctx, scores, k):
+        # Get the supermask by sorting the scores and using the top k%
+        out = scores.clone()
+        _, idx = scores.flatten().sort()
+        j = int((1 - k) * scores.numel())
+
+        # flat_out and out access the same memory.
+        flat_out = out.flatten()
+        flat_out[idx[:j]] = 0
+        flat_out[idx[j:]] = 1
+
+        return out
+
+    @staticmethod
+    def backward(ctx, g):
+        # send the gradient g straight-through on the backward pass.
+        return g, None
+
+
+class AdapterSubnet(nn.Module):
+    def __init__(
+        self,
+        adapter_name,
+        input_size,
+        output_size,
+        sparsity,
+    ):
+        super().__init__()
+        self.name = adapter_name
+        self.input_size = input_size
+        self.output_size = output_size
+        self.sparsity = sparsity
+        self.down_mask = nn.Parameter(
+            torch.Tensor(torch.Size([input_size, output_size]))
+        )
+        self.up_mask = nn.Parameter(torch.Tensor(torch.Size([output_size, input_size])))
+
+        # init
+        nn.init.kaiming_uniform_(self.down_mask, a=math.sqrt(5))
+        nn.init.kaiming_uniform_(self.up_mask, a=math.sqrt(5))
+
+    def forward(self):
+        return GetSubnet.apply(self.down_mask.abs(), self.sparsity), GetSubnet.apply(
+            self.up_mask.abs(), self.sparsity
+        )
+        
+
+class PrefixSubnet(nn.Module):
+    def __init__(
+        self,
+        n_layers,
+        prefix_length,
+        input_size,
+        sparsity,
+    ):
+        super().__init__()
+        self.sparsity = sparsity
+        self.adapters_mask = nn.Parameter(
+            torch.Tensor(torch.Size([n_layers, prefix_length, 2 * input_size]))
+        )
+        nn.init.kaiming_uniform_(self.adapters_mask, a=math.sqrt(5))
+
+    def forward(self, layer_idx):
+        return GetSubnet.apply(self.adapters_mask[layer_idx].abs(), self.sparsity)
+
+
+class LoraSubnet(nn.Module):
+    def __init__(
+        self,
+        lora_A_size,
+        lora_B_size,
+        sparsity,
+    ):
+        super().__init__()
+        self.sparsity = sparsity
+        self.lora_A_mask = nn.Parameter(torch.Tensor(lora_A_size))
+        self.lora_B_mask = nn.Parameter(torch.Tensor(lora_B_size))
+
+        nn.init.kaiming_uniform_(self.lora_A_mask, a=math.sqrt(5))
+        nn.init.kaiming_uniform_(self.lora_B_mask, a=math.sqrt(5))
+
+    def forward(self):
+        return GetSubnet.apply(self.lora_A_mask.abs(), self.sparsity), GetSubnet.apply(
+            self.lora_B_mask.abs(), self.sparsity
+        )

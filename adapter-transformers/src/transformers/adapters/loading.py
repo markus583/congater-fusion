@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from os import mkdir
 from os.path import exists, isdir, isfile, join
 from typing import Callable, Mapping, Sequence, Tuple
+from .modeling import GetSubnet
 
 import torch
 
@@ -60,7 +61,7 @@ class WeightsLoaderHelper:
             json.dump(config, f, indent=2, sort_keys=True)
         logger.info("Configuration saved in {}".format(output_config_file))
 
-    def save_weights(self, save_directory, filter_func):
+    def save_weights(self, save_directory, filter_func, sparsity=1.0, is_mask=False):
         if not exists(save_directory):
             mkdir(save_directory)
         else:
@@ -70,6 +71,9 @@ class WeightsLoaderHelper:
 
         # Get the state of all adapter modules for this task
         state_dict = self.state_dict(filter_func)
+        if is_mask and sparsity != 1.0:
+            for k, v in state_dict.items():
+                state_dict[k] = GetSubnet.apply(v.abs(), sparsity).bool()
         # Save the adapter weights
         output_file = join(save_directory, self.weights_name)
         torch.save(state_dict, output_file)
@@ -491,6 +495,8 @@ class AdapterLoader(WeightsLoader):
         # only do if key is in config
         if requested_config is not None:
             config["config"]["omega"] = requested_config["omega"]
+            if requested_config.sparsity and config["config"].get("sparsity") is None:
+                config["config"]["sparsity"] = requested_config.sparsity
         # post-loading drop of layers
         if leave_out is not None:
             if (
@@ -504,9 +510,14 @@ class AdapterLoader(WeightsLoader):
         adapter_name = load_as or config["name"]
         # If the adapter is not part of the model, add it
         if adapter_name not in self.model.config.adapters.adapters:
-            self.model.add_adapter(
-                adapter_name, config=config["config"], set_active=set_active
-            )
+            if self.model.config.share_adapter:
+                self.model.add_shared_adapter(
+                    adapter_name, config=config["config"], set_active=set_active
+                )
+            else:
+                self.model.add_adapter(
+                    adapter_name, config=config["config"], set_active=set_active
+                )
         else:
             logger.warning("Overwriting existing adapter '{}'.".format(adapter_name))
 
@@ -1002,3 +1013,86 @@ class PredictionHeadLoader(WeightsLoader):
         )
 
         return save_directory, head_name
+
+
+MASK_CONFIG_NAME = "adapter_mask_config.json"
+MASK_WEIGHTS_NAME = "adapter_mask.bin"
+
+
+class MaskLoader(WeightsLoader):
+    """
+    A class providing methods for saving and loading prediction head modules from the file system.
+
+    Model classes supporting configurable head modules via config files should provide a prediction head dict at
+    `model.heads` and a method `add_prediction_head(head_name, config)`.
+    """
+
+    def __init__(
+        self, model, sparsity=1.0, error_on_missing=True, convert_to_flex_head=False
+    ):
+        super().__init__(model, MASK_WEIGHTS_NAME, MASK_CONFIG_NAME)
+        self.error_on_missing = error_on_missing
+        self.convert_to_flex_head = convert_to_flex_head
+        self.sparsity = sparsity
+
+    def filter_func(self, adapter_name):
+        return lambda x: ".adapters_mask.{}.".format(adapter_name) in x
+
+    def rename_func(self, old_name, new_name):
+        return lambda k: k.replace(
+            "adapters_mask.{}".format(old_name), "adapters_mask.{}".format(new_name)
+        )
+
+    def save(self, save_directory: str, name: str = None):
+        """
+        Saves a mask module into the given directory.
+
+        Args:
+            save_directory (str): The directory to save the weights in.
+            name (str, optional): The mask name.
+        """
+
+        if not exists(save_directory):
+            mkdir(save_directory)
+        else:
+            assert isdir(
+                save_directory
+            ), "Saving path should be a directory where the head can be saved."
+
+        # Save head weights
+        filter_func = self.filter_func(name)
+        self.weights_helper.save_weights(
+            save_directory, filter_func, sparsity=self.sparsity, is_mask=True
+        )
+
+    def load(self, save_directory, load_as=None, loading_info=None, **kwargs):
+        """
+        Loads a mask module from the given directory.
+
+        Args:
+            save_directory (str): The directory from where to load the weights.
+            load_as (str, optional): Load the weights with this name. Defaults to None.
+
+        Returns:
+            Tuple[str, str]: A tuple consisting of the local file system directory from which the weights where loaded
+            and the name of the loaded weights.
+        """
+        if not exists(join(save_directory, MASK_WEIGHTS_NAME)):
+            if self.error_on_missing:
+                raise ValueError(
+                    "Loading path should be a directory where the head is saved."
+                )
+            else:
+                logger.info("No matching mask found in '{}'".format(save_directory))
+                return None, None
+
+        adapter_name = load_as
+
+        # Load head weights
+        filter_func = self.filter_func(adapter_name)
+
+        self.weights_helper.load_weights(
+            save_directory, filter_func, rename_func=[], loading_info=loading_info
+        )
+
+        return save_directory, adapter_name

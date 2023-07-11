@@ -109,6 +109,7 @@ class AdapterTrainer(Trainer):
         Trainer's init through :obj:`optimizers`, or subclass and override this method in a subclass.
         """
         if self.optimizer is None:
+            mask_parameters = ".adapters_mask."
             decay_parameters = get_parameter_names(self.model, [nn.LayerNorm])
             omega_params = []
             beta_params = []
@@ -159,6 +160,7 @@ class AdapterTrainer(Trainer):
                         if n in decay_parameters
                         and n not in omega_params
                         and n not in beta_params
+                        and mask_parameters not in n
                     ],
                     "weight_decay": self.args.weight_decay,
                 },
@@ -171,6 +173,15 @@ class AdapterTrainer(Trainer):
                         and n not in beta_params
                     ],
                     "weight_decay": 0.0,
+                },
+                {
+                    "params": [
+                        p
+                        for n, p in self.model.named_parameters()
+                        if n in decay_parameters and mask_parameters in n
+                    ],
+                    "weight_decay": self.args.weight_decay,
+                    "lr": self.args.mask_learning_rate,
                 },
                 {
                     "params": [

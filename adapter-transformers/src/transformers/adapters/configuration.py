@@ -289,6 +289,7 @@ class AdapterConfig(AdapterConfigBase):
     use_ttsigmoid: Optional[bool] = True
     variable_omega: Optional[bool] = False
     gating_type: str = "sigmoid"
+    sparsity: Union[None, float] = None
 
     # We want to emulate a simple form of immutability while keeping the ability to add custom attributes.
     # Therefore, we don't allow changing attribute values if set once.

@@ -68,7 +68,8 @@ def setup_adapter_training(
     if adapter_args.train_adapter:
         # resolve the adapter config
         adapter_config = AdapterConfigBase.load(
-            adapter_args.adapter_config, **adapter_config_kwargs
+            adapter_args.adapter_config,
+            **adapter_config_kwargs,
         )
         # load a pre-trained from Hub if specified
         # note: this logic has changed in versions > 3.1.0: adapter is also loaded if it already exists
@@ -81,7 +82,10 @@ def setup_adapter_training(
             )
         # otherwise, if adapter does not exist, add it
         elif adapter_name not in model.config.adapters:
-            model.add_adapter(adapter_name, config=adapter_config)
+            if not model.config.share_adapter:
+                model.add_adapter(adapter_name, config=adapter_config)
+            else:
+                model.add_shared_adapter(adapter_name, config=adapter_config)
         # optionally load a pre-trained language adapter
         if adapter_args.load_lang_adapter:
             # resolve the language adapter config
