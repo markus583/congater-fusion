@@ -1,3 +1,5 @@
+import inspect
+
 def map_omega_grid(
     config: dict, seed, adapter_type: str = "pfeiffer"
 ) -> dict[str, float]:
@@ -16,6 +18,15 @@ def map_omega_grid(
     paths = {path: omega for path, omega in zip(paths, config.values())}
 
     return paths
+
+
+def get_default_args(func):
+    signature = inspect.signature(func)
+    return {
+        k: v.default
+        for k, v in signature.parameters.items()
+        if v.default is not inspect.Parameter.empty
+    }
 
 
 if __name__ == "__main__":

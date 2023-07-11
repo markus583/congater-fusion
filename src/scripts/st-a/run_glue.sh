@@ -1,4 +1,4 @@
-RUN_NAME=st-a
+RUN_NAME=st-a-3e-4
 
 MODEL_NAME=roberta-base
 GPU_ID=0
@@ -21,7 +21,7 @@ if [ ${#SEEDS[@]} -eq 0 ]; then
   SEEDS=(0 1 2 3 4 5 6 7 8 9)
 fi
 
-for TASK in rte mrpc cola stsb sst2 qnli qqp mnli; do
+for TASK in qqp mnli; do
   for SEED in "${SEEDS[@]}"; do
     # these tasks only run with seeds 0 to 2
     if [ $SEED -gt 2 ] && [ $TASK = "sst2" -o $TASK = "qnli" -o $TASK = "qqp" -o $TASK = "mnli" ]; then
@@ -43,7 +43,7 @@ for TASK in rte mrpc cola stsb sst2 qnli qqp mnli; do
       --per_device_train_batch_size 32 \
       --per_device_eval_batch_size 32 \
       --dataloader_num_workers 0 \
-      --learning_rate 1e-4 \
+      --learning_rate 3e-4 \
       --num_train_epochs 30 \
       --train_adapter \
       --adapter_config pfeiffer \
@@ -59,7 +59,7 @@ for TASK in rte mrpc cola stsb sst2 qnli qqp mnli; do
       --run_name $TASK-$MODEL_NAME-$TRAIN_PCT-$SEED-$RUN_NAME \
       --max_train_pct $TRAIN_PCT \
       --seed $SEED \
-      --overwrite_output_dir
+      --overwrite_output_dir \
 
       rm -rf ../../runs/$RUN_NAME/$TASK/$MODEL_NAME/$TRAIN_PCT/$SEED/checkpoint*
     done

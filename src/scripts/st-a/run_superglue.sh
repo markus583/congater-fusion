@@ -1,4 +1,4 @@
-RUN_NAME=st-a
+RUN_NAME=st-a-3e-4
 
 MODEL_NAME=roberta-base
 GPU_ID=0
@@ -23,8 +23,8 @@ fi
 
 for TASK in record; do
   for SEED in "${SEEDS[@]}"; do
-    # these tasks only run with seeds 0 to 4
-    if [ $SEED -gt 2 ] && [ $TASK = "record" ]; then
+    # these tasks only run with seeds 0 to 2
+    if [ $SEED -gt 2 ] && [ $TASK = "record" -o $TASK = "multirc" ]; then
       echo "Skipping $TASK with seed $SEED"
       continue
     fi
@@ -49,8 +49,8 @@ for TASK in record; do
       --do_eval \
       --per_device_train_batch_size 32 \
       --per_device_eval_batch_size 32 \
-      --dataloader_num_workers 4 \
-      --learning_rate 1e-4 \
+      --dataloader_num_workers 0 \
+      --learning_rate 3e-4 \
       --num_train_epochs 30 \
       --train_adapter \
       --adapter_config pfeiffer \

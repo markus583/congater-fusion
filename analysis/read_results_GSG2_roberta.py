@@ -20,7 +20,13 @@ if not os.path.exists(BASE_DIR):
 OUT_FILES = [
     "FULL.csv",
     "ST-A.csv",
+    "ST-A-3e-4.csv",
+    "ST-A-3e-4-sH.csv",
     "ST-A-FUSION-30-GSG2.csv",
+    "st-compacterP-3e-3.csv",
+    "st-compacterP-3e-3-RF16.csv",
+    "st-compacterP.csv",
+    "st-a-propetl-3e-4.csv",
     "st-a-splitL__vector_2_avg_d03-lr1e-2-GSG2.csv",
     "st-a-splitL__vector_2_avg_d03-lr5e-3-GSG2.csv",
 ]
@@ -29,7 +35,13 @@ OUT_FILES = [BASE_DIR + f for f in OUT_FILES]
 DIR_NAMES = [
     "full",
     "st-a",
+    "st-a-3e-4",
+    "st-a-3e-4-sH",
     "/share/rk3/home/markus-frohmann/congater-fusion/src/runs/st-a-fusion-FP16-30-GSG2",
+    "/share/rk5/home/markus-frohmann/congater-fusion/src/runs/st-compacterP-3e-3",
+    "/share/rk5/home/markus-frohmann/congater-fusion/src/runs/st-compacterP-3e-3-RF16",
+    "/share/rk5/home/markus-frohmann/congater-fusion/src/runs/st-compacterP",
+    "/share/rk5/home/markus-frohmann/congater-fusion/src/runs/st-a-propetl-3e-4",
     "st-a-splitL__vector_2_avg_d03-lr1e-2-GSG2",
     "st-a-splitL__vector_2_avg_d03-lr5e-3-GSG2",
 ]
@@ -40,12 +52,28 @@ extract_statistics(OUT_FILES, DIR_NAMES, MODEL_NAME, TASKS)
 EXCLUDE_LIST = []
 
 compare_dict = {
+    "ST": {
+        "exclude": [],
+        "include": [],
+        "include_list_exactly": [
+            "FULL",
+            "ST-A",
+            "ST-A-3e-4",
+            "ST-A-3e-4-sH",
+            "st-compacterP-3e-3",
+            "st-compacterP",
+            "st-compacterP-3e-3-RF16",
+            "st-a-propetl-3e-4",
+        ],
+        "diff_base": "ST-A",
+    },
     "BASELINES": {
         "exclude": [],
         "include": [],
         "include_list_exactly": [
             "FULL",
             "ST-A",
+            "ST-A-3e-4",
             "ST-A-FUSION-30-GSG2",
             "st-a-splitL__vector_2_avg_d03-lr1e-2-GSG2",
             "st-a-splitL__vector_2_avg_d03-lr5e-3-GSG2",

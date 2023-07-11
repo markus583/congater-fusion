@@ -22,6 +22,7 @@ OUT_FILES = [
     "ST-A.csv",
     "st-a-fusion-FP16-30-SUPERGLUE.csv",
     "st-a-splitL__vector_2_avg_d03-lr1e-2-SUPERGLUE.csv",
+    "st-a-splitL__scalar_2_avg_d03-lr1e-2-SUPERGLUE.csv",
 
 ]
 
@@ -31,29 +32,13 @@ DIR_NAMES = [
     "st-a",
     "st-a-fusion-FP16-30-SUPERGLUE",
     "st-a-splitL__vector_2_avg_d03-lr1e-2-SUPERGLUE",
+    "st-a-splitL__scalar_2_avg_d03-lr1e-2-SUPERGLUE",
 ]
 
 print(len(OUT_FILES), len(DIR_NAMES))
 extract_statistics(OUT_FILES, DIR_NAMES, MODEL_NAME, TASKS)
 
-EXCLUDE_LIST = [
-    "ln_after",
-    "ln_before-after",
-    "residual",
-    "CUSTOM",
-    "C-V6",
-    "C-V7",
-    # "C-V8",
-    "C-V5-ln_before",
-    "FUSION-ND",
-    "STATIC",
-    "value_init_avg",
-    "value_after",
-    "value_normal",
-    # "LR",
-    "dk",
-    "C-V0-FUSION-GSG-roberta-FP16-TT-DOUBLETT",
-]
+EXCLUDE_LIST = []
 
 compare_dict = {
     "BASELINES": {
@@ -73,6 +58,7 @@ compare_dict = {
             "ST-A",
             "st-a-fusion-FP16-30-SUPERGLUE",
             "st-a-splitL__vector_2_avg_d03-lr1e-2-SUPERGLUE",
+            "st-a-splitL__scalar_2_avg_d03-lr1e-2-SUPERGLUE",
         ],
         "diff_base": "ST-A",
     },
@@ -514,8 +500,8 @@ def plot_100(
     
     category_order = sorted(df["Model"].unique().tolist())
     # remove ST-A-Fusion and put it back at position 1
-    category_order.remove(diff_base)
-    category_order.insert(1, diff_base)
+    # category_order.remove(diff_base)
+    # category_order.insert(1, diff_base)
     
     fig = px.bar(
         df,
