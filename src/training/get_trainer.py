@@ -24,7 +24,7 @@ from model.utils import TaskType, get_model
 from tasks.glue.dataset import GlueDataset
 from tasks.superglue.dataset import SuperGlueDataset
 from tasks.utils import GLUE_DATASETS, SUPERGLUE_DATASETS
-from training.utils import map_omega_grid
+from training.utils import map_omega_grid, get_default_args
 
 logger = logging.getLogger(__name__)
 
@@ -242,6 +242,9 @@ def get_trainer(args):
                     id2label={i: v for i, v in enumerate(dataset.label_list)}
                     if not dataset.is_regression
                     else None,
+                    layers=model_args.head_n_layers
+                    if model_args.head_n_layers
+                    else get_default_args(model.add_classification_head)["layers"],
                 )
             # Setup adapters
             # TODO: setup variable omega for training also (not only eval mode, i.e. data_args.eval_adapter = True)
