@@ -52,6 +52,12 @@ def extract_statistics(OUT_FILES, DIR_NAMES, MODEL_NAME, task_list):
                 "spearmanr_STD",
                 "matthews_correlation_MEAN",
                 "matthews_correlation_STD",
+                "f1_MEAN",
+                "f1_STD",
+                "exact_match_MEAN",
+                "exact_match_STD",
+                "combined_score_MEAN",
+                "combined_score_STD",
             ]
         )
 
@@ -107,6 +113,8 @@ def extract_statistics(OUT_FILES, DIR_NAMES, MODEL_NAME, task_list):
                         "spearmanr",
                         "matthews_correlation",
                         "f1",
+                        "exact_match",
+                        "combined_score",
                     ]:
                         if "test_" + metric in metrics:
                             current_metrics[metric] = metrics["test_" + metric]
@@ -159,6 +167,7 @@ def extract_statistics(OUT_FILES, DIR_NAMES, MODEL_NAME, task_list):
                     "matthews_correlation",
                     "f1",
                     "exact_match",
+                    "combined_score"
                 ]:
                     metric_values = [
                         float(m[metric]) for m in all_metrics.values() if metric in m
@@ -186,6 +195,10 @@ def extract_statistics(OUT_FILES, DIR_NAMES, MODEL_NAME, task_list):
                         "matthews_correlation_STD": std_metrics["matthews_correlation"],
                         "f1_MEAN": mean_metrics["f1"],
                         "f1_STD": std_metrics["f1"],
+                        "exact_match_MEAN": mean_metrics["exact_match"],
+                        "exact_match_STD": std_metrics["exact_match"],
+                        "combined_score_MEAN": mean_metrics["combined_score"],
+                        "combined_score_STD": std_metrics["combined_score"],
                         "n_runs": len(all_metrics),
                     },
                     ignore_index=True,
